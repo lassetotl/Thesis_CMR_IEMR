@@ -12,6 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
+from Lasse_functions import D_ij, theta
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn
@@ -48,41 +49,6 @@ T_ed = data['TimePointEndDiastole']
 print(f'Velocity field shape: {np.shape(V)}')
 print(f'Magnitudes field shape: {np.shape(M)}')
 print(f'Mask shape: {np.shape(mask)}')
-
-
-#%%
-#Strain rate tensor (xy plane, dim=2) incl mask
-#(Selskog et al 2002, hentet 17.08.23)
-
-#V[i, j, 0, t, i]
-# xval, yval, ?, timepoint, axis
-
-def D_ij(V, t, f, mask_, dim = 2): #Construct SR tensor
-    L = np.zeros((dim, dim), dtype = object) #Jacobian 2D velocity matrices
-    
-    v_i = 1; x_j = 0 #index 0 is y and 1 is x (?)
-    for i in range(dim):
-        s = 1
-        for j in range(dim):
-            #Gathering velocity data and applying gaussian smoothing
-            V_ = gaussian_filter(V[:f, :f, 0, t, v_i]*mask_, sigma = 2)
-            #V_[V_ == 0] = np.nan
-            
-            if (j==1) is True: #negative sign on V_y (?)
-                s = -1
-            L[i, j] = s * np.gradient(V_, axis=x_j, edge_order = 2)
-            x_j += 1
-        v_i -= 1
-        x_j = 0
-    
-    D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
-    return D_ij
-
-#Invariant for a given xy point and 2D SR tensor (D_ij)
-def Invariant(x, y, D):
-    D_ = np.array([[D[0,0][x,y], D[1,0][x,y]], [D[0,1][x,y], D[1,1][x,y]]])
-    val, vec = np.linalg.eig(D_)
-    return val[0]**2 + val[1]**2
 
 #%%
 #mask modification
@@ -125,7 +91,6 @@ plt.show()
 f = 80
 frame_ = np.zeros((f,f))
 I = np.zeros(T); I[:] = np.nan #Invariant
-I_ = [63, 38] #x and y comp of point we measure I in
 
 
 for t in range(T):

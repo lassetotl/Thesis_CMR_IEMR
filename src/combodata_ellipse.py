@@ -10,12 +10,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
+from Lasse_functions import D_ij, theta
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn
 
 import scipy.io as sio
-from scipy.ndimage import binary_erosion, binary_dilation, gaussian_filter
+import scipy.ndimage as ndi 
 from scipy.signal import wiener
 import scipy.interpolate as scint
 import imageio
@@ -25,11 +26,12 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-dict = sio.loadmat(r'R:\Lasse\combodata\ComboData1.mat')
+file = 'ComboData1'
+dict = sio.loadmat(f'R:\Lasse\combodata\{file}.mat')
 data = dict["ComboData_thisonly"]
 
-print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
-print(f'Combodata shape: {np.shape(data)}')
+#print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
+#print(f'Combodata shape: {np.shape(data)}')
 
 #%%
 
@@ -41,47 +43,15 @@ M = data['Magn'][0,0] #magnitudes
 mask = data['Mask'][0,0] #mask for non-heart tissue
 
 T = len(V[0,0,0,:,0]) #Total amount of time steps
-T_es = data['TimePointEndSystole']
-T_ed = data['TimePointEndDiastole']
+T_es = data['TimePointEndSystole'][0,0][0][0]
+T_ed = data['TimePointEndDiastole'][0,0][0][0]
 
+print(f'{file} overview:')
 print(f'Velocity field shape: {np.shape(V)}')
 print(f'Magnitudes field shape: {np.shape(M)}')
 print(f'Mask shape: {np.shape(mask)}')
+
 print(f'End systole at t={T_es}, end diastole at t={T_ed}')
-
-
-#%%
-#Strain rate tensor (xy plane, dim=2) incl mask
-#(Selskog et al 2002, hentet 17.08.23)
-
-#V[i, j, 0, t, i]
-# xval, yval, ?, timepoint, axis
-
-def D_ij(V, t, f, mask_, dim = 2): #Construct SR tensor
-    L = np.zeros((dim, dim), dtype = object) #Jacobian 2D velocity matrices
-    
-    v_i = 1; x_j = 0 #index 0 is y and 1 is x (?)
-    for i in range(dim):
-        s = 1
-        for j in range(dim):
-            #Gathering velocity data and applying gaussian smoothing
-            V_ = gaussian_filter(V[:f, :f, 0, t, v_i]*mask_, sigma = 2)
-            #V_[V_ == 0] = np.nan
-            
-            if (j==1) is True: #negative sign on V_y (?)
-                s = -1
-            L[i, j] = s * np.gradient(V_, axis=x_j, edge_order = 1)
-            x_j += 1
-        v_i -= 1
-        x_j = 0
-    
-    D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
-    return D_ij
-
-# Note: returns angle in radians between vectos 
-def theta(v, w): return np.arccos(v.dot(w)/(norm(v)*norm(w)))
-
-#https://stats.stackexchange.com/questions/9898/how-to-plot-an-ellipse-from-eigenvalues-and-eigenvectors-in-r
 
 #%%
 #visualizing Strain Rate
@@ -105,8 +75,11 @@ for t in range(T):
     
     #diluted mask to calculate D_ij
     mask_t = mask[:f, :f, 0, t] #mask at this timepoint
-    mask_d = binary_dilation(mask_t).astype(mask_t.dtype) - mask_t
-    mask_e = binary_erosion(mask_t).astype(mask_t.dtype)
+    mask_d = ndi.binary_dilation(mask_t).astype(mask_t.dtype) - mask_t
+    mask_e = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
+    
+    #find center of mass of filled mask (middle of the heart)
+    cy, cx = ndi.center_of_mass(ndi.binary_fill_holes(mask[:f, :f, 0, t]))
     
     D = D_ij(V=V, t=t, f=f, mask_ = 1)
     
@@ -145,16 +118,16 @@ for t in range(T):
                 
                 #color code in hex notation, from invariant
                 I = val[0]**2 + val[1]**2 
+                
                 c = mpl.colors.rgb2hex(c_cmap(val[0]**2 + val[1]**2))
                 
                 #directional information lost from eigenvalues
-                val = abs(val/np.max((eigvals_m)))
+                val = abs(val)
                 
                 #https://stackoverflow.com/questions/67718828/how-can-i-plot-an-ellipse-from-eigenvalues-and-eigenvectors-in-python-matplotl
                 theta_ = np.linspace(0, 2*np.pi, 1000);
                 #the first factor is arbitrary scaling
                 ellipsis = 1*(np.sqrt(val[None,:]) * vec) @ [np.sin(theta_), np.cos(theta_)]
-                #ellipsis = 1*(1/np.sqrt(val[None,:]) * vec) @ [np.sin(theta_), np.cos(theta_)]
                 
                 plt.fill(x + ellipsis[0,:], y + ellipsis[1,:], color = c)
                 #plt.quiver(x, y, vec[0][0], vec[0][1], color = 'red', scale = 10/np.sqrt(val[0]))
@@ -164,7 +137,7 @@ for t in range(T):
     #frame_e = frame_*mask_e
     #I[t] = np.sum(frame_e)/np.sum(mask_e) #total SR scaled by nr of mask pixels
 
-    
+    plt.scatter(cx, cy, marker = 'x', c='w')
  
     plt.title(f'Strain Rate at t = {t}', fontsize = 15)
     plt.xlim(0, f-1); plt.ylim(f-1, 0)
@@ -196,7 +169,7 @@ for t in range(T):
 
 filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in range(T)]
 
-with imageio.get_writer('R:\Lasse\plots\MP4\Ellipses.mp4', fps=7) as writer:    # inputs: filename, frame per second
+with imageio.get_writer(f'R:\Lasse\plots\MP4\{file}\Ellipses.mp4', fps=7) as writer:    # inputs: filename, frame per second
     for filename in filenames:
         image = imageio.imread(filename)                         # load the image file
         writer.append_data(image)
