@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from Lasse_functions import D_ij, theta
+from lasse_functions import D_ij, theta
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn
@@ -27,7 +27,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-dict = sio.loadmat(r'R:\Lasse\combodata\ComboData.mat')
+file = 'Combodata'
+dict = sio.loadmat(f'R:\Lasse\combodata\{file}.mat')
 data = dict["ComboData_thisonly"]
 
 print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -82,7 +83,7 @@ my_cmap.set_under(alpha=0) # set how the colormap handles 'bad' values
 
 plt.imshow(M[:f, :f, 0, 30]/np.max(M[:f, :f, 0, 30]), cmap = 'gray')
 
-dm = plt.imshow(test, cmap = my_cmap, vmin = 0.01)
+dm = plt.imshow(test, origin = 'lower', cmap = my_cmap, vmin = 0.01)
 plt.colorbar(dm)
 plt.show()
 #%%
@@ -121,11 +122,11 @@ for t in range(T):
     plt.subplot(1, 2, 1) #SR colormap
     ax = plt.gca()
     
-    plt.imshow(M[:f, :f, 0, t], cmap = 'gray', alpha = 1)
+    plt.imshow(M[:f, :f, 0, t], origin = 'lower', cmap = 'gray', alpha = 1)
     
     frame = frame_*mask_t
     frame[frame == 0] = -20
-    cm = plt.imshow(frame/abs(np.max(frame)), vmin = -1, vmax = 1, alpha=1, cmap = my_cmap)
+    cm = plt.imshow(frame/abs(np.max(frame)), origin = 'lower' , vmin = -1, vmax = 1, alpha=1, cmap = my_cmap)
     
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -165,7 +166,7 @@ ax = plt.gca()
 
 plt.imshow(M[:f, :f, 0, t], cmap = 'gray', alpha = 1)
 
-cm = plt.imshow(frame/abs(np.max(frame)), vmin = -1, vmax = 1, alpha=1, cmap = my_cmap)
+cm = plt.imshow(frame/abs(np.max(frame)), origin = 'lower', vmin = -1, vmax = 1, alpha=1, cmap = my_cmap)
 
 divider = make_axes_locatable(ax)
 cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -196,7 +197,7 @@ plt.show()
 
 filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in range(T)]
 
-with imageio.get_writer('R:\Lasse\plots\MP4\Strain Rate.mp4', fps=7) as writer:    # inputs: filename, frame per second
+with imageio.get_writer(f'R:\Lasse\plots\MP4\{file}\Strain Rate.mp4', fps=7) as writer:    # inputs: filename, frame per second
     for filename in filenames:
         image = imageio.imread(filename)                         # load the image file
         writer.append_data(image)

@@ -10,7 +10,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from Lasse_functions import D_ij, theta
+from lasse_functions import D_ij, theta
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn
@@ -26,7 +26,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'ComboData1'
+file = 'Combodata'
 dict = sio.loadmat(f'R:\Lasse\combodata\{file}.mat')
 data = dict["ComboData_thisonly"]
 
@@ -57,8 +57,6 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 #visualizing Strain Rate
 
 f = 100
-frame_ = np.zeros((f,f))
-I = np.zeros(T); I[:] = np.nan #Graph values
 
 #plot every n'th ellipse
 n = 2
@@ -66,11 +64,17 @@ n = 2
 #cyclic colormap
 
 c_cmap = plt.get_cmap('plasma')
-norm = mpl.colors.Normalize(0, 1)
+norm_ = mpl.colors.Normalize(vmin = 0, vmax = 2*np.pi)
 
 #%%
+frame_ = np.zeros((f,f))
+g1 = np.zeros(T); g1[:] = np.nan #Graph values
+g2 = np.zeros(T); g2[:] = np.nan #Graph values
+
 for t in range(T):
-    fig = plt.figure(figsize=(8, 8))
+    fig = plt.figure(figsize=(18, 8))
+    plt.subplot(1, 2, 1) #SR colormap
+    ax = plt.gca()
     ax = plt.gca()
     
     #diluted mask to calculate D_ij
@@ -85,11 +89,14 @@ for t in range(T):
     
     #plot ellipse every third index
     #ax1 = fig.add_subplot(211, aspect='auto') #SR colormap
-    plt.imshow(M[:f, :f, 0, t], cmap = 'gray', alpha = 1)
+    plt.imshow(M[:f, :f, 0, t], origin = 'lower', cmap = 'gray', alpha = 1)
     
+    # arrays for this timepoint t / this image
     eigvals = np.zeros((f,f), dtype = object)
     eigvals_m = np.zeros((f,f), dtype = object) #highest values
     eigvecs = np.zeros((f,f), dtype = object)
+    rad_e = 0 #radial components of eigenvectors, sum will be saved every t
+    circ_e = 0 #circumferential ...
     
     #calculate eigenvalues and vectors
     for x in range(0, f, n):
@@ -101,7 +108,7 @@ for t in range(T):
             eigvecs[x, y] = vec
             eigvals_m[x, y] = val[np.argmax(abs(val))]
             
-            #the highest eigenvalue is saved, no directional info!
+            #the highest eigenvalue is saved
             #frame_[x,y] = val[np.argmax(abs(val))] #stretch/shortening
             
     #create ellipses, normalized eigenvals at mean
@@ -111,13 +118,31 @@ for t in range(T):
             #mask choice here
             if mask_e[y, x] == 1: #why does this work? (Switching x and y)
                     
+                # vector between center of mass and point (x, y) 
+                r = np.array([x - cx, y - cy])
+                #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
+                
                 vec = eigvecs[x, y]
                 val = eigvals[x, y]
-                print(val)
-                #color code in hex notation, from invariant
-                I = val[0]**2 + val[1]**2 
                 
-                c = mpl.colors.rgb2hex(c_cmap(val[0]**2 + val[1]**2))
+                # index of highest/lowest (absolute) eigenvalue
+                val_max_i = np.argmax(abs(val))
+                val_min_i = np.argmin(abs(val))
+                
+                # color code in hex notation, from c value
+                # c = val[0]**2 + val[1]**2  # invariant
+                c = theta(r, vec[val_max_i])  # angle between highest eigenvector and r
+                c_ = theta(r, vec[val_min_i]) # angle between lowest eigenvector and r
+                
+                # radial/circumferential contributions from each eigenvector
+                rad_e += val[val_max_i]*np.cos(c) + val[val_min_i]*np.cos(c_)
+                circ_e += val[val_max_i]*np.sin(c) + val[val_min_i]*np.sin(c_)
+                
+                #print(r, vec[val_i], c)
+                
+                #hex code, inputs in range (0, 1) so c is scaled
+                hx = mpl.colors.rgb2hex(c_cmap(c/(2*np.pi)))
+                #print(c_cmap(c), hx)
                 
                 #directional information lost from eigenvalues
                 val = abs(val)
@@ -127,40 +152,76 @@ for t in range(T):
                 #the first factor is arbitrary scaling
                 ellipsis = 1*(np.sqrt(val[None,:]) * vec) @ [np.sin(theta_), np.cos(theta_)]
                 
-                plt.fill(x + ellipsis[0,:], y + ellipsis[1,:], color = c)
+                plt.fill(x + ellipsis[0,:], y + ellipsis[1,:], color = hx)
                 #plt.quiver(x, y, vec[0][0], vec[0][1], color = 'red', scale = 10/np.sqrt(val[0]))
                 #plt.quiver(x, y, vec[1][0], vec[1][1], color = 'red', scale = 10/np.sqrt(val[1]))
     #I[t] = Invariant(I_[0], I_[1], D)
     
     #frame_e = frame_*mask_e
-    #I[t] = np.sum(frame_e)/np.sum(mask_e) #total SR scaled by nr of mask pixels
+    
+    # graph subplot values
+    g1[t] = rad_e #global radial strain rate this frame
+    g2[t] = circ_e #global circumferential strain rate
 
-    plt.scatter(cx, cy, marker = 'x', c='w')
+    plt.scatter(cx, cy, marker = 'x', c = 'w')
  
     plt.title(f'Strain Rate at t = {t}', fontsize = 15)
-    plt.xlim(0, f-1); plt.ylim(f-1, 0)
+    plt.xlim(0, f-1); plt.ylim(0, f-1)
     
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     
-    sm = plt.cm.ScalarMappable(cmap=c_cmap, norm=norm)
+    sm = plt.cm.ScalarMappable(cmap = c_cmap, norm = norm_)
     cbar = plt.colorbar(sm, cax = cax)
-    cbar.set_label('$\lambda_1^2 + \lambda_2^2$', fontsize = 15)
-    '''
-    ax2 = fig.add_subplot(212, aspect='auto') #TSR
+    cbar.set_label('$\Theta$ (radians)', fontsize = 15)
+    
+    
+    plt.subplot(1, 2, 2) #TSR
     #plt.title('Invariant $\lambda_1^2 + \lambda_2^2$ in marked position', fontsize = 15)
-    plt.title('Total Strain Rate over time')
+    plt.title('Global Strain rate over time')
     plt.grid(1)
-    plt.plot(np.arange(0, T, 1), I, 'k')
-    plt.axvline(T_es, c = 'm', ls = ':', lw = 2, label = 'End Systole')
-    plt.axvline(T_ed, c = 'm', ls = '--', lw = 1.5, label = 'End Diastole')
+    plt.axhline(0, c = 'k', lw = 1)
+    plt.plot(np.arange(0, T, 1), g1, 'darkblue', label = 'Radial')
+    plt.plot(np.arange(0, T, 1), g2, 'm', label = 'Circumferential')
+    
+    plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+    plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+    
+    
     plt.xlim(0, T)#; plt.ylim(0, 50)
     plt.xlabel('Timepoints', fontsize = 15)
     plt.ylabel('$s^{-1}$', fontsize = 20)
     plt.legend()
-    '''
+    
     plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
     plt.show()
+
+#%%
+#last frame with running average
+
+N = 4 #window
+I_a = np.convolve(I, np.ones(N)/N, mode='same')
+
+plt.figure(figsize=(12, 8))
+
+#plt.subplot(1, 2, 2) #TSR
+#plt.title('Invariant $\lambda_1^2 + \lambda_2^2$ in marked position', fontsize = 15)
+plt.title('Global Radial Strain rate over time')
+plt.grid(1)
+plt.plot(np.arange(0, T, 1), I, 'lightgrey', ls = '--')
+plt.axvline(T_es, c = 'm', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed, c = 'm', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.xlim(0, T)#; plt.ylim(0, 50)
+plt.xlabel('Timepoints', fontsize = 15)
+plt.ylabel('$s^{-1}$', fontsize = 20)
+plt.legend()
+
+plt.plot(np.arange(0, T, 1), I_a, 'indigo', lw=2, label = 'Walking Average') #walking average
+plt.legend()
+
+plt.subplots_adjust(wspace=0.25)
+plt.savefig(f'R:\Lasse\plots\SHAM_GRSR.PNG')
+plt.show()
 
 #%%
 #Generate mp4

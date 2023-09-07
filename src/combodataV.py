@@ -23,7 +23,8 @@ import imageio
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-dict = sio.loadmat(r'R:\Lasse\ComboData.mat')
+file = 'ComboData'
+dict = sio.loadmat(f'R:\Lasse\combodata\{file}.mat')
 data = dict["ComboData_thisonly"]
 
 print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -38,7 +39,7 @@ print(f'Combodata shape: {np.shape(data)}')
 # last indexing is to zoom in; reducing amount of data to iterate through
 # same minimum and maximum image position values
 f_max = 80
-f_min = 30
+f_min = 0
 
 V = data['V'][0,0][f_min:f_max, f_min:f_max, :, :, :] #velocity field
 M = data['Magn'][0,0][f_min:f_max, f_min:f_max, :, :] #magnitudes
@@ -62,7 +63,7 @@ ay = len(mask[0,:,0,0])
 X, Y = np.meshgrid(np.arange(0, ax, 1), np.arange(0, ay, 1))
 
 #find center of mask at t=0
-cy, cx = center_of_mass(mask[:f, :f, 0, 0])
+cy, cx = center_of_mass(mask[:, :, 0, 0])
 
 for t in range(T):
     #whats the third component?
@@ -70,7 +71,7 @@ for t in range(T):
     mask_t = mask[:, :, 0, t]
     
     fig, ax = plt.subplots(figsize=(10,10))
-    plt.imshow(frame1/np.max(frame1), cmap='gray', vmin = 0, vmax = 1)
+    plt.imshow(frame1/np.max(frame1), origin = 'lower', cmap='gray', vmin = 0, vmax = 1)
     plt.colorbar()
     plt.title(f'Velocity plot over proton density at timepoint t = {t}', fontsize = 15)
     
@@ -79,7 +80,7 @@ for t in range(T):
     
     #wiener noise reduction filter (?)
     vx = gaussian_filter(V[:, :, 0, t, 1], sigma = 1)*mask_t #x components of velocity w mask
-    vy = gaussian_filter(-V[:, :, 0, t, 0], sigma = 1)*mask_t #y components (negative?)
+    vy = gaussian_filter(V[:, :, 0, t, 0], sigma = 1)*mask_t #y components (negative?)
     
     q = ax.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n], vy[::n, ::n], 
                   color = 'w', scale = 100, minshaft = 1, minlength=0, width = 0.01)
@@ -91,7 +92,7 @@ for t in range(T):
 
 filenames = [f'R:\Lasse\plots\Vdump\V(t={t}).PNG' for t in range(T)]
 
-with imageio.get_writer('R:\Lasse\plots\MP4\Velocity.mp4', fps=7) as writer:    # inputs: filename, frame per second
+with imageio.get_writer(f'R:\Lasse\plots\MP4\{file}\Velocity.mp4', fps=7) as writer:    # inputs: filename, frame per second
     for filename in filenames:
         image = imageio.imread(filename)                         # load the image file
         writer.append_data(image)
