@@ -110,12 +110,10 @@ for t in range(T):
         for y in range(0, f, n):       
             #mask choice here
             if mask_e[y, x] == 1: #why does this work? (Switching x and y)
-                
-                #D_Ellipse(x, y, vectors=0)
                     
                 vec = eigvecs[x, y]
                 val = eigvals[x, y]
-                
+                print(val)
                 #color code in hex notation, from invariant
                 I = val[0]**2 + val[1]**2 
                 
