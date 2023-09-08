@@ -37,7 +37,7 @@ def D_ij(V, t, f, mask_, dim = 2): #Construct SR tensor
     for i in range(dim):
         for j in range(dim):
             #Gathering velocity data and applying gaussian smoothing
-            V_ = ndi.gaussian_filter(V[:f, :f, 0, t, v_i]*mask_, sigma = 1)
+            V_ = ndi.gaussian_filter(V[:f, :f, 0, t, v_i]*mask_, sigma = 0)
             #V_[V_ == 0] = np.nan
             
             L[i, j] = np.gradient(V_, axis=x_j, edge_order = 1)
@@ -50,5 +50,8 @@ def D_ij(V, t, f, mask_, dim = 2): #Construct SR tensor
 
 # Note: returns angle in radians between vectors 
 def theta(v, w): return np.arccos(v.dot(w)/(norm(v)*norm(w)))
-
 #https://stats.stackexchange.com/questions/9898/how-to-plot-an-ellipse-from-eigenvalues-and-eigenvectors-in-r
+
+# running average of array a with window size N
+def running_average(a, N, mode = 'same'):
+    return np.convolve(a, np.ones(N)/N, mode = mode)

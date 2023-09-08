@@ -3,14 +3,13 @@ Created on Tue Aug 29 10:46:34 2023
 
 @author: lassetot
 """
-#imports
 
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from lasse_functions import D_ij, theta
+from lasse_functions import D_ij, theta, running_average
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn
@@ -71,11 +70,12 @@ frame_ = np.zeros((f,f))
 g1 = np.zeros(T); g1[:] = np.nan #Graph values
 g2 = np.zeros(T); g2[:] = np.nan #Graph values
 
+sub = 1  # Graph subplot on (1) or off (0)
 for t in range(T):
     fig = plt.figure(figsize=(18, 8))
     plt.subplot(1, 2, 1) #SR colormap
     ax = plt.gca()
-    ax = plt.gca()
+    #ax.set_facecolor('b')
     
     #diluted mask to calculate D_ij
     mask_t = mask[:f, :f, 0, t] #mask at this timepoint
@@ -88,7 +88,6 @@ for t in range(T):
     D = D_ij(V=V, t=t, f=f, mask_ = 1)
     
     #plot ellipse every third index
-    #ax1 = fig.add_subplot(211, aspect='auto') #SR colormap
     plt.imshow(M[:f, :f, 0, t], origin = 'lower', cmap = 'gray', alpha = 1)
     
     # arrays for this timepoint t / this image
@@ -120,7 +119,7 @@ for t in range(T):
                     
                 # vector between center of mass and point (x, y) 
                 r = np.array([x - cx, y - cy])
-                #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
+                plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
                 
                 vec = eigvecs[x, y]
                 val = eigvals[x, y]
@@ -135,8 +134,9 @@ for t in range(T):
                 c_ = theta(r, vec[val_min_i]) # angle between lowest eigenvector and r
                 
                 # radial/circumferential contributions from each eigenvector
-                rad_e += val[val_max_i]*np.cos(c) + val[val_min_i]*np.cos(c_)
-                circ_e += val[val_max_i]*np.sin(c) + val[val_min_i]*np.sin(c_)
+                # eigenvectors contain directional info, thus abs() of eigenvalues
+                rad_e += abs(val[val_max_i])*np.cos(c) + abs(val[val_min_i])*np.cos(c_)
+                circ_e += abs(val[val_max_i])*np.sin(c) + abs(val[val_min_i])*np.sin(c_)
                 
                 #print(r, vec[val_i], c)
                 
@@ -175,23 +175,24 @@ for t in range(T):
     cbar = plt.colorbar(sm, cax = cax)
     cbar.set_label('$\Theta$ (radians)', fontsize = 15)
     
-    
-    plt.subplot(1, 2, 2) #TSR
-    #plt.title('Invariant $\lambda_1^2 + \lambda_2^2$ in marked position', fontsize = 15)
-    plt.title('Global Strain rate over time')
-    plt.grid(1)
-    plt.axhline(0, c = 'k', lw = 1)
-    plt.plot(np.arange(0, T, 1), g1, 'darkblue', label = 'Radial')
-    plt.plot(np.arange(0, T, 1), g2, 'm', label = 'Circumferential')
-    
-    plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-    plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-    
-    
-    plt.xlim(0, T)#; plt.ylim(0, 50)
-    plt.xlabel('Timepoints', fontsize = 15)
-    plt.ylabel('$s^{-1}$', fontsize = 20)
-    plt.legend()
+    if sub == 1:  # subplot graph
+        plt.subplot(1, 2, 2) #TSR
+        #plt.title('Invariant $\lambda_1^2 + \lambda_2^2$ in marked position', fontsize = 15)
+        plt.title('Global Strain Rate over time')
+        plt.grid(1)
+        plt.axhline(0, c = 'k', lw = 1)
+        plt.plot(np.arange(0, T, 1), g1, 'darkblue', label = 'Radial')
+        plt.plot(np.arange(0, T, 1), g2, 'm', label = 'Circumferential')
+        
+        plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+        plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+        
+        
+        plt.xlim(0, T)#; plt.ylim(0, 50)
+        plt.xlabel('Timepoints', fontsize = 15)
+        plt.ylabel('$s^{-1}$', fontsize = 20)
+        
+        plt.legend()
     
     plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
     plt.show()
@@ -200,15 +201,15 @@ for t in range(T):
 #last frame with running average
 
 N = 4 #window
-I_a = np.convolve(I, np.ones(N)/N, mode='same')
+I_g1 = running_average(g1, 4)
+I_g2 = running_average(g2, 4)
 
 plt.figure(figsize=(12, 8))
 
 #plt.subplot(1, 2, 2) #TSR
 #plt.title('Invariant $\lambda_1^2 + \lambda_2^2$ in marked position', fontsize = 15)
-plt.title('Global Radial Strain rate over time')
+plt.title('Global Strain rate over time')
 plt.grid(1)
-plt.plot(np.arange(0, T, 1), I, 'lightgrey', ls = '--')
 plt.axvline(T_es, c = 'm', ls = ':', lw = 2, label = 'End Systole')
 plt.axvline(T_ed, c = 'm', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.xlim(0, T)#; plt.ylim(0, 50)
@@ -216,7 +217,12 @@ plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('$s^{-1}$', fontsize = 20)
 plt.legend()
 
-plt.plot(np.arange(0, T, 1), I_a, 'indigo', lw=2, label = 'Walking Average') #walking average
+plt.plot(np.arange(0, T, 1), g1, 'lightgrey')
+plt.plot(np.arange(0, T, 1), g2, 'lightgrey')
+
+plt.plot(np.arange(0, T, 1), I_g1, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
+plt.plot(np.arange(0, T, 1), I_g2, 'm', lw=2, label = 'Circumferential (Walking Average)') #walking average
+
 plt.legend()
 
 plt.subplots_adjust(wspace=0.25)
