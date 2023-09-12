@@ -27,8 +27,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'Combodata'
-dict = sio.loadmat(f'R:\Lasse\combodata\{file}.mat')
+file = 'sham_D7-1_6w'
+dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
 print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])

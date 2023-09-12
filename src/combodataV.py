@@ -23,8 +23,8 @@ import imageio
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'ComboData'
-dict = sio.loadmat(f'R:\Lasse\combodata\{file}.mat')
+file = 'sham_D7-1_1d'
+dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
 print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -83,7 +83,7 @@ for t in range(T):
     vy = gaussian_filter(V[:, :, 0, t, 0], sigma = 1)*mask_t #y components (negative?)
     
     q = ax.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n], vy[::n, ::n], 
-                  color = 'w', scale = 100, minshaft = 1, minlength=0, width = 0.01)
+                  color = 'w', scale = 110, minshaft = 1, minlength=0, width = 0.005)
     plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
     plt.show()
     
