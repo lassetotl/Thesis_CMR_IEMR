@@ -15,9 +15,11 @@ from numpy.linalg import norm
 #import seaborn as sns; sns.set()
 #import sklearn
 
+from astropy.convolution import Gaussian2DKernel
+
 import scipy.io as sio
 import scipy.ndimage as ndi
-from scipy.signal import wiener
+from scipy.signal import wiener, convolve2d
 import scipy.interpolate as scint
 import imageio
 import copy
@@ -30,17 +32,22 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 #V[i, j, 0, t, i]
 # xval, yval, zval (...), timepoint, axis
 
-def D_ij(V, t, f, mask_, dim = 2): #Construct SR tensor
+def D_ij(V, M, t, f, mask_, dim = 2): #Construct SR tensor (old)
     L = np.zeros((dim, dim), dtype = object) #Jacobian 2D velocity matrices
     
     v_i = 1; x_j = 0 #index 0 is y and 1 is x (?)
     for i in range(dim):
         for j in range(dim):
+            # calculate certainty matrix from normalized magnitude plot
+            C = M/np.max(M)
+            
             #Gathering velocity data and applying gaussian smoothing
             V_ = ndi.gaussian_filter(V[:f, :f, 0, t, v_i]*mask_, sigma = 1)
             #V_[V_ == 0] = np.nan
             
             L[i, j] = np.gradient(V_, axis=x_j, edge_order = 1)
+            #L[i, j] = 
+            
             x_j += 1
         v_i -= 1
         x_j = 0
@@ -49,8 +56,31 @@ def D_ij(V, t, f, mask_, dim = 2): #Construct SR tensor
     return D_ij
 
 
+def D_ij_2D(x, y, V, M, t, g): #Construct SR tensor for specific point
+    L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
+    
+    # calculate certainty matrix from normalized magnitude plot
+    C = M/np.max(M)
+    
+    # velocity x and y components from combodata multiplied by C + gaussian convolution
+    # should compensate border artifacts
+    vx = convolve2d(V[:, :, 0, t, 1]*C, g) / convolve2d(C, g)
+    vy = convolve2d(V[:, :, 0, t, 0]*C, g) / convolve2d(C, g)
+    
+    for i in range(2):
+        for j in range(2):
+            dx = dy = 1 # 1 as long as x and y voxels have length 1 in image 
+            L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+            L[0, 1] = (C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+            L[1, 0] = (C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+            L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+            
+    D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
+    return D_ij
+
+
 # Note: returns angle in radians between vectors 
-def theta(v, w): return np.arccos(v.dot(w)/(norm(v)*norm(w)))
+def theta_rad(v, w): return np.arccos(v.dot(w)/(norm(v)*norm(w)))
 #https://stats.stackexchange.com/questions/9898/how-to-plot-an-ellipse-from-eigenvalues-and-eigenvectors-in-r
 
 # running average of array a with window size N
@@ -72,3 +102,13 @@ def draw_ellipse(x, y, vec, val, max_i, min_i, angle, hx):
     ellipse = patches.Ellipse((x, y), val[max_i], val[min_i], angle=angle*180/np.pi, color = hx)
     return ellipse
     
+
+# insert arrays / meshgrid x y?
+def gaussian_2d(sigma):
+    d = round(2*np.pi*sigma)  # g size based on sigma 
+    z = np.zeros((d, d))
+    # create gaussian, peak shifted to middle
+    for i in range(-d, d):
+        for j in range(-d, d):
+            z[i, j] = np.exp(-0.5*((i - d/2)**2 + (j - d/2)**2)/sigma**2)/(2*np.pi*sigma**2)
+    return z

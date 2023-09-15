@@ -15,15 +15,16 @@ import matplotlib.pyplot as plt
 
 import scipy.io as sio
 import scipy.signal as sig
+import scipy.ndimage as ndi 
 
-from scipy.ndimage import gaussian_filter, center_of_mass
+from scipy.ndimage import gaussian_filter
 import imageio
 
 #%%
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D7-1_1d'
+file = 'sham_D11-1_40d'
 dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
@@ -38,7 +39,7 @@ print(f'Combodata shape: {np.shape(data)}')
 
 # last indexing is to zoom in; reducing amount of data to iterate through
 # same minimum and maximum image position values
-f_max = 80
+f_max = 100
 f_min = 0
 
 V = data['V'][0,0][f_min:f_max, f_min:f_max, :, :, :] #velocity field
@@ -63,7 +64,7 @@ ay = len(mask[0,:,0,0])
 X, Y = np.meshgrid(np.arange(0, ax, 1), np.arange(0, ay, 1))
 
 #find center of mask at t=0
-cy, cx = center_of_mass(mask[:, :, 0, 0])
+#cy, cx = ndi.center_of_mass(mask[:, :, 0, 0])
 
 for t in range(T):
     #whats the third component?

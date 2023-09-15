@@ -12,13 +12,13 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from lasse_functions import D_ij, theta
+from lasse_functions import D_ij, D_ij_2D, theta_rad
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn
 
 import scipy.io as sio
-from scipy.ndimage import binary_erosion, binary_dilation, gaussian_filter
+import scipy.ndimage as ndi 
 import scipy.interpolate as scint
 import imageio
 import copy
@@ -58,7 +58,7 @@ print(f'Mask shape: {np.shape(mask)}')
 
 f = 80
 mask_t = mask[:f, :f, 0, 0]
-mask_d = binary_dilation(mask_t).astype(mask_t.dtype) - mask_t
+mask_d = ndi.binary_dilation(mask_t).astype(mask_t.dtype) - mask_t
 #plt.imshow(mask_d, cmap = 'gray')
 
 test = np.zeros((f,f))#; test[:, :] = np.nan
@@ -99,14 +99,17 @@ for t in range(T):
     
     #diluted mask to calculate D_ij
     mask_t = mask[:f, :f, 0, t] #mask at this timepoint
-    mask_d = binary_dilation(mask_t).astype(mask_t.dtype) - mask_t
-    mask_e = binary_erosion(mask_t).astype(mask_t.dtype)
+    mask_d = ndi.binary_dilation(mask_t).astype(mask_t.dtype) - mask_t
+    mask_e = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
     
-    D = D_ij(V=V, t=t, f=f, mask_ = 1)
+    M_norm = M[:, :, 0, t]/np.max(M[:, :, 0, t])
+    
+    #D = D_ij(V=V, t=t, f=f, mask_ = 1)
     for x in range(f):
         for y in range(f):
             #SR tensor for specific point xy
-            D_ = np.array([[D[0,0][x,y], D[1,0][x,y]], [D[0,1][x,y], D[1,1][x,y]]])
+            #D_ = np.array([[D[0,0][x,y], D[1,0][x,y]], [D[0,1][x,y], D[1,1][x,y]]])
+            D_ = D_ij_2D(x, y, V, M_norm, t)
             val, vec = np.linalg.eig(D_)
                 
             #the highest eigenvalue is saved, no directional info!
