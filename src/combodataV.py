@@ -24,7 +24,7 @@ import imageio
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D11-1_40d'
+file = 'sham_D11-1_1d'
 dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
@@ -36,26 +36,27 @@ print(f'Combodata shape: {np.shape(data)}')
 #velocity V field, and magnitudes
 
 # shape of V is (1, 1), indexing necessary to 'unpack' the correct format (?)
-
-# last indexing is to zoom in; reducing amount of data to iterate through
-# same minimum and maximum image position values
-f_max = 100
-f_min = 0
-
-V = data['V'][0,0][f_min:f_max, f_min:f_max, :, :, :] #velocity field
-M = data['Magn'][0,0][f_min:f_max, f_min:f_max, :, :] #magnitudes
-mask = data['Mask'][0,0][f_min:f_max, f_min:f_max, :, :] #mask for non-heart tissue
+V = data['V'][0,0] #velocity field
+M = data['Magn'][0,0] #magnitudes
+mask = data['Mask'][0,0] #mask for non-heart tissue
 
 T = len(V[0,0,0,:,0]) #Total amount of time steps
+T_es = data['TimePointEndSystole'][0,0][0][0]
+T_ed = data['TimePointEndDiastole'][0,0][0][0]
+res = data['Resolution'][0,0][0][0]  # voxel length in mm?
 
+print(f'{file} overview:')
 print(f'Velocity field shape: {np.shape(V)}')
 print(f'Magnitudes field shape: {np.shape(M)}')
 print(f'Mask shape: {np.shape(mask)}')
+
+print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 
 #%%
 #generate images (implement line that clears gifdump?)
 
 #plot every n'th vector
+f = 80
 n = 2
 
 #axis lengths
@@ -67,14 +68,35 @@ X, Y = np.meshgrid(np.arange(0, ax, 1), np.arange(0, ay, 1))
 #cy, cx = ndi.center_of_mass(mask[:, :, 0, 0])
 
 for t in range(T):
-    #whats the third component?
+    
     frame1 = M[:, :, 0, t] #photon density at time t
     mask_t = mask[:, :, 0, t]
     
-    fig, ax = plt.subplots(figsize=(10,10))
-    plt.imshow(frame1/np.max(frame1), origin = 'lower', cmap='gray', vmin = 0, vmax = 1)
+    fig = plt.subplots(figsize=(10,10))
+    ax = plt.gca()
+    
+    
+    plt.imshow(frame1/np.max(frame1), origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
+    #plt.imshow(mask_t, origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
     plt.colorbar()
-    plt.title(f'Velocity plot over proton density at timepoint t = {t}', fontsize = 15)
+    
+    #find center of mass of filled mask (middle of the heart)
+    cy, cx = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
+    plt.scatter(cx, cy, marker = 'x', c = 'w')
+    
+    plt.title(f'Velocity plot over proton density at timepoint t = {t} ({file})', fontsize = 15)
+    
+    
+    #loops over y first
+    
+    '''
+    # just for troubleshooting
+    for x in range(0, f, n):
+        for y in range(0, f, n):
+            if mask_t[y, x] == 1: 
+                plt.scatter(x, y, color = 'green')
+    '''
+    
     
     
     #2D vector visualization 128x128 res image in xy plane
@@ -84,8 +106,9 @@ for t in range(T):
     vy = gaussian_filter(V[:, :, 0, t, 0], sigma = 1)*mask_t #y components (negative?)
     
     q = ax.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n], vy[::n, ::n], 
-                  color = 'w', scale = 110, minshaft = 1, minlength=0, width = 0.005)
+                  color = 'w', scale = 110, minshaft = 1, minlength=0, width = 0.003)
     plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
+    plt.xlim(0, f-1); plt.ylim(0, f-1)
     plt.show()
     
 #%%
