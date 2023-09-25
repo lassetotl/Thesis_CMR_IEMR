@@ -29,7 +29,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D11-1_1d'
+file = 'sham_D4-4_6w'
 dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
@@ -60,10 +60,11 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 #%%
 # visualizing Strain Rate
 # 'fov'
-f = 80
+f = 100
 
 # plot every n'th ellipse
-n = 18
+n = 3
+sigma = 2
 
 # cyclic colormap, normalize to radians 
 c_cmap = plt.get_cmap('plasma')
@@ -74,6 +75,7 @@ norm_ = mpl.colors.Normalize(vmin = 0, vmax = 90)
 
 #%%
 
+range_ = np.arange(0, T, 1)
 g1 = np.zeros(T); g1[:] = np.nan #Graph values
 g2 = np.zeros(T); g2[:] = np.nan #Graph values
 
@@ -83,9 +85,9 @@ r2_ = np.zeros(T); r2_[:] = np.nan #Graph values, negative
 c1_ = np.zeros(T); c1_[:] = np.nan #Graph values
 c2_ = np.zeros(T); c2_[:] = np.nan #Graph values
 
-a1 = np.zeros(T) #  most positive angle (stretch)
+a1 = np.zeros(T, dtype = 'object') #  most positive angle (stretch)
 a1_std = np.zeros(T) # std stored for each t
-a2 = np.zeros(T) # most negative angle (compression)
+a2 = np.zeros(T, dtype = 'object') # most negative angle (compression)
 a2_std = np.zeros(T)
 
 # center of mass at t=0
@@ -96,7 +98,7 @@ for t in range(T):
     fig = plt.figure(figsize=(18, 8))
     ax = plt.subplot(1, 2, 1) #SR colormap
     ax = plt.gca()
-    ax.text(3, 3, f'Gaussian smoothing ($\sigma = 1$)', color = 'w')
+    ax.text(3, 3, f'Gaussian smoothing ($\sigma = {sigma}$)', color = 'w')
     #ax.set_facecolor('b')
     
     # combodata mask 
@@ -130,7 +132,7 @@ for t in range(T):
     circ_e = 0 #circumferential ...
     
     # generate 2d gaussian kernel for data smoothing
-    g = gaussian_2d(sigma = 1)
+    g = gaussian_2d(sigma = sigma)
     
     #calculate eigenvalues and vectors
     e_count = 0  # ellipse counter in this frame
@@ -168,7 +170,7 @@ for t in range(T):
                     
                 # vector between center of mass and point (x, y) 
                 r = np.array([x - cx, y - cy])
-                plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
+                #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
                 
                 vec = eigvecs[x, y]
                 val = eigvals[x, y]
@@ -209,7 +211,15 @@ for t in range(T):
                 
                 # angle sum collected, scaled to get average angle each t
                 # does not assume that each 2d tensor has a positive and negative eigenvector
-                a1_.append(theta*int(val[val_max_i] > 0) + theta_*int(val[val_min_i] > 0))
+                if val[val_max_i] > 0:
+                    a1_.append(theta) 
+                if val[val_min_i] > 0:
+                    a1_.append(theta_)
+                if val[val_max_i] < 0:
+                    a2_.append(theta) 
+                if val[val_min_i] < 0:
+                    a2_.append(theta_)
+                    
                 a2_.append(theta*int(val[val_max_i] < 0) + theta_*int(val[val_min_i] < 0))
                 
                 #print(r, vec[val_i], c)
@@ -228,7 +238,7 @@ for t in range(T):
                                           angle = e_angle, color = hx)
                 
                 #unit ellipse
-                unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
+                #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
                 
                 ax.add_artist(ellipse)
                 #plt.quiver(x, y, vec[val_max_i][0], vec[val_max_i][1], color = hx, scale = 10/np.sqrt(val[val_max_i]))
@@ -245,18 +255,18 @@ for t in range(T):
     g2[t] = circ_e #global circumferential strain rate
     
     # collect average angle in degrees
-    a1[t] = np.mean(a1_)*180/np.pi #(np.mean(a1_))*180/np.pi
-    a2[t] = np.mean(a2_)*180/np.pi #(np.mean(a2_))*180/np.pi
-    a1_std[t] = (np.std(a1_))*180/np.pi
-    a2_std[t] = (np.std(a2_))*180/np.pi
+    a1[t] = np.array(a1_)*180/np.pi #np.mean(a1_)*180/np.pi 
+    a2[t] = np.array(a2_)*180/np.pi #np.mean(a2_)*180/np.pi 
+    a1_std[t] = (np.mean(a1_))*180/np.pi
+    a2_std[t] = (np.mean(a2_))*180/np.pi
 
     plt.scatter(cx, cy, marker = 'x', c = 'w')
  
     plt.title(f'Strain Rate at t = {t} ({file})', fontsize = 15)
-    z = 25
-    plt.xlim(cx_0-z, cx_0+z); plt.ylim(cy_0-z, cy_0+z)
-    ax.set_aspect('equal')
-    #plt.xlim(0, f); plt.ylim(0, f)
+    
+    #z = 25
+    #plt.xlim(cx_0-z, cx_0+z); plt.ylim(cy_0-z, cy_0+z)
+    plt.xlim(0, f); plt.ylim(0, f)
     
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
@@ -274,15 +284,15 @@ for t in range(T):
         plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
         plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
         
-        plt.plot(np.arange(0, T, 1), r1_, 'darkblue', label = 'Radial+')
-        plt.plot(np.arange(0, T, 1), c1_, 'chocolate', label = 'Circumferential+')
+        plt.plot(range_, r1_, 'darkblue', label = 'Radial+')
+        plt.plot(range_, c1_, 'chocolate', label = 'Circumferential+')
         
         
-        plt.plot(np.arange(0, T, 1), r2_, 'blue', label = 'Radial-')
-        plt.plot(np.arange(0, T, 1), c2_, 'orange', label = 'Circumferential-')
+        plt.plot(range_, r2_, 'blue', label = 'Radial-')
+        plt.plot(range_, c2_, 'orange', label = 'Circumferential-')
         
-        plt.plot(np.arange(0, T, 1), r1_ + r2_, 'blue', ls = '--', alpha = 0.2)
-        plt.plot(np.arange(0, T, 1), c1_ + c2_, 'orange', ls = '--', alpha = 0.2)
+        plt.plot(range_, r1_ + r2_, 'blue', ls = '--', alpha = 0.2)
+        plt.plot(range_, c1_ + c2_, 'orange', ls = '--', alpha = 0.2)
         
         plt.xlim(0, T)#; plt.ylim(0, 50)
         plt.xlabel('Timepoints', fontsize = 15)
@@ -291,6 +301,7 @@ for t in range(T):
         plt.legend()
     
     plt.tight_layout()
+    #plt.autoscale()
     plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
     plt.show()
 
@@ -305,15 +316,19 @@ plt.xlim(0, T)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('Degrees', fontsize = 20)
 
+for i in range_:
+    plt.scatter([i]*len(a1[i]), a1[i], color = 'r', alpha = 0.008)
+    plt.scatter([i]*len(a2[i]), a2[i], color = 'g', alpha = 0.008)
+
 # variance 
-plt.fill_between(np.arange(0, T, 1), a1-a1_std, a1+a1_std, facecolor = 'r', alpha = 0.08, label = 'Variance')
-plt.fill_between(np.arange(0, T, 1), a2-a2_std, a2+a2_std, facecolor = 'g', alpha = 0.08, label = 'Variance')
+#plt.fill_between(range_, a1-a1_std, a1+a1_std, facecolor = 'r', alpha = 0.08, label = 'Variance')
+#plt.fill_between(range_, a2-a2_std, a2+a2_std, facecolor = 'g', alpha = 0.08, label = 'Variance')
 
 # mean angles
-plt.plot(np.arange(0, T, 1), a1, 'r', label = 'Positive eigenvectors (stretch)')
-plt.plot(np.arange(0, T, 1), a2, 'g', label = 'Negative eigenvectors (compression)')
+plt.plot(range_, a1_std, 'r', label = 'Positive eigenvectors (stretch)')
+plt.plot(range_, a2_std, 'g', label = 'Negative eigenvectors (compression)')
 plt.text(1, 2, f'Mean std: {round((np.mean(a1_std) + np.mean(a2_std))/2, 4)} degrees')
-plt.legend()
+plt.legend(loc = 'upper right')
 plt.show()
 
 #%%
@@ -334,11 +349,11 @@ plt.xlim(0, T)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('$s^{-1}$', fontsize = 20)
 
-plt.plot(np.arange(0, T, 1), g1, 'lightgrey')
-plt.plot(np.arange(0, T, 1), g2, 'lightgrey')
+plt.plot(range_, g1, 'lightgrey')
+plt.plot(range_, g2, 'lightgrey')
 
-plt.plot(np.arange(0, T, 1), I_g1, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
-plt.plot(np.arange(0, T, 1), I_g2, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+plt.plot(range_, I_g1, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
+plt.plot(range_, I_g2, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
 
 plt.legend()
 

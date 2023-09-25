@@ -24,7 +24,7 @@ import imageio
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D11-1_1d'
+file = 'sham_D4-4_1d'
 dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
@@ -64,8 +64,8 @@ ax = len(mask[:,0,0,0])
 ay = len(mask[0,:,0,0])
 X, Y = np.meshgrid(np.arange(0, ax, 1), np.arange(0, ay, 1))
 
-#find center of mask at t=0
-#cy, cx = ndi.center_of_mass(mask[:, :, 0, 0])
+# center of mass at t=0
+cy_0, cx_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[:, :, 0, 0]))
 
 for t in range(T):
     
@@ -106,9 +106,12 @@ for t in range(T):
     vy = gaussian_filter(V[:, :, 0, t, 0], sigma = 1)*mask_t #y components (negative?)
     
     q = ax.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n], vy[::n, ::n], 
-                  color = 'w', scale = 110, minshaft = 1, minlength=0, width = 0.003)
+                  color = 'w', scale = 90, minshaft = 1, minlength=0, width = 0.005)
     plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
-    plt.xlim(0, f-1); plt.ylim(0, f-1)
+    
+    z = 25
+    plt.xlim(cx_0-z, cx_0+z); plt.ylim(cy_0-z, cy_0+z)
+    #plt.xlim(0, f-1); plt.ylim(0, f-1)
     plt.show()
     
 #%%
