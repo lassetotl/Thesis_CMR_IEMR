@@ -9,6 +9,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
+from lasse_functions import divergence
 #import pandas as pd
 #import seaborn as sns
 #import sklearn
@@ -101,17 +102,27 @@ for t in range(T):
     
     #2D vector visualization 128x128 res image in xy plane
     
+    #certainty matrix
+    C = frame1/np.max(frame1)
+    
     #wiener noise reduction filter (?)
-    vx = gaussian_filter(V[:, :, 0, t, 1], sigma = 1)*mask_t #x components of velocity w mask
-    vy = gaussian_filter(V[:, :, 0, t, 0], sigma = 1)*mask_t #y components (negative?)
+    vx = gaussian_filter(V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #x components of velocity w mask
+    vy = gaussian_filter(V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #y components (negative?)
+    
+    # remove '#' to display divergence of V field; 
+    # tells us about unit volume growth per unit volume per unit time (basically strain rate?)
+    #vx = divergence(vx)
+    #vy = divergence(vy)
     
     q = ax.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n], vy[::n, ::n], 
-                  color = 'w', scale = 90, minshaft = 1, minlength=0, width = 0.005)
-    plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
-    
+                  color = 'w', scale = 10, minshaft = 1, minlength=0, width = 0.005)
     z = 25
     plt.xlim(cx_0-z, cx_0+z); plt.ylim(cy_0-z, cy_0+z)
     #plt.xlim(0, f-1); plt.ylim(0, f-1)
+    
+    plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
+    
+    
     plt.show()
     
 #%%

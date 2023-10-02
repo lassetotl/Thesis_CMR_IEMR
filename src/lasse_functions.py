@@ -70,6 +70,7 @@ def D_ij_2D(x, y, V, M, t, g): #Construct SR tensor for specific point
     dx = dy = 1  # voxel length 1 in our image calculations
     L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
     L[0, 1] = (C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+    
     L[1, 0] = (C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
     L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
             
@@ -129,3 +130,8 @@ def gaussian_2d(sigma):
         for j in range(-d, d):
             z[i, j] = np.exp(-0.5*((i - d/2)**2 + (j - d/2)**2)/sigma**2)/(2*np.pi*sigma**2)
     return z
+
+#https://stackoverflow.com/questions/11435809/compute-divergence-of-vector-field-using-python
+def divergence(F):
+    """ compute the divergence of n-D scalar field `F` """
+    return np.ufunc.reduce(np.add, np.gradient(F))

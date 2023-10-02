@@ -29,7 +29,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D4-4_6w'
+file = 'sham_D11-1_40d'
 dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
@@ -63,7 +63,7 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 f = 100
 
 # plot every n'th ellipse
-n = 3
+n = 2
 sigma = 2
 
 # cyclic colormap, normalize to radians 
@@ -71,6 +71,7 @@ c_cmap = plt.get_cmap('plasma')
 
 # you can get color palettes from seaborn like this
 #c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 8).as_hex())
+
 norm_ = mpl.colors.Normalize(vmin = 0, vmax = 90)
 
 #%%
@@ -89,6 +90,9 @@ a1 = np.zeros(T, dtype = 'object') #  most positive angle (stretch)
 a1_std = np.zeros(T) # std stored for each t
 a2 = np.zeros(T, dtype = 'object') # most negative angle (compression)
 a2_std = np.zeros(T)
+
+#divergence
+d = np.zeros(T)
 
 # center of mass at t=0
 cx_0, cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[:, :, 0, 0]))
@@ -134,53 +138,42 @@ for t in range(T):
     # generate 2d gaussian kernel for data smoothing
     g = gaussian_2d(sigma = sigma)
     
-    #calculate eigenvalues and vectors
-    e_count = 0  # ellipse counter in this frame
-    for x in range(0, f, n):
-        for y in range(0, f, n):
-            # mask choice
-            if mask_t[x, y] == 1: #why does this work? (Switching x and y)
-                # SR tensor for specific point xy
-                #D_ = np.array([[D[0,0][x,y], D[1,0][x,y]], [D[0,1][x,y], D[1,1][x,y]]])
-                D_ = D_ij_2D(x, y, V, M_norm, t, g)
-            
-                val, vec = np.linalg.eig(D_)
-                #print(np.sign(val[0]) != np.sign(val[1]))
-                 
-                eigvals[x, y] = val 
-                eigvecs[x, y] = vec
-                eigvals_m[x, y] = val[np.argmax(abs(val))]
-                # print(eigvals_m[x,y] > np.pi)
-                
-                # the highest eigenvalue is saved
-                #frame_[x,y] = val[np.argmax(abs(val))] #stretch/shortening
-                e_count += 1
-            
-    # create ellipses, normalized eigenvals at mean
-    #eigvals = eigvals/abs(np.max((eigvals_m))) # scale with max eigval this frame
-    
     r1_[t] = 0; r2_[t] = 0  # remove nan values for this t
     c1_[t] = 0; c2_[t] = 0
     
     a1_ = []; a2_ = []
     
+    #calculate eigenvalues and vectors
+    e_count = 0  # ellipse counter in this frame
     for x in range(0, f, n):
         for y in range(0, f, n): 
             if mask_t[x, y] == 1: #why does this work? (Switching x and y)
-                    
+                # SR tensor for point xy
+                D_ = D_ij_2D(x, y, V, M_norm, t, g)     
+                val, vec = np.linalg.eig(D_)
+                
+                # force eigenvals
+                #val = [0.5, -0.5]
+                
+                # stop loop if eigenvalue signs are equal
+                #if np.sign(val[0]) == np.sign(val[1]):
+                    #continue
+                
+                e_count += 1
+                
+                # sum of eigenvalues represents divergence (?)
+                d[t] += val[0] + val[1]
+                
                 # vector between center of mass and point (x, y) 
                 r = np.array([x - cx, y - cy])
                 #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
-                
-                vec = eigvecs[x, y]
-                val = eigvals[x, y]
                 
                 # index of eigenvalues
                 val_max_i = np.argmax(val)  # most positive value
                 val_min_i = np.argmin(val)  # most negative
                 
                 # color code in hex notation, from c value
-                # I = val[0]**2 + val[1]**2  # invariant
+                I = val[0]**2 + val[1]**2  # invariant
                 
                 theta = theta_rad(r, vec[val_max_i])  # angle between highest eigenvector and r
                 theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
@@ -215,22 +208,22 @@ for t in range(T):
                     a1_.append(theta) 
                 if val[val_min_i] > 0:
                     a1_.append(theta_)
+                    
                 if val[val_max_i] < 0:
                     a2_.append(theta) 
                 if val[val_min_i] < 0:
                     a2_.append(theta_)
-                    
-                a2_.append(theta*int(val[val_max_i] < 0) + theta_*int(val[val_min_i] < 0))
                 
                 #print(r, vec[val_i], c)
                 
                 # hex code, inputs in range (0, 1) so theta is scaled
-                hx = mpl.colors.rgb2hex(c_cmap(theta/(np.pi/2)))
-                #print(c_cmap(c), hx)
+                hx = mpl.colors.rgb2hex(c_cmap(theta/(np.pi/2)))  # code with
+                #hx = mpl.colors.rgb2hex(c_cmap(I))  # color code with invariant
                 
                 # angle between eigenvector and x-axis, converted to degrees anti-clockwise
-                
-                e_angle = -(clockwise_angle([1,0], r) + theta)*180/np.pi
+                # clockwise theta needed
+                theta_c = clockwise_angle(r, vec[val_max_i])
+                e_angle = -(clockwise_angle([1,0], r) + theta_c)*180/np.pi
                 
                 # draw ellipses that are spanned by eigenvectors
                 # eigenvalues are transformed (1 + tanh(val)) to have a circular unit ellipse
@@ -241,6 +234,8 @@ for t in range(T):
                 #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
                 
                 ax.add_artist(ellipse)
+                
+                # eigenvector visualization
                 #plt.quiver(x, y, vec[val_max_i][0], vec[val_max_i][1], color = hx, scale = 10/np.sqrt(val[val_max_i]))
                 #plt.quiver(x, y, vec[val_min_i][0], vec[val_min_i][1], color = 'k', scale = 10/np.sqrt(val[val_min_i]))
     
@@ -306,6 +301,23 @@ for t in range(T):
     plt.show()
 
 #%%
+#divergence
+
+plt.figure(figsize = (10, 8))
+plt.title(f'Divergence (?) over time ({file})', fontsize = 15)
+plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.xlim(0, T)#; plt.ylim(0, 50)
+plt.xlabel('Timepoints', fontsize = 15)
+plt.ylabel('Degrees', fontsize = 20)
+
+plt.plot(range_, d, lw = 2)
+plt.axhline(0, c = 'k', lw = 1)
+
+plt.legend(loc = 'upper right')
+plt.show()
+
+#%%
 #angles over time
 
 plt.figure(figsize = (10, 8))
@@ -317,8 +329,9 @@ plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('Degrees', fontsize = 20)
 
 for i in range_:
-    plt.scatter([i]*len(a1[i]), a1[i], color = 'r', alpha = 0.008)
-    plt.scatter([i]*len(a2[i]), a2[i], color = 'g', alpha = 0.008)
+    #print((a2[i]))
+    plt.scatter([i]*len(a1[i]), a1[i], color = 'r', alpha = 0.03)
+    plt.scatter([i]*len(a2[i]), a2[i], color = 'g', alpha = 0.03)
 
 # variance 
 #plt.fill_between(range_, a1-a1_std, a1+a1_std, facecolor = 'r', alpha = 0.08, label = 'Variance')
@@ -327,7 +340,7 @@ for i in range_:
 # mean angles
 plt.plot(range_, a1_std, 'r', label = 'Positive eigenvectors (stretch)')
 plt.plot(range_, a2_std, 'g', label = 'Negative eigenvectors (compression)')
-plt.text(1, 2, f'Mean std: {round((np.mean(a1_std) + np.mean(a2_std))/2, 4)} degrees')
+#plt.text(1, 2, f'Mean std: {round((np.mean(a1_std) + np.mean(a2_std))/2, 4)} degrees')
 plt.legend(loc = 'upper right')
 plt.show()
 
