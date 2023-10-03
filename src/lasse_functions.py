@@ -32,30 +32,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 #V[i, j, 0, t, i]
 # xval, yval, zval (...), timepoint, axis
 
-def D_ij(V, M, t, f, mask_, dim = 2): #Construct SR tensor (old, probably incorrect calculation)
-    L = np.zeros((dim, dim), dtype = object) #Jacobian 2D velocity matrices
-    
-    v_i = 1; x_j = 0 #index 0 is y and 1 is x (?)
-    for i in range(dim):
-        for j in range(dim):
-            # calculate certainty matrix from normalized magnitude plot
-            C = M/np.max(M)
-            
-            #Gathering velocity data and applying gaussian smoothing
-            V_ = ndi.gaussian_filter(V[:f, :f, 0, t, v_i]*mask_, sigma = 1)
-            #V_[V_ == 0] = np.nan
-            
-            L[i, j] = np.gradient(V_, axis=x_j, edge_order = 1)
-            #L[i, j] = 
-            
-            x_j += 1
-        v_i -= 1
-        x_j = 0
-    
-    D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
-    return D_ij
-
-
 def D_ij_2D(x, y, V, M, t, g): #Construct SR tensor for specific point
     L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
     
@@ -115,7 +91,7 @@ def clockwise_angle(p1, p2):  # redundant?
 
 
 # insert point and eigenvalues/vectors + index of highest eigenval
-# angle in radians
+# angle in radians, converts to degrees in function
 def draw_ellipse(x, y, vec, val, max_i, min_i, angle, hx):
     ellipse = patches.Ellipse((x, y), val[max_i], val[min_i], angle=angle*180/np.pi, color = hx)
     return ellipse

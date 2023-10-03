@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from lasse_functions import D_ij, D_ij_2D, theta_rad, running_average, clockwise_angle
+from lasse_functions import D_ij_2D, theta_rad, running_average, clockwise_angle
 from lasse_functions import gaussian_2d, theta_extreme
 #import pandas as pd
 #import seaborn as sns
@@ -20,8 +20,9 @@ from lasse_functions import gaussian_2d, theta_extreme
 
 import scipy.io as sio
 import scipy.ndimage as ndi 
-from scipy.signal import wiener, convolve2d
+from scipy.signal import convolve2d
 import scipy.interpolate as scint
+from scipy.integrate import cumtrapz
 import imageio
 import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -29,9 +30,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D11-1_40d'
-dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
-data = dict["ComboData_thisonly"]
+file = 'sham_D11-1_1d'
+data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
 #print(f'Combodata shape: {np.shape(data)}')
@@ -48,8 +48,16 @@ mask = data['Mask'][0,0] #mask for non-heart tissue
 T = len(V[0,0,0,:,0]) #Total amount of time steps
 T_es = data['TimePointEndSystole'][0,0][0][0]
 T_ed = data['TimePointEndDiastole'][0,0][0][0]
-res = data['Resolution'][0,0][0][0]  # voxel length in mm?
+res = data['Resolution'][0,0][0][0]  # temporal resolution, need this for correct SR units?
 
+# check if mi, collect infarct site mis if so
+'''
+mis = np.nan
+l = file.split('_')
+if (l[0] == 'mi') is True:
+    mis = data['InfarctSector'][0,0][0]
+    print(f'Infarct Sector at {mis}')
+'''
 print(f'{file} overview:')
 print(f'Velocity field shape: {np.shape(V)}')
 print(f'Magnitudes field shape: {np.shape(M)}')
@@ -63,8 +71,13 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 f = 100
 
 # plot every n'th ellipse
-n = 2
+n = 3
+
+# sigma value of gaussian used in data smoothing
 sigma = 2
+
+# generate 2d gaussian kernel for data smoothing
+g = gaussian_2d(sigma = sigma)
 
 # cyclic colormap, normalize to radians 
 c_cmap = plt.get_cmap('plasma')
@@ -98,7 +111,7 @@ d = np.zeros(T)
 cx_0, cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[:, :, 0, 0]))
 
 sub = 1 # Graph subplot on (1) or off (0)
-for t in range(T):
+for t in range_:
     fig = plt.figure(figsize=(18, 8))
     ax = plt.subplot(1, 2, 1) #SR colormap
     ax = plt.gca()
@@ -119,24 +132,16 @@ for t in range(T):
     
     # plot magnitude M plot, normalize for certainty values
     # transpose to allign with mask
-    M_norm = (M[:, :, 0, t]/np.max(M[:, :, 0, t])).T
-    plt.imshow(M_norm, origin = 'lower', cmap = 'gray', alpha = 1)
+    M_norm = (M[:, :, 0, t]/np.max(M[:, :, 0, t]))
+    plt.imshow(M_norm.T, origin = 'lower', cmap = 'gray', alpha = 1)
     #plt.imshow(mask_t.T, origin = 'lower', cmap = 'gray', alpha = 1)
     
     # generate strain rate tensor (old method)
     #D = D_ij(V=V, M=M_norm, t=t, f=f, mask_ = 1)
     
-    # arrays for this timepoint t / this image
-    eigvals = np.zeros((f,f), dtype = object)
-    eigvals_m = np.zeros((f,f), dtype = object) #highest values
-    eigvecs = np.zeros((f,f), dtype = object)
-    
     # reset radial and circumferential contributions from last frame / initialize
     rad_e = 0 #radial components of eigenvectors, sum will be saved every t
     circ_e = 0 #circumferential ...
-    
-    # generate 2d gaussian kernel for data smoothing
-    g = gaussian_2d(sigma = sigma)
     
     r1_[t] = 0; r2_[t] = 0  # remove nan values for this t
     c1_[t] = 0; c2_[t] = 0
@@ -173,7 +178,7 @@ for t in range(T):
                 val_min_i = np.argmin(val)  # most negative
                 
                 # color code in hex notation, from c value
-                I = val[0]**2 + val[1]**2  # invariant
+                #I = val[0]**2 + val[1]**2  # invariant
                 
                 theta = theta_rad(r, vec[val_max_i])  # angle between highest eigenvector and r
                 theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
@@ -185,7 +190,8 @@ for t in range(T):
                 
                 # radial/circumferential contributions from each eigenvector
                 # scaled with amount of ellipses, varies because of dynamic mask
-            
+                
+                #higher eigenvalues weighted higher (abs to not affect direction)
                 r1 = (val[val_max_i])*abs(np.cos(theta))/e_count
                 r2 = (val[val_min_i])*abs(np.cos(theta_))/e_count
                 
@@ -242,8 +248,8 @@ for t in range(T):
     #I[t] = Invariant(I_[0], I_[1], D)
     
     ax.text(3, 6, f'{e_count} Ellipses', color = 'w')
-    res_ = round(f*res, 4)
-    ax.text(3, 9, f'{res_} x {res_} mm (?)', color = 'w')
+    #res_ = round(f*res, 4)
+    #ax.text(3, 9, f'{res_} x {res_} mm (?)', color = 'w')
     
     # graph subplot values
     g1[t] = rad_e #global radial strain rate this frame
@@ -256,6 +262,7 @@ for t in range(T):
     a2_std[t] = (np.mean(a2_))*180/np.pi
 
     plt.scatter(cx, cy, marker = 'x', c = 'w')
+    #plt.scatter(mis[0], mis[1], marker = 'x', c = 'r')
  
     plt.title(f'Strain Rate at t = {t} ({file})', fontsize = 15)
     
@@ -269,6 +276,8 @@ for t in range(T):
     sm = plt.cm.ScalarMappable(cmap = c_cmap, norm = norm_)
     cbar = plt.colorbar(sm, cax = cax)
     cbar.set_label('$\Theta$ (degrees)', fontsize = 15)
+    
+    
     
     if sub == 1:  # subplot graph
         plt.subplot(1, 2, 2) #TSR
@@ -375,9 +384,35 @@ plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GSR.PNG')
 plt.show()
 
 #%%
+#plot strain over time
+
+r_strain = cumtrapz(I_g1, range_, initial=0)
+c_strain = cumtrapz(I_g2, range_, initial=0)
+
+plt.figure(figsize=(10, 8))
+
+plt.title(f'Global Strain over time ({file})', fontsize = 15)
+plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.axhline(0, c = 'k', lw = 1)
+
+plt.xlim(0, T)#; plt.ylim(0, 50)
+plt.xlabel('Timepoints', fontsize = 15)
+#plt.ylabel('$s^{-1}$', fontsize = 20)
+
+plt.plot(range_, r_strain, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
+plt.plot(range_, c_strain, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+
+plt.legend()
+
+plt.subplots_adjust(wspace=0.25)
+plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
+plt.show()
+
+#%%
 #Generate mp4
 
-filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in range(T)]
+filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in range_]
 
 with imageio.get_writer(f'R:\Lasse\plots\MP4\{file}\Ellipses.mp4', fps=7) as writer:    # inputs: filename, frame per second
     for filename in filenames:
