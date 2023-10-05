@@ -15,8 +15,6 @@ from numpy.linalg import norm
 #import seaborn as sns; sns.set()
 #import sklearn
 
-from astropy.convolution import Gaussian2DKernel
-
 import scipy.io as sio
 import scipy.ndimage as ndi
 from scipy.signal import wiener, convolve2d
@@ -25,6 +23,8 @@ import imageio
 import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
+#from numba import njit #  use this to compile?
+
 #%%
 #Strain rate tensor (xy plane, dim=2) incl mask
 #(Selskog et al 2002, hentet 17.08.23)
@@ -32,7 +32,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 #V[i, j, 0, t, i]
 # xval, yval, zval (...), timepoint, axis
 
-def D_ij_2D(x, y, V, M, t, g): #Construct SR tensor for specific point
+
+def D_ij_2D(x, y, V, M, t, g, sigma, mask): #Construct SR tensor for specific point
     L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
     
     # calculate certainty matrix from normalized magnitude plot
@@ -40,8 +41,11 @@ def D_ij_2D(x, y, V, M, t, g): #Construct SR tensor for specific point
     
     # velocity x and y components from combodata multiplied by C + gaussian convolution
     # should compensate border artifacts
-    vx = convolve2d(V[:, :, 0, t, 1]*C, g) / convolve2d(C, g)
-    vy = convolve2d(V[:, :, 0, t, 0]*C, g) / convolve2d(C, g)
+    #vx = convolve2d(V[:, :, 0, t, 1]*C, g, 'same')*mask / convolve2d(C, g, 'same')
+    #vy = convolve2d(V[:, :, 0, t, 0]*C, g, 'same')*mask / convolve2d(C, g, 'same')
+    
+    vx = ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
+    vy = ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
     
     dx = dy = 1  # voxel length 1 in our image calculations
     L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))

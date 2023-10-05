@@ -7,6 +7,7 @@ Note (Sep 20): a lot of the current code is included for troubleshooting purpose
 not all are strictly useful at the moment and will be trimmed eventually
 """
 
+import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
@@ -30,7 +31,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D11-1_1d'
+file = 'sham_D11-1_40d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -71,7 +72,7 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 f = 100
 
 # plot every n'th ellipse
-n = 3
+n = 2
 
 # sigma value of gaussian used in data smoothing
 sigma = 2
@@ -121,11 +122,11 @@ for t in range_:
     # combodata mask 
     mask_t = mask[:, :, 0, t] #mask at this timepoint
     
-    # erode mask
-    #mask_t = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
-    
     #find center of mass of filled mask (middle of the heart)
     cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
+    
+    # erode mask 
+    mask_e = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
     
     # generate strain rate tensor
     #D = D_ij(V=V, M=M[:f, :f, 0, t], t=t, f=f, mask_ = 1)
@@ -152,9 +153,10 @@ for t in range_:
     e_count = 0  # ellipse counter in this frame
     for x in range(0, f, n):
         for y in range(0, f, n): 
-            if mask_t[x, y] == 1: #why does this work? (Switching x and y)
+            # search in eroded mask to avoid border artifacts
+            if mask_e[x, y] == 1:
                 # SR tensor for point xy
-                D_ = D_ij_2D(x, y, V, M_norm, t, g)     
+                D_ = D_ij_2D(x, y, V, M_norm, t, g, sigma, mask_t)     
                 val, vec = np.linalg.eig(D_)
                 
                 # force eigenvals
@@ -221,6 +223,8 @@ for t in range_:
                     a2_.append(theta_)
                 
                 #print(r, vec[val_i], c)
+                
+                # for class, skip this part if only data is requested 
                 
                 # hex code, inputs in range (0, 1) so theta is scaled
                 hx = mpl.colors.rgb2hex(c_cmap(theta/(np.pi/2)))  # code with
@@ -380,6 +384,10 @@ plt.plot(range_, I_g2, 'chocolate', lw=2, label = 'Circumferential (Walking Aver
 plt.legend()
 
 plt.subplots_adjust(wspace=0.25)
+
+if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
+    os.makedirs(f'R:\Lasse\plots\MP4\{file}')
+    
 plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GSR.PNG')
 plt.show()
 
@@ -412,9 +420,17 @@ plt.show()
 #%%
 #Generate mp4
 
-filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in range_]
-
+filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in range_]  
+  
 with imageio.get_writer(f'R:\Lasse\plots\MP4\{file}\Ellipses.mp4', fps=7) as writer:    # inputs: filename, frame per second
     for filename in filenames:
         image = imageio.imread(filename)                         # load the image file
         writer.append_data(image)
+        
+# save strain npy files for analysis
+
+if os.path.exists(f'R:\Lasse\strain data\{file}') == False:
+    os.makedirs(f'R:\Lasse\strain data\{file}')
+
+#np.save(fr'R:\Lasse\strain data\{file}\r_strain', r_strain)
+#np.save(fr'R:\Lasse\strain data\{file}\c_strain', c_strain)
