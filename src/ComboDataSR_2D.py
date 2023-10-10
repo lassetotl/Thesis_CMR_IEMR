@@ -43,8 +43,8 @@ class ComboDataSR_2D:
         self.n = n
         self.sigma = sigma
         
-        # generalize: make filename be whole directory line
-        self.data = sio.loadmat(f'R:\Lasse\combodata_shax\{filename}.mat')["ComboData_thisonly"]
+        # generalize: make filename be whole directory line?
+        self.data = sio.loadmat(f'R:\Lasse\combodata_shax\{filename}')["ComboData_thisonly"]
         self.V = self.data['V'][0,0] #velocity field
         self.M = self.data['Magn'][0,0] #magnitudes
         self.mask = self.data['Mask'][0,0] #mask for non-heart tissue
@@ -53,9 +53,7 @@ class ComboDataSR_2D:
         self.T_es = self.data['TimePointEndSystole'][0,0][0][0]
         self.T_ed = self.data['TimePointEndDiastole'][0,0][0][0]
         self.res = self.data['Resolution'][0,0][0][0]  # temporal resolution, need this for correct SR units?
-        
-        self.g = gaussian_2d(self.sigma)
-        
+        self.TR = self.data['TR'][0,0][0][0]      
     
     def overview(self):
         print(f'{self.filename} overview:')
@@ -149,7 +147,7 @@ class ComboDataSR_2D:
     # set save = 0 to avoid overwriting current .mp4 and .npy files
     def strain_rate(self, plot = 1, save = 1):  
         # range of time-points
-        self.range_ = range(self.T)
+        self.range_ = np.array(range(self.T))
         
         # get data axis dimensions
         self.ax = len(self.mask[:,0,0,0])
@@ -166,7 +164,7 @@ class ComboDataSR_2D:
         c_cmap = plt.get_cmap('plasma')
         norm_ = mpl.colors.Normalize(vmin = 0, vmax = 90)
         
-        print(f'Calculating Global Strain rate for {self.filename} ()...')
+        print(f'Calculating Global Strain rate for {self.filename}...')
         for t in self.range_:
 
             # combodata mask 
@@ -199,7 +197,7 @@ class ComboDataSR_2D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         # SR tensor for point xy
-                        D_ = D_ij_2D(x, y, self.V, M_norm, t, self.g, self.sigma, mask_t)     
+                        D_ = D_ij_2D(x, y, self.V, M_norm, t, self.sigma, mask_t)     
                         val, vec = np.linalg.eig(D_)
                         
                         e_count += 1
@@ -268,6 +266,9 @@ class ComboDataSR_2D:
                          color = 'w', fontsize = 15)
                 plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, f'{e_count} Ellipses', 
                          color = 'w', fontsize = 15)
+                res_ = round(self.res*w*2, 4)
+                plt.text(self.cx_0 - w + 3, self.cy_0 - w + 9, f'{res_} x {res_} cm', 
+                         color = 'w', fontsize = 15)
                 
                 divider = make_axes_locatable(ax)
                 cax = divider.append_axes("right", size="6%", pad=0.09)
@@ -279,30 +280,31 @@ class ComboDataSR_2D:
                 
                 plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
                 plt.show(); plt.close()
-                
-        if plot == 1:
-            # plot global strain rate
             
             N = 4 #window
-            grsr = running_average(self.r_sr, N)
-            gcsr = running_average(self.c_sr, N)
+            self.r_strain_rate = running_average(self.r_sr, N)
+            self.c_strain_rate = running_average(self.c_sr, N)    
+            
+        self.range_TR = self.range_*self.TR
+        if plot == 1:
+            # plot global strain rate
 
             plt.figure(figsize=(10, 8))
 
             plt.title(f'Global Strain rate over time ({self.filename})', fontsize = 15)
-            plt.axvline(self.T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            plt.axvline(self.T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
             plt.axhline(0, c = 'k', lw = 1)
 
-            plt.xlim(0, self.T)#; plt.ylim(0, 50)
-            plt.xlabel('Timepoints', fontsize = 15)
+            plt.xlim(0, self.T*self.TR)#; plt.ylim(0, 50)
+            plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('$s^{-1}$', fontsize = 20)
 
-            plt.plot(self.range_, self.r_sr, 'lightgrey')
-            plt.plot(self.range_, self.r_sr, 'lightgrey')
+            plt.plot(self.range_TR, self.r_sr, 'lightgrey')
+            plt.plot(self.range_TR, self.c_sr, 'lightgrey')
 
-            plt.plot(self.range_, grsr, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
-            plt.plot(self.range_, gcsr, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+            plt.plot(self.range_TR, self.r_strain_rate, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
+            plt.plot(self.range_TR, self.c_strain_rate, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
 
             plt.legend()
 
@@ -313,11 +315,71 @@ class ComboDataSR_2D:
                     os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
                     
                 plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GSR.PNG')
+                
+                filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in self.range_]  
+                  
+                with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.mp4', fps=7) as writer:    # inputs: filename, frame per second
+                    for filename in filenames:
+                        image = imageio.imread(filename)                         # load the image file
+                        writer.append_data(image)
+            plt.show()
+                        
+        # integrate strain rate (cyclic boundary condition) to get strain
+        
+        # weights for both temporal directions of integration
+        # higher divisor scalar gives stronger tanh weighting
+        w = np.tanh((self.T_ed - self.range_)/10)[:self.T_ed+1]
+        w_f = np.tanh(self.range_/10)[:self.T_ed+1]
+        
+        self.r_strain = cumtrapz(self.r_strain_rate, self.range_TR, initial=0)[:self.T_ed+1]
+        r_strain_flipped = np.flip(cumtrapz(self.r_strain_rate[:self.T_ed+1][::-1], 
+                                            self.range_TR[:self.T_ed+1][::-1], initial=0))
+        self.r_strain = (w*self.r_strain + w_f*r_strain_flipped)/2
+        
+        self.c_strain = cumtrapz(self.c_strain_rate, self.range_TR, initial=0)[:self.T_ed+1]
+        c_strain_flipped = np.flip(cumtrapz(self.c_strain_rate[:self.T_ed+1][::-1], 
+                                            self.range_TR[:self.T_ed+1][::-1], initial=0))
+        self.c_strain = (w*self.c_strain + w_f*c_strain_flipped)/2
+            
+            
+        if plot == 1:
+            plt.figure(figsize=(10, 8))
+
+            plt.title(f'Global Strain over time ({self.filename})', fontsize = 15)
+            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            #plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+            plt.axhline(0, c = 'k', lw = 1)
+
+            plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
+            plt.xlabel('Time [s]', fontsize = 15)
+            plt.ylabel('%', fontsize = 20)
+
+            plt.plot(self.range_TR[:self.T_ed+1], (self.r_strain), 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
+            plt.plot(self.range_TR[:self.T_ed+1], (self.c_strain), 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+
+            plt.legend()
+
+            plt.subplots_adjust(wspace=0.25)
+            plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
             plt.show()
             
-        return self.r_sr, self.c_sr
-    
-    #def strain(self):  # called after 'strain_rate', message?
+        if save == 1:
+            # save strain npy files for analysis
+
+            if os.path.exists(f'R:\Lasse\strain data\{self.filename}') == False:
+                os.makedirs(f'R:\Lasse\strain data\{self.filename}')
+                
+            np.save(fr'R:\Lasse\strain data\{self.filename}\r_strain', self.r_strain)
+            np.save(fr'R:\Lasse\strain data\{self.filename}\c_strain', self.c_strain)
+                
+            if os.path.exists(f'R:\Lasse\strain rate data\{self.filename}') == False:
+                os.makedirs(f'R:\Lasse\strain rate data\{self.filename}')
+            
+            np.save(fr'R:\Lasse\strain rate data\{self.filename}\r_strain_rate', self.r_strain_rate)
+            np.save(fr'R:\Lasse\strain rate data\{self.filename}\c_strain_rate', self.c_strain_rate)
+                
+            
+        return self.r_strain_rate, self.c_strain_rate, self.r_strain, self.c_strain
             
         
         
@@ -325,11 +387,14 @@ class ComboDataSR_2D:
 # example of use
 if __name__ == "__main__":
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D11-1_1d')
+    run1 = ComboDataSR_2D('sham_D4-4_6w')
     
     # get info/generate data 
     #run1.overview()
     #grv1 = run1.velocity()
-    r1, c1 = run1.strain_rate(plot = 0, save = 0)
+    run1.strain_rate(plot = 1, save = 0)
 
 #%%
+# example of dictionary functionality
+
+    print(run1.__dict__['TR'])

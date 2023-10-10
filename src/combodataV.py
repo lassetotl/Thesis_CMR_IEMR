@@ -79,14 +79,14 @@ for t in range_:
     
     frame1 = M[:, :, 0, t] #photon density at time t
     mask_t = mask[:, :, 0, t]
-    mask_t = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
+    #mask_t = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
     
     plt.subplots(figsize=(10,10))
     #ax = plt.gca()
     
     
-    #plt.imshow(frame1.T/np.max(frame1), origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
-    plt.imshow(mask_t.T, origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
+    plt.imshow(frame1.T/np.max(frame1), origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
+    #plt.imshow(mask_t.T, origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
     #plt.colorbar()
     
     #find center of mass of filled mask (middle of the heart)

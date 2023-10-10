@@ -31,7 +31,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D11-1_40d'
+file = 'sham_D3-2_3d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -50,6 +50,7 @@ T = len(V[0,0,0,:,0]) #Total amount of time steps
 T_es = data['TimePointEndSystole'][0,0][0][0]
 T_ed = data['TimePointEndDiastole'][0,0][0][0]
 res = data['Resolution'][0,0][0][0]  # temporal resolution, need this for correct SR units?
+TR = data['TR'][0,0][0][0]
 
 # check if mi, collect infarct site mis if so
 '''
@@ -63,6 +64,7 @@ print(f'{file} overview:')
 print(f'Velocity field shape: {np.shape(V)}')
 print(f'Magnitudes field shape: {np.shape(M)}')
 print(f'Mask shape: {np.shape(mask)}')
+print(f'{res}, {TR}')
 
 print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 
@@ -76,9 +78,6 @@ n = 2
 
 # sigma value of gaussian used in data smoothing
 sigma = 2
-
-# generate 2d gaussian kernel for data smoothing
-g = gaussian_2d(sigma = sigma)
 
 # cyclic colormap, normalize to radians 
 c_cmap = plt.get_cmap('plasma')
@@ -137,9 +136,6 @@ for t in range_:
     plt.imshow(M_norm.T, origin = 'lower', cmap = 'gray', alpha = 1)
     #plt.imshow(mask_t.T, origin = 'lower', cmap = 'gray', alpha = 1)
     
-    # generate strain rate tensor (old method)
-    #D = D_ij(V=V, M=M_norm, t=t, f=f, mask_ = 1)
-    
     # reset radial and circumferential contributions from last frame / initialize
     rad_e = 0 #radial components of eigenvectors, sum will be saved every t
     circ_e = 0 #circumferential ...
@@ -156,11 +152,8 @@ for t in range_:
             # search in eroded mask to avoid border artifacts
             if mask_e[x, y] == 1:
                 # SR tensor for point xy
-                D_ = D_ij_2D(x, y, V, M_norm, t, g, sigma, mask_t)     
+                D_ = D_ij_2D(x, y, V, M_norm, t, sigma, mask_t)     
                 val, vec = np.linalg.eig(D_)
-                
-                # force eigenvals
-                #val = [0.5, -0.5]
                 
                 # stop loop if eigenvalue signs are equal
                 #if np.sign(val[0]) == np.sign(val[1]):
@@ -194,11 +187,11 @@ for t in range_:
                 # scaled with amount of ellipses, varies because of dynamic mask
                 
                 #higher eigenvalues weighted higher (abs to not affect direction)
-                r1 = (val[val_max_i])*abs(np.cos(theta))/e_count
-                r2 = (val[val_min_i])*abs(np.cos(theta_))/e_count
+                r1 = (val[val_max_i])*abs(np.cos(theta))
+                r2 = (val[val_min_i])*abs(np.cos(theta_))
                 
-                c1 = (val[val_max_i])*abs(np.sin(theta))/e_count
-                c2 = (val[val_min_i])*abs(np.sin(theta_))/e_count
+                c1 = (val[val_max_i])*abs(np.sin(theta))
+                c2 = (val[val_min_i])*abs(np.sin(theta_))
                 
                 # filtering positive and negative values
                 r1_[t] += r1*int(r1 > 0) + r2*int(r2 > 0) # +
@@ -227,7 +220,12 @@ for t in range_:
                 # for class, skip this part if only data is requested 
                 
                 # hex code, inputs in range (0, 1) so theta is scaled
-                hx = mpl.colors.rgb2hex(c_cmap(theta/(np.pi/2)))  # code with
+                rgb = list(c_cmap(theta/(np.pi/2)))
+                
+                #rgb[3] = 0.03
+                # different function to include alpha?
+                hx = mpl.colors.rgb2hex(rgb)  # code with
+                
                 #hx = mpl.colors.rgb2hex(c_cmap(I))  # color code with invariant
                 
                 # angle between eigenvector and x-axis, converted to degrees anti-clockwise
@@ -252,12 +250,12 @@ for t in range_:
     #I[t] = Invariant(I_[0], I_[1], D)
     
     ax.text(3, 6, f'{e_count} Ellipses', color = 'w')
-    #res_ = round(f*res, 4)
-    #ax.text(3, 9, f'{res_} x {res_} mm (?)', color = 'w')
+    res_ = round(f*res, 4)
+    ax.text(3, 9, f'{res_} x {res_} cm', color = 'w')
     
-    # graph subplot values
-    g1[t] = rad_e #global radial strain rate this frame
-    g2[t] = circ_e #global circumferential strain rate
+    # graph subplot values, scale with amount of ellipses
+    g1[t] = rad_e/e_count #global radial strain rate this frame
+    g2[t] = circ_e/e_count  #global circumferential strain rate
     
     # collect average angle in degrees
     a1[t] = np.array(a1_)*180/np.pi #np.mean(a1_)*180/np.pi 
@@ -316,15 +314,17 @@ for t in range_:
 #%%
 #divergence
 
-plt.figure(figsize = (10, 8))
-plt.title(f'Divergence (?) over time ({file})', fontsize = 15)
-plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-plt.xlim(0, T)#; plt.ylim(0, 50)
-plt.xlabel('Timepoints', fontsize = 15)
-plt.ylabel('Degrees', fontsize = 20)
+# temporal resolution is calculated here
+range_TR = np.array(range_)*TR
 
-plt.plot(range_, d, lw = 2)
+plt.figure(figsize = (10, 8))
+plt.title(f'Divergence over time ({file})', fontsize = 15)
+plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.xlim(0, T*TR)#; plt.ylim(0, 50)
+plt.xlabel('Time [s]', fontsize = 15)
+
+plt.plot(range_TR, d, lw = 2)
 plt.axhline(0, c = 'k', lw = 1)
 
 plt.legend(loc = 'upper right')
@@ -335,24 +335,20 @@ plt.show()
 
 plt.figure(figsize = (10, 8))
 plt.title(f'Average radial angles over time ({file})', fontsize = 15)
-plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-plt.xlim(0, T)#; plt.ylim(0, 50)
+plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('Degrees', fontsize = 20)
 
 for i in range_:
     #print((a2[i]))
-    plt.scatter([i]*len(a1[i]), a1[i], color = 'r', alpha = 0.03)
-    plt.scatter([i]*len(a2[i]), a2[i], color = 'g', alpha = 0.03)
-
-# variance 
-#plt.fill_between(range_, a1-a1_std, a1+a1_std, facecolor = 'r', alpha = 0.08, label = 'Variance')
-#plt.fill_between(range_, a2-a2_std, a2+a2_std, facecolor = 'g', alpha = 0.08, label = 'Variance')
+    plt.scatter([range_TR[i]]*len(a1[i]), a1[i], color = 'r', alpha = 0.03)
+    plt.scatter([range_TR[i]]*len(a2[i]), a2[i], color = 'g', alpha = 0.03)
 
 # mean angles
-plt.plot(range_, a1_std, 'r', label = 'Positive eigenvectors (stretch)')
-plt.plot(range_, a2_std, 'g', label = 'Negative eigenvectors (compression)')
+plt.plot(range_TR, a1_std, 'r', label = 'Positive eigenvectors (stretch)')
+plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
 #plt.text(1, 2, f'Mean std: {round((np.mean(a1_std) + np.mean(a2_std))/2, 4)} degrees')
 plt.legend(loc = 'upper right')
 plt.show()
@@ -367,19 +363,19 @@ I_g2 = running_average(g2, N)
 plt.figure(figsize=(10, 8))
 
 plt.title(f'Global Strain rate over time ({file})', fontsize = 15)
-plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.axhline(0, c = 'k', lw = 1)
 
-plt.xlim(0, T)#; plt.ylim(0, 50)
+plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('$s^{-1}$', fontsize = 20)
 
-plt.plot(range_, g1, 'lightgrey')
-plt.plot(range_, g2, 'lightgrey')
+plt.plot(range_TR, g1, 'lightgrey')
+plt.plot(range_TR, g2, 'lightgrey')
 
-plt.plot(range_, I_g1, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
-plt.plot(range_, I_g2, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+plt.plot(range_TR, I_g1, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
+plt.plot(range_TR, I_g2, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
 
 plt.legend()
 
@@ -394,22 +390,30 @@ plt.show()
 #%%
 #plot strain over time
 
-r_strain = cumtrapz(I_g1, range_, initial=0)
-c_strain = cumtrapz(I_g2, range_, initial=0)
+# weighting for integrals in positive/flipped time directions
+w = np.tanh((T_ed-range_)/10)[:T_ed+1]
+w_f = np.tanh(range_/10)[:T_ed+1]
+
+r_strain = cumtrapz(g1, range_TR, initial=0)[:T_ed+1]
+r_strain_flipped = np.flip(cumtrapz(g1[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
+
+c_strain = cumtrapz(g2, range_TR, initial=0)[:T_ed+1]
+c_strain_flipped = np.flip(cumtrapz(g2[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
 
 plt.figure(figsize=(10, 8))
 
 plt.title(f'Global Strain over time ({file})', fontsize = 15)
-plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.axhline(0, c = 'k', lw = 1)
 
-plt.xlim(0, T)#; plt.ylim(0, 50)
+plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 #plt.ylabel('$s^{-1}$', fontsize = 20)
 
-plt.plot(range_, r_strain, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
-plt.plot(range_, c_strain, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+plt.plot(range_TR[:T_ed+1], (w*r_strain + w_f*r_strain_flipped)/2, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
+plt.plot(range_TR[:T_ed+1], (w*c_strain + w_f*c_strain_flipped)/2, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+
 
 plt.legend()
 

@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # xval, yval, zval (...), timepoint, axis
 
 
-def D_ij_2D(x, y, V, M, t, g, sigma, mask): #Construct SR tensor for specific point
+def D_ij_2D(x, y, V, M, t, sigma, mask): #Construct SR tensor for specific point
     L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
     
     # calculate certainty matrix from normalized magnitude plot
@@ -47,11 +47,13 @@ def D_ij_2D(x, y, V, M, t, g, sigma, mask): #Construct SR tensor for specific po
     vx = ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
     vy = ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
     
-    dx = dy = 1  # voxel length 1 in our image calculations
-    L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
-    L[0, 1] = (C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+    dy = dx = 1  # voxel length 1 in our image calculations
     
-    L[1, 0] = (C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+    # note!: the diagonal has been switched for script testing!
+    L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+    L[1, 0] = -(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+    
+    L[0, 1] = -(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
     L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
             
     D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
