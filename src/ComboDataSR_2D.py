@@ -197,7 +197,7 @@ class ComboDataSR_2D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         # SR tensor for point xy
-                        D_ = D_ij_2D(x, y, self.V, M_norm, t, self.sigma, mask_t)     
+                        D_ = D_ij_2D(x, y, self.V, M_norm, t, self.sigma, mask_t, self.res)     
                         val, vec = np.linalg.eig(D_)
                         
                         e_count += 1
