@@ -197,7 +197,7 @@ class ComboDataSR_2D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         # SR tensor for point xy
-                        D_ = D_ij_2D(x, y, self.V, M_norm, t, self.sigma, mask_t, self.res)     
+                        D_ = D_ij_2D(x, y, self.V, M_norm, t, self.sigma, mask_t)     
                         val, vec = np.linalg.eig(D_)
                         
                         e_count += 1
@@ -217,11 +217,11 @@ class ComboDataSR_2D:
                         # scaled with amount of ellipses, varies because of dynamic mask
                         
                         #higher eigenvalues weighted higher (abs to not affect direction)
-                        r1 = (val[val_max_i])*abs(np.cos(theta))/e_count
-                        r2 = (val[val_min_i])*abs(np.cos(theta_))/e_count
+                        r1 = (val[val_max_i])*abs(np.cos(theta))
+                        r2 = (val[val_min_i])*abs(np.cos(theta_))
                         
-                        c1 = (val[val_max_i])*abs(np.sin(theta))/e_count
-                        c2 = (val[val_min_i])*abs(np.sin(theta_))/e_count
+                        c1 = (val[val_max_i])*abs(np.sin(theta))
+                        c2 = (val[val_min_i])*abs(np.sin(theta_))
                         
                         # global contribution
                         rad_e += r1 + r2
@@ -249,8 +249,8 @@ class ComboDataSR_2D:
                             ax.add_artist(ellipse)
             
             # graph subplot values
-            self.r_sr[t] = rad_e #global radial strain rate this frame
-            self.c_sr[t] = circ_e #global circumferential strain rate
+            self.r_sr[t] = rad_e/(e_count*self.res) #global radial strain rate this frame
+            self.c_sr[t] = circ_e/(e_count*self.res) #global circumferential strain rate
             
             if plot == 1:
                 plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)

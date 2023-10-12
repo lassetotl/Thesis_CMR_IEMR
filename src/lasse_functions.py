@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # xval, yval, zval (...), timepoint, axis
 
 
-def D_ij_2D(x, y, V, M, t, sigma, mask, dx): #Construct SR tensor for specific point
+def D_ij_2D(x, y, V, M, t, sigma, mask): #Construct SR tensor for specific point
     L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
     
     # calculate certainty matrix from normalized magnitude plot
@@ -47,7 +47,7 @@ def D_ij_2D(x, y, V, M, t, sigma, mask, dx): #Construct SR tensor for specific p
     vx = ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
     vy = ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
     
-    dy = dx  # voxel length 1 in our image calculations
+    dy = dx = 1 # voxel length 1 in our image calculations
     
     # note!: the diagonal has been switched for script testing!
     L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))

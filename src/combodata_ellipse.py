@@ -31,7 +31,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D3-2_3d'
+file = 'sham_D11-1_40d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -254,8 +254,8 @@ for t in range_:
     ax.text(3, 9, f'{res_} x {res_} cm', color = 'w')
     
     # graph subplot values, scale with amount of ellipses
-    g1[t] = rad_e/e_count #global radial strain rate this frame
-    g2[t] = circ_e/e_count  #global circumferential strain rate
+    g1[t] = rad_e/(e_count*res) #global radial strain rate this frame
+    g2[t] = circ_e/(e_count*res)  #global circumferential strain rate
     
     # collect average angle in degrees
     a1[t] = np.array(a1_)*180/np.pi #np.mean(a1_)*180/np.pi 

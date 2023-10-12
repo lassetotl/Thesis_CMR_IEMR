@@ -38,20 +38,21 @@ T = 63  # timepoints
 TR = run.__dict__['TR']
 range_TR = np.arange(0, T)*TR
 
-f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(16, 8))
+f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
 
 ax1.set_title('Global Radial Strain over time', fontsize = 15)
 ax1.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 ax1.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 ax1.axhline(0, c = 'k', lw = 1)
-ax1.set_xlim(0, T*TR)#; plt.ylim(0, 50)
+ax1.set_xlim(0, np.max(T_ed_list)*TR)
 ax1.set_xlabel('Time [s]', fontsize = 15)
+ax1.set_ylabel('%', fontsize = 17)
 
 ax2.set_title('Global Circumferential Strain over time', fontsize = 15)
 ax2.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 ax2.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 ax2.axhline(0, c = 'k', lw = 1)
-ax2.set_xlim(0, T*TR)#; plt.ylim(0, 50)
+ax2.set_xlim(0, np.max(T_ed_list)*TR)
 ax2.set_xlabel('Time [s]', fontsize = 15)
 
 for file in os.listdir('R:\Lasse\strain data'):
@@ -60,21 +61,21 @@ for file in os.listdir('R:\Lasse\strain data'):
     
     T_ = len(r_strain) # stops at respective end diastole
     if str(file[0]) == 'm':
-        ax1.plot(range_TR[:T_], r_strain[:T_], lw=2, c='lime') #, label = f'({file.split("_")[2]})')
-        ax2.plot(range_TR[:T_], c_strain[:T_], lw=2, c='gold')
+        ax1.plot(range_TR[:T_], 100*r_strain[:T_], lw=1.3, c='lime') #, label = f'({file.split("_")[2]})')
+        ax2.plot(range_TR[:T_], 100*c_strain[:T_], lw=1.3, c='gold')
     else:
         
-        ax1.plot(range_TR[:T_], r_strain[:T_], lw=2, c='darkblue') 
-        ax2.plot(range_TR[:T_], c_strain[:T_], lw=2, c='chocolate') 
+        ax1.plot(range_TR[:T_], 100*r_strain[:T_], lw=1.3, c='darkblue') 
+        ax2.plot(range_TR[:T_], 100*c_strain[:T_], lw=1.3, c='chocolate') 
      
-legend_handles1 = [Line2D([0], [0], color = 'darkblue', lw = 2, label = 'Sham'),
-          Line2D([0], [0], color = 'lime', lw = 2, label = '6w after MI')]
+legend_handles1 = [Line2D([0], [0], color = 'darkblue', lw = 1.3, label = 'Sham'),
+          Line2D([0], [0], color = 'lime', lw = 1.3, label = '6w after MI')]
 
-legend_handles2 = [Line2D([0], [0], color = 'chocolate', lw = 2, label = 'Sham'),
-          Line2D([0], [0], color = 'gold', lw = 2, label = '6w after MI')]
+legend_handles2 = [Line2D([0], [0], color = 'chocolate', lw = 1.3, label = 'Sham'),
+          Line2D([0], [0], color = 'gold', lw = 1.3, label = '6w after MI')]
                        
-ax1.legend(handles = legend_handles1, fontsize = 15)
-ax2.legend(handles = legend_handles2, fontsize = 15)
+ax1.legend(handles = legend_handles1, fontsize = 12)
+ax2.legend(handles = legend_handles2, fontsize = 12)
 
 plt.subplots_adjust(wspace=0.07)
 plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
@@ -84,16 +85,17 @@ plt.show()
 #%%
 # strain rate
 
-f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(16, 8))
+f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
 
-ax1.set_title('Global Radial Strain over time', fontsize = 15)
+ax1.set_title('Global Radial Strain Rate over time', fontsize = 15)
 ax1.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 ax1.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 ax1.axhline(0, c = 'k', lw = 1)
 ax1.set_xlim(0, T*TR)#; plt.ylim(0, 50)
 ax1.set_xlabel('Time [s]', fontsize = 15)
+ax1.set_ylabel('$s^{-1}$', fontsize = 15)
 
-ax2.set_title('Global Circumferential Strain over time', fontsize = 15)
+ax2.set_title('Global Circumferential Strain Rate over time', fontsize = 15)
 ax2.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 ax2.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 ax2.axhline(0, c = 'k', lw = 1)
@@ -106,22 +108,22 @@ for file in os.listdir('R:\Lasse\strain rate data'):
     
     T_ = 63 # stops at respective end diastole
     if str(file[0]) == 'm':
-        ax1.plot(range_TR[:T_], r_strain_rate[:T_], 'lime', lw=2)
-        ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'gold', lw=2)
+        ax1.plot(range_TR[:T_], r_strain_rate[:T_], 'lime', lw=1.3)
+        ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'gold', lw=1.3)
     else:
         
-        ax1.plot(range_TR[:T_], r_strain_rate[:T_], 'darkblue', lw=2) 
-        ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'chocolate', lw=2) 
+        ax1.plot(range_TR[:T_], r_strain_rate[:T_], 'darkblue', lw=1.3) 
+        ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'chocolate', lw=1.3) 
         
-legend_handles1 = [Line2D([0], [0], color = 'darkblue', lw = 2, label = 'Sham'),
-          Line2D([0], [0], color = 'lime', lw = 2, label = '6w after MI')]
+legend_handles1 = [Line2D([0], [0], color = 'darkblue', lw = 1.3, label = 'Sham'),
+          Line2D([0], [0], color = 'lime', lw = 1.3, label = '6w after MI')]
 
-legend_handles2 = [Line2D([0], [0], color = 'chocolate', lw = 2, label = 'Sham'),
-          Line2D([0], [0], color = 'gold', lw = 2, label = '6w after MI')]
+legend_handles2 = [Line2D([0], [0], color = 'chocolate', lw = 1.3, label = 'Sham'),
+          Line2D([0], [0], color = 'gold', lw = 1.3, label = '6w after MI')]
                        
-ax1.legend(handles = legend_handles1, fontsize = 15)
-ax2.legend(handles = legend_handles2, fontsize = 15)
+ax1.legend(handles = legend_handles1, fontsize = 12)
+ax2.legend(handles = legend_handles2, fontsize = 12)
 
-plt.subplots_adjust(wspace=0.03)
+plt.subplots_adjust(wspace=0.07)
 plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
 plt.show()
