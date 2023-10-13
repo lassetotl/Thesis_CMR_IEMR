@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from lasse_functions import D_ij, D_ij_2D, theta_rad
+from lasse_functions import D_ij_2D, theta_rad
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn

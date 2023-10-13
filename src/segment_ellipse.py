@@ -1,10 +1,11 @@
 """
-Created on Tue Aug 29 10:46:34 2023
+Created on Tue 13.10.23
 
 @author: lassetot
 
-Note (Sep 20): a lot of the current code is included for troubleshooting purposes, 
-not all are strictly useful at the moment and will be trimmed eventually
+Note (Oct 13): duplicate of combodata_ellipse.py used to experiment with 
+segmentation to look at homogeneity in strain and strain rate. A lot of 
+troubleshooting features are removed to focus on segments.
 """
 
 import os
@@ -16,7 +17,7 @@ from numpy.linalg import norm
 from lasse_functions import D_ij_2D, theta_rad, running_average, clockwise_angle
 from lasse_functions import gaussian_2d, theta_extreme
 #import pandas as pd
-#import seaborn as sns
+import seaborn as sns
 #import sklearn
 
 import scipy.io as sio
@@ -31,7 +32,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D9-3_6w'
+file = 'sham_D7-1_6w'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -64,7 +65,6 @@ print(f'{file} overview:')
 print(f'Velocity field shape: {np.shape(V)}')
 print(f'Magnitudes field shape: {np.shape(M)}')
 print(f'Mask shape: {np.shape(mask)}')
-print(f'{res}, {TR}')
 
 print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 
@@ -80,29 +80,32 @@ n = 2
 sigma = 2
 
 # cyclic colormap, normalize to radians 
-c_cmap = plt.get_cmap('plasma')
+#c_cmap = plt.get_cmap('plasma')
 
-# you can get color palettes from seaborn like this
-#c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 8).as_hex())
+# you can get discrete nr of colors in palette corresponding to defined sectors
+c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
 
-norm_ = mpl.colors.Normalize(vmin = 0, vmax = 90)
+norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
+
+
+plt.imshow(np.array([[4, 1], [2, 3]]), cmap = c_cmap, origin = 'lower')
+plt.colorbar()
 
 #%%
 
 range_ = np.arange(0, T, 1)
-g1 = np.zeros(T); g1[:] = np.nan #Graph values
-g2 = np.zeros(T); g2[:] = np.nan #Graph values
+# initialize arrays for each quadrant
+r1 = np.zeros(T); r1[:] = np.nan #Graph values
+c1 = np.zeros(T); c1[:] = np.nan #Graph values
 
-# temporary, separates positive and negative contributions over time
-r1_ = np.zeros(T); r1_[:] = np.nan #Graph values, positive
-r2_ = np.zeros(T); r2_[:] = np.nan #Graph values, negative
-c1_ = np.zeros(T); c1_[:] = np.nan #Graph values
-c2_ = np.zeros(T); c2_[:] = np.nan #Graph values
+r2 = np.zeros(T); r2[:] = np.nan #Graph values
+c2 = np.zeros(T); c2[:] = np.nan #Graph values
 
-a1 = np.zeros(T, dtype = 'object') #  most positive angle (stretch)
-a1_std = np.zeros(T) # std stored for each t
-a2 = np.zeros(T, dtype = 'object') # most negative angle (compression)
-a2_std = np.zeros(T)
+r3 = np.zeros(T); r3[:] = np.nan #Graph values
+c3 = np.zeros(T); c3[:] = np.nan #Graph values
+
+r4 = np.zeros(T); r4[:] = np.nan #Graph values
+c4 = np.zeros(T); c4[:] = np.nan #Graph values
 
 #divergence
 d = np.zeros(T)
@@ -110,7 +113,7 @@ d = np.zeros(T)
 # center of mass at t=0
 cx_0, cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[:, :, 0, 0]))
 
-sub = 1 # Graph subplot on (1) or off (0)
+sub = 0 # Graph subplot on (1) or off (0)
 for t in range_:
     fig = plt.figure(figsize=(18, 8))
     ax = plt.subplot(1, 2, 1) #SR colormap
@@ -135,18 +138,20 @@ for t in range_:
     M_norm = (M[:, :, 0, t]/np.max(M[:, :, 0, t]))
     plt.imshow(M_norm.T, origin = 'lower', cmap = 'gray', alpha = 1)
     #plt.imshow(mask_t.T, origin = 'lower', cmap = 'gray', alpha = 1)
+
+    # ellipse counter in segment, this timepoint
+    e_count1 = 0  
+    e_count2 = 0
+    e_count3 = 0
+    e_count4 = 0
+    sector = 0  # reset sector number
     
-    # reset radial and circumferential contributions from last frame / initialize
-    rad_e = 0 #radial components of eigenvectors, sum will be saved every t
-    circ_e = 0 #circumferential ...
+    # remove nan's
+    r1[t] = 0; c1[t] = 0
+    r2[t] = 0; c2[t] = 0
+    r3[t] = 0; c3[t] = 0
+    r4[t] = 0; c4[t] = 0
     
-    r1_[t] = 0; r2_[t] = 0  # remove nan values for this t
-    c1_[t] = 0; c2_[t] = 0
-    
-    a1_ = []; a2_ = []
-    
-    #calculate eigenvalues and vectors
-    e_count = 0  # ellipse counter in this frame
     for x in range(0, f, n):
         for y in range(0, f, n): 
             # search in eroded mask to avoid border artifacts
@@ -158,8 +163,6 @@ for t in range_:
                 # stop loop if eigenvalue signs are equal
                 #if np.sign(val[0]) == np.sign(val[1]):
                     #continue
-                
-                e_count += 1
                 
                 # sum of eigenvalues represents divergence (?)
                 d[t] += val[0] + val[1]
@@ -177,54 +180,36 @@ for t in range_:
                 
                 theta = theta_rad(r, vec[val_max_i])  # angle between highest eigenvector and r
                 theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
-                #print(theta, theta_)
                 
-                # for color coding; smallest angle between long-axis eigenvector (tends to correspond to positive eigenvalue) and r
-                # max value is now 90 degrees (pi/2) relative to radial unit vector
-                #theta_r = theta_rad(r, vec[np.argmax(val)])
+                # local contribution
                 
-                # radial/circumferential contributions from each eigenvector
-                # scaled with amount of ellipses, varies because of dynamic mask
-                
-                #higher eigenvalues weighted higher (abs to not affect direction)
-                r1 = (val[val_max_i])*abs(np.cos(theta))
-                r2 = (val[val_min_i])*abs(np.cos(theta_))
-                
-                c1 = (val[val_max_i])*abs(np.sin(theta))
-                c2 = (val[val_min_i])*abs(np.sin(theta_))
-                
-                # filtering positive and negative values
-                r1_[t] += r1*int(r1 > 0) + r2*int(r2 > 0) # +
-                r2_[t] += r1*int(r1 < 0) + r2*int(r2 < 0) # -
-                c1_[t] += c1*int(c1 > 0) + c2*int(c2 > 0)
-                c2_[t] += c1*int(c1 < 0) + c2*int(c2 < 0)
-                
-                # global contribution
-                rad_e += r1 + r2
-                circ_e += c1 + c2
-                
-                # angle sum collected, scaled to get average angle each t
-                # does not assume that each 2d tensor has a positive and negative eigenvector
-                if val[val_max_i] > 0:
-                    a1_.append(theta) 
-                if val[val_min_i] > 0:
-                    a1_.append(theta_)
+                if (x > cx) and (y > cy):
+                    sector = 0
+                    e_count1 += 1
+                    r1[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c1[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
                     
-                if val[val_max_i] < 0:
-                    a2_.append(theta) 
-                if val[val_min_i] < 0:
-                    a2_.append(theta_)
+                if (x > cx) and (y < cy):
+                    sector = 1
+                    e_count2 += 1
+                    r2[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c2[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
+                    
+                if (x < cx) and (y < cy):
+                    sector = 2
+                    e_count3 += 1
+                    r3[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c3[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
+                    
+                if (x < cx) and (y > cy):
+                    sector = 3
+                    e_count4 += 1
+                    r4[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c4[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
                 
-                #print(r, vec[val_i], c)
                 
-                # for class, skip this part if only data is requested 
-                
-                # hex code, inputs in range (0, 1) so theta is scaled
-                rgb = list(c_cmap(theta/(np.pi/2)))
-                
-                #rgb[3] = 0.03
-                # different function to include alpha?
-                hx = mpl.colors.rgb2hex(rgb)  # code with
+                # color code after sector 1 to 4
+                hx = mpl.colors.rgb2hex(list(c_cmap(sector)))  # code with
                 
                 #hx = mpl.colors.rgb2hex(c_cmap(I))  # color code with invariant
                 
@@ -238,31 +223,27 @@ for t in range_:
                 ellipse = patches.Ellipse((x, y), (1 + np.tanh(val[val_max_i])), (1 + np.tanh(val[val_min_i])), 
                                           angle = e_angle, color = hx)
                 
-                #unit ellipse
-                #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
-                
                 ax.add_artist(ellipse)
-                
-                # eigenvector visualization
-                #plt.quiver(x, y, vec[val_max_i][0], vec[val_max_i][1], color = hx, scale = 10/np.sqrt(val[val_max_i]))
-                #plt.quiver(x, y, vec[val_min_i][0], vec[val_min_i][1], color = 'k', scale = 10/np.sqrt(val[val_min_i]))
     
-    #I[t] = Invariant(I_[0], I_[1], D)
-    
-    ax.text(3, 6, f'{e_count} Ellipses', color = 'w')
+    #ax.text(3, 6, f'{e_count} Ellipses', color = 'w')
     res_ = round(f*res, 4)
     ax.text(3, 9, f'{res_} x {res_} cm', color = 'w')
     
     # graph subplot values, scale with amount of ellipses
-    g1[t] = rad_e/(e_count*res) #global radial strain rate this frame
-    g2[t] = circ_e/(e_count*res)  #global circumferential strain rate
+    # count ellipses for each segment?
     
-    # collect average angle in degrees
-    a1[t] = np.array(a1_)*180/np.pi #np.mean(a1_)*180/np.pi 
-    a2[t] = np.array(a2_)*180/np.pi #np.mean(a2_)*180/np.pi 
-    a1_std[t] = (np.mean(a1_))*180/np.pi
-    a2_std[t] = (np.mean(a2_))*180/np.pi
-
+    r1[t] = r1[t]/(e_count1*res) #local radial strain rate this frame
+    c1[t] = c1[t]/(e_count1*res)  #local circumferential strain rate
+    
+    r2[t] = r2[t]/(e_count2*res) 
+    c2[t] = c2[t]/(e_count2*res)
+    
+    r3[t] = r3[t]/(e_count3*res) 
+    c3[t] = c3[t]/(e_count3*res)
+    
+    r4[t] = r4[t]/(e_count4*res) 
+    c4[t] = c4[t]/(e_count4*res)
+    
     plt.scatter(cx, cy, marker = 'x', c = 'w')
     #plt.scatter(mis[0], mis[1], marker = 'x', c = 'r')
  
@@ -272,13 +253,14 @@ for t in range_:
     #plt.xlim(cx_0-z, cx_0+z); plt.ylim(cy_0-z, cy_0+z)
     plt.xlim(0, f); plt.ylim(0, f)
     
+    '''
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     
     sm = plt.cm.ScalarMappable(cmap = c_cmap, norm = norm_)
     cbar = plt.colorbar(sm, cax = cax)
     cbar.set_label('$\Theta$ (degrees)', fontsize = 15)
-    
+    '''
     
     
     if sub == 1:  # subplot graph
@@ -290,15 +272,17 @@ for t in range_:
         plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
         plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
         
-        plt.plot(range_, r1_, 'darkblue', label = 'Radial+')
-        plt.plot(range_, c1_, 'chocolate', label = 'Circumferential+')
+        plt.plot(range_, r1, c = c_cmap(0), label = 'Sector 1')
+        plt.plot(range_, c1, c = c_cmap(0))
         
+        plt.plot(range_, r2, c = c_cmap(1), label = 'Sector 2')
+        plt.plot(range_, c2, c = c_cmap(1))
         
-        plt.plot(range_, r2_, 'blue', label = 'Radial-')
-        plt.plot(range_, c2_, 'orange', label = 'Circumferential-')
+        plt.plot(range_, r3, c = c_cmap(2), label = 'Sector 3')
+        plt.plot(range_, c3, c = c_cmap(2))
         
-        plt.plot(range_, r1_ + r2_, 'blue', ls = '--', alpha = 0.2)
-        plt.plot(range_, c1_ + c2_, 'orange', ls = '--', alpha = 0.2)
+        plt.plot(range_, r4, c = c_cmap(3), label = 'Sector 4')
+        plt.plot(range_, c4, c = c_cmap(3))
         
         plt.xlim(0, T)#; plt.ylim(0, 50)
         plt.xlabel('Timepoints', fontsize = 15)
@@ -330,39 +314,16 @@ plt.axhline(0, c = 'k', lw = 1)
 plt.legend(loc = 'upper right')
 plt.show()
 
-#%%
-#angles over time
 
-plt.figure(figsize = (10, 8))
-plt.title(f'Average radial angles over time ({file})', fontsize = 15)
-plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-plt.xlim(0, T*TR)#; plt.ylim(0, 50)
-plt.xlabel('Timepoints', fontsize = 15)
-plt.ylabel('Degrees', fontsize = 20)
-
-for i in range_:
-    #print((a2[i]))
-    plt.scatter([range_TR[i]]*len(a1[i]), a1[i], color = 'r', alpha = 0.03)
-    plt.scatter([range_TR[i]]*len(a2[i]), a2[i], color = 'g', alpha = 0.03)
-
-# mean angles
-plt.plot(range_TR, a1_std, 'r', label = 'Positive eigenvectors (stretch)')
-plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
-#plt.text(1, 2, f'Mean std: {round((np.mean(a1_std) + np.mean(a2_std))/2, 4)} degrees')
-plt.legend(loc = 'upper right')
-plt.show()
 
 #%%
 #last frame with running average
 
 N = 4 #window
-I_g1 = running_average(g1, N)
-I_g2 = running_average(g2, N)
 
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(8, 6))
 
-plt.title(f'Global Strain rate over time ({file})', fontsize = 15)
+plt.title(f'Regional Strain rate ({file})', fontsize = 15)
 plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.axhline(0, c = 'k', lw = 1)
@@ -371,11 +332,17 @@ plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('$s^{-1}$', fontsize = 20)
 
-plt.plot(range_TR, g1, 'lightgrey')
-plt.plot(range_TR, g2, 'lightgrey')
+plt.plot(range_TR, running_average(r1, N), c = c_cmap(0), label = 'Sector 1')
+plt.plot(range_TR, running_average(c1, N), c = c_cmap(0))
 
-plt.plot(range_TR, I_g1, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
-plt.plot(range_TR, I_g2, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+plt.plot(range_TR, running_average(r2, N), c = c_cmap(1), label = 'Sector 2')
+plt.plot(range_TR, running_average(c2, N), c = c_cmap(1))
+
+plt.plot(range_TR, running_average(r3, N), c = c_cmap(2), label = 'Sector 3')
+plt.plot(range_TR, running_average(c3, N), c = c_cmap(2))
+
+plt.plot(range_TR, running_average(r4, N), c = c_cmap(3), label = 'Sector 4')
+plt.plot(range_TR, running_average(c4, N), c = c_cmap(3))
 
 plt.legend()
 
@@ -388,31 +355,45 @@ plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GSR.PNG')
 plt.show()
 
 #%%
+# integration
+
+# input array of strain rate data
+def strain(strain_rate, weight = 10):
+    # weighting for integrals in positive/flipped time directions
+    w = np.tanh((T_ed-range_)/weight)[:T_ed+1]
+    w_f = np.tanh(range_/weight)[:T_ed+1]
+
+    strain = cumtrapz(strain_rate, range_TR, initial=0)[:T_ed+1]
+    strain_flipped = np.flip(cumtrapz(strain_rate[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
+    
+    return (w*strain + w_f*strain_flipped)/2
+
+
+#%%
 #plot strain over time
 
-# weighting for integrals in positive/flipped time directions
-w = np.tanh((T_ed-range_)/10)[:T_ed+1]
-w_f = np.tanh(range_/10)[:T_ed+1]
+plt.figure(figsize=(8, 6))
 
-r_strain = cumtrapz(g1, range_TR, initial=0)[:T_ed+1]
-r_strain_flipped = np.flip(cumtrapz(g1[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
-
-c_strain = cumtrapz(g2, range_TR, initial=0)[:T_ed+1]
-c_strain_flipped = np.flip(cumtrapz(g2[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
-
-plt.figure(figsize=(10, 8))
-
-plt.title(f'Global Strain over time ({file})', fontsize = 15)
+plt.title(f'Regional Strain over time ({file})', fontsize = 15)
 plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.axhline(0, c = 'k', lw = 1)
 
 plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
-#plt.ylabel('$s^{-1}$', fontsize = 20)
+plt.ylabel('%', fontsize = 15)
 
-plt.plot(range_TR[:T_ed+1], (w*r_strain + w_f*r_strain_flipped)/2, 'darkblue', lw=2, label = 'Radial (Walking Average)') #walking average
-plt.plot(range_TR[:T_ed+1], (w*c_strain + w_f*c_strain_flipped)/2, 'chocolate', lw=2, label = 'Circumferential (Walking Average)') #walking average
+plt.plot(range_TR[:T_ed+1], 100*strain(r1), c = c_cmap(0), lw=2, label = 'Sector 1')
+plt.plot(range_TR[:T_ed+1], 100*strain(c1), c = c_cmap(0), lw=2) #walking average
+
+plt.plot(range_TR[:T_ed+1], 100*strain(r2), c = c_cmap(1), lw=2, label = 'Sector 2')
+plt.plot(range_TR[:T_ed+1], 100*strain(c2), c = c_cmap(1), lw=2) #walking average
+
+plt.plot(range_TR[:T_ed+1], 100*strain(r3), c = c_cmap(2), lw=2, label = 'Sector 3')
+plt.plot(range_TR[:T_ed+1], 100*strain(c3), c = c_cmap(2), lw=2) #walking average
+
+plt.plot(range_TR[:T_ed+1], 100*strain(r4), c = c_cmap(3), lw=2, label = 'Sector 4')
+plt.plot(range_TR[:T_ed+1], 100*strain(c4), c = c_cmap(3), lw=2) #walking average
 
 
 plt.legend()
