@@ -13,6 +13,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from ComboDataSR_2D import ComboDataSR_2D
+from scipy.integrate import cumtrapz
 from lasse_functions import running_average
 
 #%%
@@ -118,10 +119,10 @@ for file in os.listdir('R:\Lasse\strain rate data'):
         ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'chocolate', lw=1.3) 
         
 legend_handles1 = [Line2D([0], [0], color = 'darkblue', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'lime', lw = 1.3, label = '6w after MI')]
+          Line2D([0], [0], color = 'lime', lw = 1.3, label = 'MI')]
 
 legend_handles2 = [Line2D([0], [0], color = 'chocolate', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'gold', lw = 1.3, label = '6w after MI')]
+          Line2D([0], [0], color = 'gold', lw = 1.3, label = 'MI')]
                        
 ax1.legend(handles = legend_handles1, fontsize = 12)
 ax2.legend(handles = legend_handles2, fontsize = 12)
@@ -134,7 +135,7 @@ plt.show()
 # angle distributions
 
 plt.figure(figsize = (10, 8))
-plt.title(f'Cohesion of radial angles over time ({file})', fontsize = 15)
+plt.title('Radial angle concentration', fontsize = 15)
 plt.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 plt.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.xlim(0, T*TR)#; plt.ylim(0, 50)
@@ -143,6 +144,7 @@ plt.ylabel('Degrees', fontsize = 20)
 
 
 a1_mean = np.zeros(T); a2_mean = np.zeros(T)
+auc_mi = []; auc_sham = []  # to fill with tuples (days, auc)
 for file in os.listdir('R:\Lasse\\angle distribution data'):
     a1 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_pos.npy', allow_pickle = 1)
     a2 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_neg.npy', allow_pickle = 1)
@@ -151,15 +153,49 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
         a1_mean[t] = np.mean(a1[t])
         a2_mean[t] = np.mean(a2[t])
     
+    diff = running_average(abs(a1_mean - a2_mean), 4)
+      
+    #days = 0
+    if str(file[-1]) == 'w':
+           days = int(file.split('_')[2].replace('w', ''))*7
+    if str(file[-1]) == 'd':
+           days = int(file.split('_')[2].replace('d', ''))
+           
     if str(file[0]) == 'm':  # compare angle cohesion
-        plt.plot(range_TR, running_average(abs(a1_mean - a2_mean), 5), 'r', lw=1.3)
+        plt.plot(range_TR, diff, 'r', lw=1.3)
+        auc_mi.append([days, sum(diff)])
     else:
-        plt.plot(range_TR, running_average(abs(a1_mean - a2_mean), 5), 'k', lw=1.3)
+        plt.plot(range_TR, running_average(abs(a1_mean - a2_mean), 4), 'k', lw=1.3)
+        auc_sham.append([days, sum(diff)])
 
 legend_handles1 = [Line2D([0], [0], color = 'k', lw = 1.3, label = 'Sham'),
           Line2D([0], [0], color = 'r', lw = 1.3, label = '6w after MI')]
 
 # difference
-
 plt.legend(handles = legend_handles1, loc = 'upper right')
+plt.show()
+
+auc_mi = np.array(auc_mi)
+auc_sham = np.array(auc_sham)
+
+#%% angle concentration AUC over time 
+
+T_ = 47
+plt.figure(figsize = (8, 6))
+plt.title('Radial angle concentration', fontsize = 15)
+plt.xlim(0, T_)#; plt.ylim(0, 50)
+plt.xlabel('Time [days]', fontsize = 15)
+plt.ylabel('AUC', fontsize = 15)
+
+plt.scatter(auc_mi[:,0], auc_mi[:,1], c='r')
+plt.scatter(auc_sham[:,0], auc_sham[:,1], c='k')
+
+a, b = np.polyfit(auc_sham[:,0], auc_sham[:,1], 1)
+c, d = np.polyfit(auc_mi[:,0], auc_mi[:,1], 1)
+t = np.arange(0, T_)
+
+plt.plot(t, a*t + b, 'k', label = f'sham linear fit, slope = {np.round(a, 3)}')
+plt.plot(t, c*t + d, 'r', label = f'mi linear fit, slope = {np.round(c, 3)}')
+
+plt.legend()
 plt.show()
