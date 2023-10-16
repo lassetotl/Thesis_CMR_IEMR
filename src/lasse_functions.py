@@ -117,3 +117,4 @@ def gaussian_2d(sigma):
 def divergence(F):
     """ compute the divergence of n-D scalar field `F` """
     return np.ufunc.reduce(np.add, np.gradient(F))
+

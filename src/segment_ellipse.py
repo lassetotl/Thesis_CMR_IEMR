@@ -1,5 +1,5 @@
 """
-Created on Tue 13.10.23
+Created on 13.10.23
 
 @author: lassetot
 
@@ -32,7 +32,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D7-1_6w'
+file = 'sham_D4-4_1d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -84,12 +84,7 @@ sigma = 2
 
 # you can get discrete nr of colors in palette corresponding to defined sectors
 c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
-
 norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
-
-
-plt.imshow(np.array([[4, 1], [2, 3]]), cmap = c_cmap, origin = 'lower')
-plt.colorbar()
 
 #%%
 
@@ -160,7 +155,7 @@ for t in range_:
                 D_ = D_ij_2D(x, y, V, M_norm, t, sigma, mask_t)     
                 val, vec = np.linalg.eig(D_)
                 
-                # stop loop if eigenvalue signs are equal
+                # skip this voxel if eigenvalue signs are equal
                 #if np.sign(val[0]) == np.sign(val[1]):
                     #continue
                 

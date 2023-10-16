@@ -153,9 +153,15 @@ class ComboDataSR_2D:
         self.ax = len(self.mask[:,0,0,0])
         self.ay = len(self.mask[0,:,0,0])
         
-        # create arrays
+        # create strain rate arrays
         self.r_sr = np.zeros(self.T); self.r_sr[:] = np.nan #Graph values
         self.c_sr = np.zeros(self.T); self.c_sr[:] = np.nan #Graph values
+        
+        # create arrays for angle distribution and mean values
+        self.a1 = np.zeros(self.T, dtype = 'object') #  most positive angle (stretch)
+        self.a1_mean = np.zeros(self.T)
+        self.a2 = np.zeros(self.T, dtype = 'object') # most negative angle (compression)
+        self.a2_mean = np.zeros(self.T)
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
@@ -163,6 +169,10 @@ class ComboDataSR_2D:
         # custom colormap
         c_cmap = plt.get_cmap('plasma')
         norm_ = mpl.colors.Normalize(vmin = 0, vmax = 90)
+        
+        if save == 1:
+            if os.path.exists(f'R:\Lasse\plots\MP4\{self.filename}') == False:
+                os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
         
         print(f'Calculating Global Strain rate for {self.filename}...')
         for t in self.range_:
@@ -190,6 +200,9 @@ class ComboDataSR_2D:
             rad_e = 0 #radial components of eigenvectors, sum will be saved every t
             circ_e = 0 #circumferential ...
             
+            # initialize lists of tensor angles
+            a1_ = []; a2_ = []
+            
             #calculate eigenvalues and vectors
             e_count = 0  # ellipse counter in this frame
             for x in range(0, self.ax, self.n):
@@ -199,6 +212,10 @@ class ComboDataSR_2D:
                         # SR tensor for point xy
                         D_ = D_ij_2D(x, y, self.V, M_norm, t, self.sigma, mask_t)     
                         val, vec = np.linalg.eig(D_)
+                        
+                        # skip this voxel if eigenvalue signs are equal
+                        #if np.sign(val[0]) == np.sign(val[1]):
+                            #continue
                         
                         e_count += 1
                         
@@ -227,6 +244,18 @@ class ComboDataSR_2D:
                         rad_e += r1 + r2
                         circ_e += c1 + c2
                         
+                        # angle sum collected, scaled to get average angle each t
+                        # does not assume that each 2d tensor has a positive and negative eigenvector
+                        if val[val_max_i] > 0:
+                            a1_.append(theta) 
+                        if val[val_min_i] > 0:
+                            a1_.append(theta_)
+                            
+                        if val[val_max_i] < 0:
+                            a2_.append(theta) 
+                        if val[val_min_i] < 0:
+                            a2_.append(theta_)
+                        
                         ## for class, skip this part if only data is requested ##
                         if plot == 1:
                             # hex code, inputs in range (0, 1) so theta is scaled
@@ -251,6 +280,12 @@ class ComboDataSR_2D:
             # graph subplot values
             self.r_sr[t] = rad_e/(e_count*self.res) #global radial strain rate this frame
             self.c_sr[t] = circ_e/(e_count*self.res) #global circumferential strain rate
+            
+            # collect angle distribution and mean values in degrees
+            self.a1[t] = np.array(a1_)*180/np.pi #np.mean(a1_)*180/np.pi 
+            self.a2[t] = np.array(a2_)*180/np.pi #np.mean(a2_)*180/np.pi 
+            self.a1_mean[t] = (np.mean(a1_))*180/np.pi
+            self.a2_mean[t] = (np.mean(a2_))*180/np.pi
             
             if plot == 1:
                 plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
@@ -318,10 +353,12 @@ class ComboDataSR_2D:
                 
                 filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in self.range_]  
                   
-                with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.mp4', fps=7) as writer:    # inputs: filename, frame per second
+                with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.mp4', 
+                                        fps=7, macro_block_size = 1) as writer:    # inputs: filename, frame per second
                     for filename in filenames:
                         image = imageio.imread(filename)                         # load the image file
                         writer.append_data(image)
+                
             plt.show()
                         
         # integrate strain rate (cyclic boundary condition) to get strain
@@ -363,8 +400,32 @@ class ComboDataSR_2D:
             plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
             plt.show()
             
+            #angles over time
+
+            plt.figure(figsize = (10, 8))
+            plt.title(f'Average radial angles over time ({self.filename})', fontsize = 15)
+            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+            plt.xlim(0, self.T*self.TR)#; plt.ylim(0, 50)
+            plt.xlabel('Timepoints', fontsize = 15)
+            plt.ylabel('Degrees', fontsize = 20)
+
+            for i in self.range_:
+                #print((a2[i]))
+                plt.scatter([self.range_TR[i]]*len(self.a1[i]), self.a1[i], color = 'r', alpha = 0.03)
+                plt.scatter([self.range_TR[i]]*len(self.a2[i]), self.a2[i], color = 'g', alpha = 0.03)
+
+            # mean angles
+            plt.plot(self.range_TR, self.a1_mean, 'r', label = 'Positive eigenvectors (stretch)')
+            plt.plot(self.range_TR, self.a2_mean, 'g', label = 'Negative eigenvectors (compression)')
+            # difference
+            plt.plot(self.range_TR, abs(self.a1_mean - self.a2_mean), 'darkgray', ls = '--', label = 'Difference')
+
+            plt.legend(loc = 'upper right')
+            plt.show()
+            
         if save == 1:
-            # save strain npy files for analysis
+            # save strain/strain rate/angle dist npy files for analysis
 
             if os.path.exists(f'R:\Lasse\strain data\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\strain data\{self.filename}')
@@ -377,9 +438,15 @@ class ComboDataSR_2D:
             
             np.save(fr'R:\Lasse\strain rate data\{self.filename}\r_strain_rate', self.r_strain_rate)
             np.save(fr'R:\Lasse\strain rate data\{self.filename}\c_strain_rate', self.c_strain_rate)
-                
             
-        return self.r_strain_rate, self.c_strain_rate, self.r_strain, self.c_strain
+            if os.path.exists(f'R:\Lasse\\angle distribution data\{self.filename}') == False:
+                os.makedirs(f'R:\Lasse\\angle distribution data\{self.filename}')
+            
+            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_pos', self.a1)
+            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_neg', self.a2)
+                
+        # if save = 0 the parameters can still be collected from return statement without overwriting 
+        return self.r_strain_rate, self.c_strain_rate, self.r_strain, self.c_strain, self.a1, self.a2
             
         
         
@@ -387,14 +454,11 @@ class ComboDataSR_2D:
 # example of use
 if __name__ == "__main__":
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D4-4_6w')
+    run1 = ComboDataSR_2D('sham_D4-4_6w', n = 10)
     
     # get info/generate data 
     #run1.overview()
     #grv1 = run1.velocity()
     run1.strain_rate(plot = 1, save = 0)
-
-#%%
-# example of dictionary functionality
-
-    print(run1.__dict__['TR'])
+    
+    print(run1.__dict__['TR'])  # example of dictionary functionality

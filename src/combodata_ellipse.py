@@ -31,7 +31,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D9-3_6w'
+file = 'mi_D11-7_6w'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -349,7 +349,9 @@ for i in range_:
 # mean angles
 plt.plot(range_TR, a1_std, 'r', label = 'Positive eigenvectors (stretch)')
 plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
-#plt.text(1, 2, f'Mean std: {round((np.mean(a1_std) + np.mean(a2_std))/2, 4)} degrees')
+# difference
+plt.plot(range_TR, abs(a1_std - a2_std), 'darkgray', ls = '--', label = 'Difference')
+
 plt.legend(loc = 'upper right')
 plt.show()
 
