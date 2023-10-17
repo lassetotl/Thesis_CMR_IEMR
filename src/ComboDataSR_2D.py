@@ -17,8 +17,8 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from lasse_functions import D_ij_2D, theta_rad, running_average, clockwise_angle
-from lasse_functions import gaussian_2d, theta_extreme
+from utility import D_ij_2D, theta_rad, running_average, clockwise_angle
+from utility import gaussian_2d, theta_extreme
 
 import scipy.io as sio
 import scipy.ndimage as ndi 

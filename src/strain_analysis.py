@@ -14,7 +14,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumtrapz
-from lasse_functions import running_average
+from utility import running_average
 
 #%%
 ## This segment will take some time to run, and will overwrite saved data if save = 1 !! ##
@@ -154,6 +154,10 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
         a2_mean[t] = np.mean(a2[t])
     
     diff = running_average(abs(a1_mean - a2_mean), 4)
+    
+    # auc at systole/diastole only
+    u = int(np.mean(T_es_list))
+    u_ = int(np.mean(T_ed_list))
       
     #days = 0
     if str(file[-1]) == 'w':
@@ -163,10 +167,10 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
            
     if str(file[0]) == 'm':  # compare angle cohesion
         plt.plot(range_TR, diff, 'r', lw=1.3)
-        auc_mi.append([days, sum(diff)])
+        auc_mi.append([days, sum(diff[u:u_])])
     else:
         plt.plot(range_TR, running_average(abs(a1_mean - a2_mean), 4), 'k', lw=1.3)
-        auc_sham.append([days, sum(diff)])
+        auc_sham.append([days, sum(diff[u:u_])])
 
 legend_handles1 = [Line2D([0], [0], color = 'k', lw = 1.3, label = 'Sham'),
           Line2D([0], [0], color = 'r', lw = 1.3, label = '6w after MI')]
