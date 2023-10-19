@@ -13,6 +13,7 @@ import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
+from matplotlib.lines import Line2D
 from matplotlib import patches
 from numpy.linalg import norm
 
@@ -34,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D8-7_6w'
+file = 'mi_D4-6_10d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -63,6 +64,10 @@ l = file.split('_')
 if l[0] == 'mi':
     mis = data['InfarctSector'][0,0][0]
     print(f'Infarct Sector at {mis}')
+    
+# if sham, just set arbitrary mis = [4, 12]
+elif l[0] == 'sham':
+    mis = [4, 13]
 
 print(f'{file} overview:')
 print(f'Velocity field shape: {np.shape(V)}')
@@ -78,7 +83,7 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 f = 100
 
 # plot every n'th ellipse
-n = 2
+n = 1
 
 # sigma value of gaussian used in data smoothing
 sigma = 2
@@ -112,8 +117,14 @@ d = np.zeros(T)
 # center of mass at t=0
 cx_0, cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[:, :, 0, 0]))
 
+# segment slices alloted to non-infarct sectors, rounded down to int
+sl = int(np.floor((36 - (mis[1] - mis[0]))/6))
+
+range_sl = range(1, 37)
+
+
 sub = 0 # Graph subplot on (1) or off (0)
-for t in range_:
+for t in range_[:T_ed+1]:
     fig = plt.figure(figsize=(18, 8))
     ax = plt.subplot(1, 2, 1) #SR colormap
     ax = plt.gca()
@@ -137,7 +148,7 @@ for t in range_:
     # transpose to allign with mask
     M_norm = (M[:, :, 0, t]/np.max(M[:, :, 0, t]))
     plt.imshow(M_norm.T, origin = 'lower', cmap = 'gray', alpha = 1)
-    #plt.imshow((mask_segment_t*mask_t).T, origin = 'lower', cmap = 'autumn', alpha = 1)
+    #plt.imshow((mask_segment_t).T, origin = 'lower', cmap = 'autumn', alpha = 1)
 
     # ellipse counter in segment, this timepoint
     e_count1 = 0  
@@ -182,30 +193,43 @@ for t in range_:
                 theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
                 
                 # local contribution
+                sector_xy = mask_e[x, y]*mask_segment_t[x, y]  # sector value in (x,y)
                 
-                if (x > cx) and (y > cy):
+                # infarct sector (red)
+                if sector_xy in range(range_sl[mis[0]], range_sl[mis[1]]): 
                     sector = 0
                     e_count1 += 1
                     r1[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c1[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
-                    
-                if (x > cx) and (y < cy):
+                  
+                # adjacent (green)
+                elif sector_xy in range(range_sl[mis[0]-sl], range_sl[mis[0]]) or sector_xy in range(range_sl[mis[1]], range_sl[mis[1]+sl]):  
                     sector = 1
                     e_count2 += 1
                     r2[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c2[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
-                    
-                if (x < cx) and (y < cy):
+                
+                # medial (blue), first range goes from 33 to 1, script cant interpret it,
+                # compensate for it with 3rd and 4th or statements 
+                elif sector_xy in range(range_sl[mis[0]-2*sl], range_sl[mis[0]-1*sl]) \
+                    or sector_xy in range(range_sl[mis[1]+sl], range_sl[mis[1]+2*sl]) \
+                        or sector_xy in range(range_sl[mis[0]-2*sl], 37) \
+                            or sector_xy in range(1, range_sl[mis[0]-1*sl]): 
                     sector = 2
                     e_count3 += 1
                     r3[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c3[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
-                    
-                if (x < cx) and (y > cy):
+                  
+                
+                # remote (purple)
+                elif sector_xy in range(range_sl[mis[1]+2*sl], range_sl[mis[0]-2*sl]):
                     sector = 3
                     e_count4 += 1
                     r4[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c4[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
+                
+                else:  # avoid plotting ellipses in invalid ranges
+                    continue
                 
                 
                 # color code after sector 1 to 4
@@ -290,6 +314,11 @@ for t in range_:
         
         plt.legend()
     
+    legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 6.3, label = 'Infarct'),
+              Line2D([0], [0], color = c_cmap(1), lw = 6.3, label = 'Adjacent'),
+              Line2D([0], [0], color = c_cmap(2), lw = 6.3, label = 'Medial'),
+              Line2D([0], [0], color = c_cmap(3), lw = 6.3, label = 'Remote')]
+    plt.legend(handles = legend_handles1, fontsize = 12, loc = 'lower right')
     plt.tight_layout()
     #plt.autoscale()
     plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
@@ -360,17 +389,18 @@ plt.show()
 # input array of strain rate data
 def strain(strain_rate, weight = 10):
     # weighting for integrals in positive/flipped time directions
-    w = np.tanh((T_ed-range_)/weight)[:T_ed+1]
-    w_f = np.tanh(range_/weight)[:T_ed+1]
+    w = np.tanh((T_ed-range_)/weight)[:T_ed]
+    w_f = np.tanh(range_/weight)[:T_ed]
 
-    strain = cumtrapz(strain_rate, range_TR, initial=0)[:T_ed+1]
-    strain_flipped = np.flip(cumtrapz(strain_rate[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
+    strain = cumtrapz(strain_rate[:T_ed], range_TR[:T_ed], initial=0)
+    strain_flipped = np.flip(cumtrapz(strain_rate[:T_ed][::-1], range_TR[:T_ed][::-1], initial=0))
     
     return (w*strain + w_f*strain_flipped)/2
 
 
 #%%
 #plot strain over time
+
 
 plt.figure(figsize=(8, 6))
 
@@ -383,17 +413,17 @@ plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('%', fontsize = 15)
 
-plt.plot(range_TR[:T_ed+1], 100*strain(r1), c = c_cmap(0), lw=2, label = 'Sector 1')
-plt.plot(range_TR[:T_ed+1], 100*strain(c1), c = c_cmap(0), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r1), c = c_cmap(0), lw=2, label = 'Infarct')
+plt.plot(range_TR[:T_ed], 100*strain(c1), c = c_cmap(0), lw=2) #walking average
 
-plt.plot(range_TR[:T_ed+1], 100*strain(r2), c = c_cmap(1), lw=2, label = 'Sector 2')
-plt.plot(range_TR[:T_ed+1], 100*strain(c2), c = c_cmap(1), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r2), c = c_cmap(1), lw=2, label = 'Adjacent')
+plt.plot(range_TR[:T_ed], 100*strain(c2), c = c_cmap(1), lw=2) #walking average
 
-plt.plot(range_TR[:T_ed+1], 100*strain(r3), c = c_cmap(2), lw=2, label = 'Sector 3')
-plt.plot(range_TR[:T_ed+1], 100*strain(c3), c = c_cmap(2), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r3), c = c_cmap(2), lw=2, label = 'Medial')
+plt.plot(range_TR[:T_ed], 100*strain(c3), c = c_cmap(2), lw=2) #walking average
 
-plt.plot(range_TR[:T_ed+1], 100*strain(r4), c = c_cmap(3), lw=2, label = 'Sector 4')
-plt.plot(range_TR[:T_ed+1], 100*strain(c4), c = c_cmap(3), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r4), c = c_cmap(3), lw=2, label = 'Remote')
+plt.plot(range_TR[:T_ed], 100*strain(c4), c = c_cmap(3), lw=2) #walking average
 
 
 plt.legend()
