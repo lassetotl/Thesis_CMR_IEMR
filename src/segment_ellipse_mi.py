@@ -35,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D4-6_10d'
+file = 'mi_D11-7_1d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -83,7 +83,7 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 f = 100
 
 # plot every n'th ellipse
-n = 1
+n = 2
 
 # sigma value of gaussian used in data smoothing
 sigma = 2
@@ -98,18 +98,14 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 #%%
 
 range_ = np.arange(0, T, 1)
-# initialize arrays for each quadrant
-r1 = np.zeros(T); r1[:] = np.nan #Graph values
-c1 = np.zeros(T); c1[:] = np.nan #Graph values
 
-r2 = np.zeros(T); r2[:] = np.nan #Graph values
-c2 = np.zeros(T); c2[:] = np.nan #Graph values
+# each row contains strain rate data for sector 1, 2, 3, 4
+r_matrix = np.zeros((4, T)); r_matrix[:, :] = np.nan
+c_matrix = np.zeros((4, T)); c_matrix[:, :] = np.nan
 
-r3 = np.zeros(T); r3[:] = np.nan #Graph values
-c3 = np.zeros(T); c3[:] = np.nan #Graph values
-
-r4 = np.zeros(T); r4[:] = np.nan #Graph values
-c4 = np.zeros(T); c4[:] = np.nan #Graph values
+# for each segment, we store angles corresponding to positive/negative eigenvalues 
+a1 = np.zeros((4, T), dtype = 'object') # 'positive' angles (stretch direction)
+a2 = np.zeros((4, T), dtype = 'object') # 'negative' angles (compression direction)
 
 #divergence
 d = np.zeros(T)
@@ -131,9 +127,12 @@ for t in range_[:T_ed+1]:
     ax.text(3, 3, f'Gaussian smoothing ($\sigma = {sigma}$)', color = 'w')
     #ax.set_facecolor('b')
     
+    # amount of ellipses in this timepoint in each sector 1-4 is stored here
+    e_count = np.zeros(4)
+    
     # combodata mask 
     mask_t = mask[:, :, 0, t] #mask at this timepoint
-    mask_segment_t = mask_segment[:, :, 0, t]*mask_t #mask at this timepoint
+    mask_segment_t = mask_segment[:, :, 0, t] #mask at this timepoint
     
     #find center of mass of filled mask (middle of the heart)
     cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
@@ -150,18 +149,13 @@ for t in range_[:T_ed+1]:
     plt.imshow(M_norm.T, origin = 'lower', cmap = 'gray', alpha = 1)
     #plt.imshow((mask_segment_t).T, origin = 'lower', cmap = 'autumn', alpha = 1)
 
-    # ellipse counter in segment, this timepoint
-    e_count1 = 0  
-    e_count2 = 0
-    e_count3 = 0
-    e_count4 = 0
     sector = 0  # reset sector number
     
     # remove nan's
-    r1[t] = 0; c1[t] = 0
-    r2[t] = 0; c2[t] = 0
-    r3[t] = 0; c3[t] = 0
-    r4[t] = 0; c4[t] = 0
+    r_matrix[:, t] = 0; c_matrix[:, t] = 0
+    
+    # angles from sectors appended here, reset every t
+    a1_ = [[], [], [], []]; a2_ = [[], [], [], []]
     
     for x in range(0, f, n):
         for y in range(0, f, n): 
@@ -193,21 +187,21 @@ for t in range_[:T_ed+1]:
                 theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
                 
                 # local contribution
-                sector_xy = mask_e[x, y]*mask_segment_t[x, y]  # sector value in (x,y)
+                sector_xy = mask_segment_t[x, y]  # sector value in (x,y)
                 
                 # infarct sector (red)
                 if sector_xy in range(range_sl[mis[0]], range_sl[mis[1]]): 
                     sector = 0
-                    e_count1 += 1
-                    r1[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
-                    c1[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
+                    e_count[sector] += 1
+                    r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
                   
                 # adjacent (green)
                 elif sector_xy in range(range_sl[mis[0]-sl], range_sl[mis[0]]) or sector_xy in range(range_sl[mis[1]], range_sl[mis[1]+sl]):  
                     sector = 1
-                    e_count2 += 1
-                    r2[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
-                    c2[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
+                    e_count[sector] += 1
+                    r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
                 
                 # medial (blue), first range goes from 33 to 1, script cant interpret it,
                 # compensate for it with 3rd and 4th or statements 
@@ -216,21 +210,32 @@ for t in range_[:T_ed+1]:
                         or sector_xy in range(range_sl[mis[0]-2*sl], 37) \
                             or sector_xy in range(1, range_sl[mis[0]-1*sl]): 
                     sector = 2
-                    e_count3 += 1
-                    r3[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
-                    c3[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
+                    e_count[sector] += 1
+                    r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
                   
                 
                 # remote (purple)
                 elif sector_xy in range(range_sl[mis[1]+2*sl], range_sl[mis[0]-2*sl]):
                     sector = 3
-                    e_count4 += 1
-                    r4[t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
-                    c4[t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
+                    e_count[sector] += 1
+                    r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
+                    c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
                 
                 else:  # avoid plotting ellipses in invalid ranges
                     continue
                 
+                # angle sum collected, scaled to get average angle each t
+                # does not assume that each 2d tensor has a positive and negative eigenvector
+                if val[val_max_i] > 0:
+                    a1_[sector].append(theta) 
+                if val[val_min_i] > 0:
+                    a1_[sector].append(theta_)
+                    
+                if val[val_max_i] < 0:
+                    a2_[sector].append(theta) 
+                if val[val_min_i] < 0:
+                    a2_[sector].append(theta_)
                 
                 # color code after sector 1 to 4
                 hx = mpl.colors.rgb2hex(list(c_cmap(sector)))  # code with
@@ -256,17 +261,13 @@ for t in range_[:T_ed+1]:
     # graph subplot values, scale with amount of ellipses
     # count ellipses for each segment?
     
-    r1[t] = r1[t]/(e_count1*res) #local radial strain rate this frame
-    c1[t] = c1[t]/(e_count1*res)  #local circumferential strain rate
-    
-    r2[t] = r2[t]/(e_count2*res) 
-    c2[t] = c2[t]/(e_count2*res)
-    
-    r3[t] = r3[t]/(e_count3*res) 
-    c3[t] = c3[t]/(e_count3*res)
-    
-    r4[t] = r4[t]/(e_count4*res) 
-    c4[t] = c4[t]/(e_count4*res)
+    for sector in range(4):
+        r_matrix[sector, t] = r_matrix[sector, t]/(e_count[sector]*res) #local radial strain rate this frame
+        c_matrix[sector, t] = c_matrix[sector, t]/(e_count[sector]*res)  #local circumferential strain rate
+        
+        # collect angles in degrees
+        a1[sector, t] = np.array(a1_[sector])*180/np.pi
+        a2[sector, t] = np.array(a2_[sector])*180/np.pi
     
     plt.scatter(cx, cy, marker = 'x', c = 'w')
     #plt.scatter(mis[0], mis[1], marker = 'x', c = 'r')
@@ -296,17 +297,9 @@ for t in range_[:T_ed+1]:
         plt.axvline(T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
         plt.axvline(T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
         
-        plt.plot(range_, r1, c = c_cmap(0), label = 'Sector 1')
-        plt.plot(range_, c1, c = c_cmap(0))
-        
-        plt.plot(range_, r2, c = c_cmap(1), label = 'Sector 2')
-        plt.plot(range_, c2, c = c_cmap(1))
-        
-        plt.plot(range_, r3, c = c_cmap(2), label = 'Sector 3')
-        plt.plot(range_, c3, c = c_cmap(2))
-        
-        plt.plot(range_, r4, c = c_cmap(3), label = 'Sector 4')
-        plt.plot(range_, c4, c = c_cmap(3))
+        for sector in range(4):
+            plt.plot(range_, r_matrix[sector, :], c = c_cmap(sector))
+            plt.plot(range_, c_matrix[sector, :], c = c_cmap(sector))
         
         plt.xlim(0, T)#; plt.ylim(0, 50)
         plt.xlabel('Timepoints', fontsize = 15)
@@ -361,17 +354,9 @@ plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('$s^{-1}$', fontsize = 20)
 
-plt.plot(range_TR, running_average(r1, N), c = c_cmap(0), label = 'Sector 1')
-plt.plot(range_TR, running_average(c1, N), c = c_cmap(0))
-
-plt.plot(range_TR, running_average(r2, N), c = c_cmap(1), label = 'Sector 2')
-plt.plot(range_TR, running_average(c2, N), c = c_cmap(1))
-
-plt.plot(range_TR, running_average(r3, N), c = c_cmap(2), label = 'Sector 3')
-plt.plot(range_TR, running_average(c3, N), c = c_cmap(2))
-
-plt.plot(range_TR, running_average(r4, N), c = c_cmap(3), label = 'Sector 4')
-plt.plot(range_TR, running_average(c4, N), c = c_cmap(3))
+for sector in range(4):
+    plt.plot(range_TR, running_average(r_matrix[sector, :], N), c = c_cmap(sector), label = f'Sector {sector}')
+    plt.plot(range_TR, running_average(c_matrix[sector, :], N), c = c_cmap(sector))
 
 plt.legend()
 
@@ -413,17 +398,17 @@ plt.xlim(0, T*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('%', fontsize = 15)
 
-plt.plot(range_TR[:T_ed], 100*strain(r1), c = c_cmap(0), lw=2, label = 'Infarct')
-plt.plot(range_TR[:T_ed], 100*strain(c1), c = c_cmap(0), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r_matrix[0, :]), c = c_cmap(0), lw=2, label = 'Infarct')
+plt.plot(range_TR[:T_ed], 100*strain(c_matrix[0, :]), c = c_cmap(0), lw=2) #walking average
 
-plt.plot(range_TR[:T_ed], 100*strain(r2), c = c_cmap(1), lw=2, label = 'Adjacent')
-plt.plot(range_TR[:T_ed], 100*strain(c2), c = c_cmap(1), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r_matrix[1, :]), c = c_cmap(1), lw=2, label = 'Adjacent')
+plt.plot(range_TR[:T_ed], 100*strain(c_matrix[1, :]), c = c_cmap(1), lw=2) #walking average
 
-plt.plot(range_TR[:T_ed], 100*strain(r3), c = c_cmap(2), lw=2, label = 'Medial')
-plt.plot(range_TR[:T_ed], 100*strain(c3), c = c_cmap(2), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r_matrix[2, :]), c = c_cmap(2), lw=2, label = 'Medial')
+plt.plot(range_TR[:T_ed], 100*strain(c_matrix[2, :]), c = c_cmap(2), lw=2) #walking average
 
-plt.plot(range_TR[:T_ed], 100*strain(r4), c = c_cmap(3), lw=2, label = 'Remote')
-plt.plot(range_TR[:T_ed], 100*strain(c4), c = c_cmap(3), lw=2) #walking average
+plt.plot(range_TR[:T_ed], 100*strain(r_matrix[3, :]), c = c_cmap(3), lw=2, label = 'Remote')
+plt.plot(range_TR[:T_ed], 100*strain(c_matrix[3, :]), c = c_cmap(3), lw=2) #walking average
 
 
 plt.legend()
@@ -432,6 +417,32 @@ plt.subplots_adjust(wspace=0.25)
 plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
 plt.show()
 
+#%%
+#angles over time
+
+plt.figure(figsize = (10, 8))
+plt.title(f'Regional radial concentration over time ({file})', fontsize = 15)
+plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+plt.xlim(0, T*TR)#; plt.ylim(0, 50)
+plt.xlabel('Timepoints', fontsize = 15)
+plt.ylabel('Degrees', fontsize = 20)
+
+a1_mean = np.zeros((4, T)); a2_mean = np.zeros((4, T))
+for t in range_:
+    for sector in range(4):
+        a1_mean[sector, t] = np.mean(a1[sector, t])
+        a2_mean[sector, t] = np.mean(a2[sector, t])
+
+# mean angles
+for sector in range(4):
+    #plt.plot(range_TR, a1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
+    #plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
+    # difference
+    plt.plot(range_TR, abs(a1_mean[sector, :] - a2_mean[sector, :]), color = c_cmap(sector), label = f'Sector {sector}')
+
+plt.legend(loc = 'upper right')
+plt.show()
 #%%
 #Generate mp4
 

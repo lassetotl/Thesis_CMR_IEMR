@@ -75,3 +75,20 @@ a = [0,1,2,3,4,5,6,7,8,9]
 for i in a:
     if i in range(3, 5+1) or i in range(6, 9):
         print(i)
+        
+#%%
+
+a = np.zeros(3)
+
+a = np.append(a, 5)
+print(a)
+
+b = []
+print(np.array(b))
+
+a1_ = [[], [], [], []]
+
+a1_[0].append(1)
+a1_[0].append(3)
+
+print(a1_)
