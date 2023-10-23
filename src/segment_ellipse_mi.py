@@ -35,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D11-7_1d'
+file = 'sham_D3-2_3d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -63,11 +63,14 @@ mis = np.nan
 l = file.split('_')
 if l[0] == 'mi':
     mis = data['InfarctSector'][0,0][0]
-    print(f'Infarct Sector at {mis}')
     
 # if sham, just set arbitrary mis = [4, 12]
 elif l[0] == 'sham':
     mis = [4, 13]
+    
+# to avoid reverse ranges like 'range(33, 17)'
+
+print(f'Infarct Sector at [{mis[0], mis[1]}]')
 
 print(f'{file} overview:')
 print(f'Velocity field shape: {np.shape(V)}')
@@ -114,9 +117,12 @@ d = np.zeros(T)
 cx_0, cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[:, :, 0, 0]))
 
 # segment slices alloted to non-infarct sectors, rounded down to int
-sl = int(np.floor((36 - (mis[1] - mis[0]))/6))
+if mis[0] < mis[1]:
+    infarct_length = mis[1] - mis[0]  # length in nr of sectors
+else:
+    infarct_length = mis[0] - 36 - mis[1]
 
-range_sl = range(1, 37)
+sl = int(np.floor((36 - abs(infarct_length))/6))
 
 
 sub = 0 # Graph subplot on (1) or off (0)
@@ -187,37 +193,61 @@ for t in range_[:T_ed+1]:
                 theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
                 
                 # local contribution
-                sector_xy = mask_segment_t[x, y]  # sector value in (x,y)
+                sect_xy = mask_segment_t[x, y]  # sector value in (x,y)
                 
+                # need two ranges for every segment to counter invalid ranges (f.ex. range(33, 17))
+                # all values that add/subtract risk becoming negative or >36, thus %
+
+                range0 = range(mis[0], mis[1]); range0_ = range(mis[1], mis[0])
+                range1 = range((mis[0]-sl)%36, mis[0]); range1_ = range(mis[0], (mis[0]-sl)%36)
+                range11 = range(mis[1], (mis[1]+sl)%36); range11_ = range((mis[1]+sl)%36, mis[1])
+                range2 = range((mis[0]-2*sl)%36, (mis[0]-sl)%36); range2_ = range((mis[0]-sl)%36, (mis[0]-2*sl)%36)
+                range22 = range((mis[1]+sl)%36, (mis[1]+2*sl)%36); range22_ = range((mis[1]+2*sl)%36, (mis[1]+sl)%36)
+                
+                # sector 4 defined from the ends of sector 3
+                if any(range22):
+                    p_end = range22[-1]%36
+                else:
+                    p_end = range22_[0]%36
+                    
+                if any(range2):
+                    n_end = (range2[0] + 1)%36
+                else:
+                    n_end = (range2_[-1] + 1)%36
+
                 # infarct sector (red)
-                if sector_xy in range(range_sl[mis[0]], range_sl[mis[1]]): 
+                if sect_xy in range0 or (sect_xy not in range0_)*any(range0_):  
                     sector = 0
                     e_count[sector] += 1
                     r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
-                  
+                    
+                
                 # adjacent (green)
-                elif sector_xy in range(range_sl[mis[0]-sl], range_sl[mis[0]]) or sector_xy in range(range_sl[mis[1]], range_sl[mis[1]+sl]):  
+                elif sect_xy in range1 or (sect_xy not in range1_)*any(range1_) \
+                    or sect_xy in range11 or (sect_xy not in range11_)*any(range11_):   
+                        
                     sector = 1
                     e_count[sector] += 1
                     r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
-                
-                # medial (blue), first range goes from 33 to 1, script cant interpret it,
-                # compensate for it with 3rd and 4th or statements 
-                elif sector_xy in range(range_sl[mis[0]-2*sl], range_sl[mis[0]-1*sl]) \
-                    or sector_xy in range(range_sl[mis[1]+sl], range_sl[mis[1]+2*sl]) \
-                        or sector_xy in range(range_sl[mis[0]-2*sl], 37) \
-                            or sector_xy in range(1, range_sl[mis[0]-1*sl]): 
+                    
+                    
+                # medial (blue)                
+                elif sect_xy in range2 or (sect_xy not in range2_)*any(range2_) \
+                    or sect_xy in range22 or (sect_xy not in range22_)*any(range22_):   
+                        
                     sector = 2
                     e_count[sector] += 1
                     r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
-                  
+                
                 
                 # remote (purple)
-                elif sector_xy in range(range_sl[mis[1]+2*sl], range_sl[mis[0]-2*sl]):
+                elif sect_xy in range(p_end, n_end) \
+                    or (sect_xy not in range(n_end, p_end))*any(range(n_end, p_end)):
                     sector = 3
+                    
                     e_count[sector] += 1
                     r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) + (val[val_min_i])*abs(np.cos(theta_))
                     c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) + (val[val_min_i])*abs(np.sin(theta_))
@@ -257,6 +287,11 @@ for t in range_[:T_ed+1]:
     #ax.text(3, 6, f'{e_count} Ellipses', color = 'w')
     res_ = round(f*res, 4)
     ax.text(3, 9, f'{res_} x {res_} cm', color = 'w')
+    ax.text(3, 6, 'Ellipse count:', color = 'w')
+    ax.text(17, 6, f'{int(e_count[0])}', color = c_cmap(0))
+    ax.text(21, 6, f'{int(e_count[1])}', color = c_cmap(1))
+    ax.text(25, 6, f'{int(e_count[2])}', color = c_cmap(2))
+    ax.text(29, 6, f'{int(e_count[3])}', color = c_cmap(3))
     
     # graph subplot values, scale with amount of ellipses
     # count ellipses for each segment?
@@ -394,7 +429,7 @@ plt.axvline(T_es*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.axhline(0, c = 'k', lw = 1)
 
-plt.xlim(0, T*TR)#; plt.ylim(0, 50)
+plt.xlim(0, T_ed*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('%', fontsize = 15)
 
@@ -446,9 +481,10 @@ plt.show()
 #%%
 #Generate mp4
 
+## clear dump folder
 filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in range_]  
   
-with imageio.get_writer(f'R:\Lasse\plots\MP4\{file}\Ellipses.mp4', fps=7) as writer:    # inputs: filename, frame per second
+with imageio.get_writer(f'R:\Lasse\plots\MP4\{file}\Ellipses.mp4', fps=7, macro_block_size=1) as writer:    # inputs: filename, frame per second
     for filename in filenames:
         image = imageio.imread(filename)                         # load the image file
         writer.append_data(image)

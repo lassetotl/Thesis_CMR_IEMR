@@ -92,3 +92,13 @@ a1_[0].append(1)
 a1_[0].append(3)
 
 print(a1_)
+
+#%%
+range_ = range(36)
+range1 = range(36, 0)
+print(any((range1)))
+print(any((range_)))
+
+x = 6
+if x not in range(10, 20):
+    print('a')
