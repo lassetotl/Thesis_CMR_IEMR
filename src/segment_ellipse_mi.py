@@ -35,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D3-2_3d'
+file = 'mi_D11-7_10d'
 data = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')["ComboData_thisonly"]
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
@@ -63,6 +63,8 @@ mis = np.nan
 l = file.split('_')
 if l[0] == 'mi':
     mis = data['InfarctSector'][0,0][0]
+    if any(np.isnan(mis)):  # early mi data tend to not have a visible infarct
+        mis = [4, 13]
     
 # if sham, just set arbitrary mis = [4, 12]
 elif l[0] == 'sham':
@@ -86,7 +88,7 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 f = 100
 
 # plot every n'th ellipse
-n = 2
+n = 1
 
 # sigma value of gaussian used in data smoothing
 sigma = 2
@@ -376,7 +378,7 @@ plt.show()
 #%%
 #last frame with running average
 
-N = 4 #window
+N = 4  # smoothing window
 
 plt.figure(figsize=(8, 6))
 
@@ -390,8 +392,15 @@ plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('$s^{-1}$', fontsize = 20)
 
 for sector in range(4):
-    plt.plot(range_TR, running_average(r_matrix[sector, :], N), c = c_cmap(sector), label = f'Sector {sector}')
-    plt.plot(range_TR, running_average(c_matrix[sector, :], N), c = c_cmap(sector))
+    rsr = running_average(r_matrix[sector, :], N)
+    csr = running_average(c_matrix[sector, :], N)
+    
+    plt.plot(range_TR, rsr, c = c_cmap(sector), label = f'Sector {sector}')
+    plt.plot(range_TR, csr, c = c_cmap(sector))
+    
+    # how to analyse sr?
+    #r_peakvals[sector] = np.max(rsr); r_peaktime = np.argmax(rsr)
+    #c_peakvals[sector] = np.max(csr); c_peaktime = np.argmax(csr)
 
 plt.legend()
 
@@ -402,6 +411,7 @@ if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
     
 plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GSR.PNG')
 plt.show()
+
 
 #%%
 # integration
@@ -419,7 +429,11 @@ def strain(strain_rate, weight = 10):
 
 
 #%%
-#plot strain over time
+# plot strain over time
+
+# strain curve analysis, synchrony of sectors
+c_peakvals = np.zeros(4); r_peakvals = np.zeros(4)
+c_peaktime = np.zeros(4); r_peaktime = np.zeros(4)
 
 
 plt.figure(figsize=(8, 6))
@@ -430,27 +444,43 @@ plt.axvline(T_ed*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.axhline(0, c = 'k', lw = 1)
 
 plt.xlim(0, T_ed*TR)#; plt.ylim(0, 50)
-plt.xlabel('Timepoints', fontsize = 15)
+plt.xlabel('Time [s]', fontsize = 15)
 plt.ylabel('%', fontsize = 15)
 
-plt.plot(range_TR[:T_ed], 100*strain(r_matrix[0, :]), c = c_cmap(0), lw=2, label = 'Infarct')
-plt.plot(range_TR[:T_ed], 100*strain(c_matrix[0, :]), c = c_cmap(0), lw=2) #walking average
+for sector in range(4):
+    rs = 100*strain(r_matrix[sector, :])
+    cs = 100*strain(c_matrix[sector, :])
+    
+    plt.plot(range_TR[:T_ed], rs, c = c_cmap(sector), lw=2)
+    plt.plot(range_TR[:T_ed], cs, c = c_cmap(sector), lw=2)
+    
+    r_peakvals[sector] = np.max(rs); r_peaktime[sector] = np.argmax(rs)
+    c_peakvals[sector] = np.min(cs); c_peaktime[sector] = np.argmin(cs)
+    
+    plt.scatter(r_peaktime[sector]*TR, r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+    plt.scatter(c_peaktime[sector]*TR, c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+    
 
-plt.plot(range_TR[:T_ed], 100*strain(r_matrix[1, :]), c = c_cmap(1), lw=2, label = 'Adjacent')
-plt.plot(range_TR[:T_ed], 100*strain(c_matrix[1, :]), c = c_cmap(1), lw=2) #walking average
-
-plt.plot(range_TR[:T_ed], 100*strain(r_matrix[2, :]), c = c_cmap(2), lw=2, label = 'Medial')
-plt.plot(range_TR[:T_ed], 100*strain(c_matrix[2, :]), c = c_cmap(2), lw=2) #walking average
-
-plt.plot(range_TR[:T_ed], 100*strain(r_matrix[3, :]), c = c_cmap(3), lw=2, label = 'Remote')
-plt.plot(range_TR[:T_ed], 100*strain(c_matrix[3, :]), c = c_cmap(3), lw=2) #walking average
-
-
-plt.legend()
+legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = 'Infarct'),
+          Line2D([0], [0], color = c_cmap(1), lw = 2, label = 'Adjacent'),
+          Line2D([0], [0], color = c_cmap(2), lw = 2, label = 'Medial'),
+          Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Remote')]
+plt.legend(handles = legend_handles1)
 
 plt.subplots_adjust(wspace=0.25)
 plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
 plt.show()
+
+#%%
+# synchrony analysis
+
+print(f'Regional strain rate for {file} calculated: \n \
+Radial peak value std: {np.std(r_peakvals):.3f} % \n \
+Radial peak time std: {np.std(r_peaktime)*TR:.3f} s \n \
+    \n \
+Circumferential peak value std: {np.std(c_peakvals):.3f} % \n \
+Circumferential peak time std: {np.std(c_peaktime)*TR:.3f} s')
+
 
 #%%
 #angles over time
@@ -478,6 +508,7 @@ for sector in range(4):
 
 plt.legend(loc = 'upper right')
 plt.show()
+
 #%%
 #Generate mp4
 

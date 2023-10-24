@@ -102,3 +102,4 @@ print(any((range_)))
 x = 6
 if x not in range(10, 20):
     print('a')
+    
