@@ -472,6 +472,10 @@ class ComboDataSR_2D:
             for sector in range(4):
                 a1_mean[sector, t] = np.mean(self.a1[sector, t])
                 a2_mean[sector, t] = np.mean(self.a2[sector, t])
+                
+        # mean angles
+        a1_mean_global = np.sum(a1_mean, axis = 0)[:self.T_ed] / 4
+        a2_mean_global = np.sum(a2_mean, axis = 0)[:self.T_ed] / 4
             
         if plot == 1:
             # plot global strain rate
@@ -575,29 +579,45 @@ class ComboDataSR_2D:
             plt.title(f'Regional radial concentration over time ({self.filename})', fontsize = 15)
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-            plt.xlim(0, self.T*self.TR)#; plt.ylim(0, 50)
+            plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
             plt.xlabel('Timepoints', fontsize = 15)
             plt.ylabel('Degrees', fontsize = 20)
 
-            # mean angles
-            for sector in range(4):
-                #plt.plot(range_TR, a1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
-                #plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
-                # difference
-                plt.plot(self.range_TR, abs(a1_mean[sector, :] - a2_mean[sector, :]), color = c_cmap(sector))
+            if segment == 1:  # mean angles segments
+                for sector in range(4):
+                    # which parameter is interesting to plot here?
+                    #plt.plot(range_TR, a1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
+                    #plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
+                    # difference
+                    plt.plot(self.range_TR, abs(a1_mean[sector, :] - a2_mean[sector, :]), color = c_cmap(sector))
+                    plt.legend(handles = legend_handles1, loc = 'lower right')
+                      
+            else:  # global angle distribution 
+                for i in self.range_[:self.T_ed]:
+                    for sector in range(4):
+                        #print(i, len(self.a1[sector, i]), len(self.a2[sector, i]))
+                        plt.scatter([self.range_TR[i]]*len(self.a1[sector, i]), self.a1[sector, i], color = 'r', alpha = 0.03)
+                        plt.scatter([self.range_TR[i]]*len(self.a2[sector, i]), self.a2[sector, i], color = 'g', alpha = 0.03)
 
-            plt.legend(handles = legend_handles1, loc = 'lower right')
+                
+                plt.plot(self.range_TR[:self.T_ed], a1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
+                plt.plot(self.range_TR[:self.T_ed], a2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
+                # difference
+                plt.plot(self.range_TR[:self.T_ed], abs(a1_mean_global - a2_mean_global)[:self.T_ed], \
+                         'darkgray', ls = '--', label = 'Difference')
+                plt.legend()
+
             plt.show()
             
         if segment == 0:  # turn all return arrays global
             self.r_matrix = np.sum(self.r_matrix, axis = 0) / 4
             self.c_matrix = np.sum(self.c_matrix, axis = 0) / 4
             
-            self.a1 = np.sum(a1_mean, axis = 0)[:self.T_ed] / 4
-            self.a2 = np.sum(a2_mean, axis = 0)[:self.T_ed] / 4
-            
             r_strain = 100*self._strain(self.r_matrix)
             c_strain = 100*self._strain(self.c_matrix)
+            
+            self.a1 = a1_mean_global
+            self.a2 = a2_mean_global
             
         else:
             self.a1 = a1_mean
@@ -633,11 +653,11 @@ class ComboDataSR_2D:
 # example of use
 if __name__ == "__main__":
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D11-1_40d')
+    run1 = ComboDataSR_2D('sham_D7-1_6w', n = 2)
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(plot = 1, save = 0, segment = 1)
+    run1.strain_rate(plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['TR'])  # example of dictionary functionality

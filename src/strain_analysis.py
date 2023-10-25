@@ -94,7 +94,7 @@ ax1.set_title('Global Radial Strain Rate over time', fontsize = 15)
 ax1.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 ax1.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 ax1.axhline(0, c = 'k', lw = 1)
-ax1.set_xlim(0, T*TR)#; plt.ylim(0, 50)
+ax1.set_xlim(0, np.max(T_ed_list)*TR)
 ax1.set_xlabel('Time [s]', fontsize = 15)
 ax1.set_ylabel('$s^{-1}$', fontsize = 15)
 
@@ -102,7 +102,7 @@ ax2.set_title('Global Circumferential Strain Rate over time', fontsize = 15)
 ax2.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 ax2.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 ax2.axhline(0, c = 'k', lw = 1)
-ax2.set_xlim(0, T*TR)#; plt.ylim(0, 50)
+ax2.set_xlim(0, np.max(T_ed_list)*TR)
 ax2.set_xlabel('Time [s]', fontsize = 15)
 
 for file in os.listdir('R:\Lasse\strain rate data'):
@@ -148,11 +148,6 @@ auc_mi = []; auc_sham = []  # to fill with tuples (days, auc)
 for file in os.listdir('R:\Lasse\\angle distribution data'):
     a1 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_pos.npy', allow_pickle = 1)
     a2 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_neg.npy', allow_pickle = 1)
-
-    
-    #for t in range_:
-    #    a1_mean[t] = np.mean(a1[t])
-    #    a2_mean[t] = np.mean(a2[t])
     
     diff = running_average(abs(a1 - a2), 4)
     
@@ -168,10 +163,10 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
            
     if str(file[0]) == 'm':  # compare angle cohesion
         plt.plot(range_TR[:len(diff)], diff, 'r', lw=1.3)
-        auc_mi.append([days, sum(diff[:u])])
+        auc_mi.append([days, sum(cumtrapz(diff[:]))])
     else:
         plt.plot(range_TR[:len(diff)], diff, 'k', lw=1.3)
-        auc_sham.append([days, sum(diff[:u])])
+        auc_sham.append([days, sum(cumtrapz(diff[:]))])
 
 legend_handles1 = [Line2D([0], [0], color = 'k', lw = 1.3, label = 'Sham'),
           Line2D([0], [0], color = 'r', lw = 1.3, label = '6w after MI')]
