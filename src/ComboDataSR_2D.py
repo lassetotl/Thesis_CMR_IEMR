@@ -76,6 +76,43 @@ class ComboDataSR_2D:
         
         # amount of segments in each remaining slice
         self.sl = int(np.floor((36 - abs(infarct_length))/6))
+        
+    # calculate strain rate tensor for given point (x, y) and time t, 
+    # and a mask for this timepoint t using Selskog method
+    def _D_ij_2D(self, x, y, t, mask): 
+        L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
+        
+        # calculate certainty matrix from normalized magnitude plot
+        C = self.M[:, :, 0, t]/np.max(self.M[:, :, 0, t])
+        
+        # certainty matrix and gaussian filter should compensate for border artifacts
+        vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*C, self.sigma)*mask / ndi.gaussian_filter(C, self.sigma)
+        vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*C, self.sigma)*mask / ndi.gaussian_filter(C, self.sigma)
+        
+        dy = dx = 1 # voxel length 1 in our image calculations
+        
+        # note!: the diagonal has been switched for script testing!
+        L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+        L[1, 0] = -(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+        
+        L[0, 1] = -(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+        L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+                
+        D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
+        return D_ij
+    
+    # input array of strain rate data
+    # (used internally by later methods)
+    def _strain(self, strain_rate, weight = 10):
+        # weighting for integrals in positive/flipped time directions
+        # cyclic boundary conditions
+        w = np.tanh((self.T_ed-self.range_)/weight)[:self.T_ed]
+        w_f = np.tanh(self.range_/weight)[:self.T_ed]
+
+        strain = cumtrapz(strain_rate[:self.T_ed], self.range_TR[:self.T_ed], initial=0)
+        strain_flipped = np.flip(cumtrapz(strain_rate[:self.T_ed][::-1], self.range_TR[:self.T_ed][::-1], initial=0))
+        return (w*strain + w_f*strain_flipped)/2
+    
     
     def overview(self):
         print(f'{self.filename} overview:')
@@ -89,8 +126,6 @@ class ComboDataSR_2D:
         else:
             print(f'No infarct sector found in this slice, sector 1 set as {self.mis}')
             
-        
-        
     # plots vector field over time, saves video, returns global radial velocity
     def velocity(self):
         # range of time-points
@@ -171,18 +206,6 @@ class ComboDataSR_2D:
         
         return self.gr
     
-    # input array of strain rate data
-    # (used internally by later methods)
-    def _strain(self, strain_rate, weight = 10):
-        # weighting for integrals in positive/flipped time directions
-        # cyclic boundary conditions
-        w = np.tanh((self.T_ed-self.range_)/weight)[:self.T_ed]
-        w_f = np.tanh(self.range_/weight)[:self.T_ed]
-
-        strain = cumtrapz(strain_rate[:self.T_ed], self.range_TR[:self.T_ed], initial=0)
-        strain_flipped = np.flip(cumtrapz(strain_rate[:self.T_ed][::-1], self.range_TR[:self.T_ed][::-1], initial=0))
-        return (w*strain + w_f*strain_flipped)/2
-    
     # set plot = 0 to ignore plotting and just calculate global strain rate
     # set save = 0 to avoid overwriting current .mp4 and .npy files
     # set segment = 1 to calculate/plot strain rate over 4 sectors
@@ -244,15 +267,12 @@ class ComboDataSR_2D:
             # erode mask 
             mask_e = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
             
-            # certainty matrix from magnitude data
-            M_norm = (self.M[:, :, 0, t]/np.max(self.M[:, :, 0, t]))
-            
             if plot == 1:
                 plt.subplots(figsize=(10,10))
                 ax = plt.gca()
                 # plot magnitude M plot, normalize for certainty values
                 # transpose in imshow to allign with mask
-                plt.imshow(M_norm.T, origin = 'lower', cmap = 'gray', alpha = 1)
+                plt.imshow(self.M[:, :, 0, t].T, origin = 'lower', cmap = 'gray', alpha = 1)
             
             sector = 0  # reset sector number
             
@@ -270,8 +290,8 @@ class ComboDataSR_2D:
                 for y in range(0, self.ay, self.n): 
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
-                        # SR tensor for point xy
-                        D_ = D_ij_2D(x, y, self.V, M_norm, t, self.sigma, mask_t)     
+                        # SR tensor for point xy 
+                        D_ = self._D_ij_2D(x, y, t, mask_t) 
                         val, vec = np.linalg.eig(D_)
                         
                         # skip this voxel if eigenvalue signs are equal
@@ -467,8 +487,8 @@ class ComboDataSR_2D:
             plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('$s^{-1}$', fontsize = 20)
 
-            rsr = np.sum(self.r_matrix, axis = 0)
-            csr = np.sum(self.c_matrix, axis = 0)
+            rsr = np.sum(self.r_matrix, axis = 0) / 4
+            csr = np.sum(self.c_matrix, axis = 0) / 4
 
             plt.plot(self.range_TR, rsr, 'lightgrey')
             plt.plot(self.range_TR, csr, 'lightgrey')
@@ -506,7 +526,6 @@ class ComboDataSR_2D:
 
             plt.figure(figsize=(8, 6))
 
-            plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
             plt.axhline(0, c = 'k', lw = 1)
@@ -519,16 +538,32 @@ class ComboDataSR_2D:
                 rs = 100*self._strain(self.r_matrix[sector, :])
                 cs = 100*self._strain(self.c_matrix[sector, :])
                 
-                plt.plot(self.range_TR[:self.T_ed], rs, c = c_cmap(sector), lw=2)
-                plt.plot(self.range_TR[:self.T_ed], cs, c = c_cmap(sector), lw=2)
-                
+                # this regional data can be aquired for segment == 0 as well
                 self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR
                 self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR
                 
-                plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
-                plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                if segment == 1:
+                    plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
+                    
+                    plt.plot(self.range_TR[:self.T_ed], rs, c = c_cmap(sector), lw=2)
+                    plt.plot(self.range_TR[:self.T_ed], cs, c = c_cmap(sector), lw=2)
+                    
+                    plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                    plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                    
+                    plt.legend(handles = legend_handles1)
+                    
+            if segment == 0:
+                plt.title(f'Global Strain over time ({self.filename})', fontsize = 15)
                 
-            plt.legend(handles = legend_handles1)
+                rs = 100*self._strain(np.sum(self.r_matrix, axis = 0) / 4)
+                cs = 100*self._strain(np.sum(self.c_matrix, axis = 0) / 4)
+                
+                plt.plot(self.range_TR[:self.T_ed], rs, c = 'darkblue', lw=2, label = 'Radial strain')
+                plt.plot(self.range_TR[:self.T_ed], cs, c = 'chocolate', lw=2, label = 'Circumferential strain')
+                
+                plt.legend()
+            
 
             plt.subplots_adjust(wspace=0.25)
             plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
@@ -555,8 +590,8 @@ class ComboDataSR_2D:
             plt.show()
             
         if segment == 0:  # turn all return arrays global
-            self.r_matrix = np.sum(self.r_matrix, axis = 0)
-            self.c_matrix = np.sum(self.c_matrix, axis = 0)
+            self.r_matrix = np.sum(self.r_matrix, axis = 0) / 4
+            self.c_matrix = np.sum(self.c_matrix, axis = 0) / 4
             
             self.a1 = np.sum(a1_mean, axis = 0)[:self.T_ed] / 4
             self.a2 = np.sum(a2_mean, axis = 0)[:self.T_ed] / 4
@@ -598,11 +633,11 @@ class ComboDataSR_2D:
 # example of use
 if __name__ == "__main__":
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('mi_D12-8_45d')
+    run1 = ComboDataSR_2D('sham_D11-1_40d')
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(plot = 1, save = 0, segment = 0)
+    run1.strain_rate(plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['TR'])  # example of dictionary functionality

@@ -168,10 +168,10 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
            
     if str(file[0]) == 'm':  # compare angle cohesion
         plt.plot(range_TR[:len(diff)], diff, 'r', lw=1.3)
-        auc_mi.append([days, sum(diff)])
+        auc_mi.append([days, sum(diff[:u])])
     else:
         plt.plot(range_TR[:len(diff)], diff, 'k', lw=1.3)
-        auc_sham.append([days, sum(diff)])
+        auc_sham.append([days, sum(diff[:u])])
 
 legend_handles1 = [Line2D([0], [0], color = 'k', lw = 1.3, label = 'Sham'),
           Line2D([0], [0], color = 'r', lw = 1.3, label = '6w after MI')]
