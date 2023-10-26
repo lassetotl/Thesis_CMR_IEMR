@@ -6,6 +6,9 @@ Created on Thu Oct  5 10:39:12 2023
 
 we collect generated global radial strain (GRS) curves and plot them together.
 make sure that all used data were generated using the same setup parameters!!
+
+curve analysis parameters collected and used to construct a pandas dataframe
+for correlation analysis
 """
 
 import os
@@ -15,6 +18,8 @@ from matplotlib.lines import Line2D
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumtrapz
 from util import running_average
+import pandas 
+import seaborn as sns
 
 #%%
 ## This segment will take some time to run, and will overwrite saved data if save = 1 !! ##
@@ -22,6 +27,8 @@ from util import running_average
 # save characteristic time-points to calc average
 T_es_list = []
 T_ed_list = []
+
+df_list = []
 
 for file in os.listdir('R:\Lasse\combodata_shax'):
     file_ = os.path.splitext(file)
@@ -31,7 +38,28 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     # collect parameters
     T_es_list.append(run.__dict__['T_es'])
     T_ed_list.append(run.__dict__['T_ed'])
-
+    
+    # collect dataframe parameters
+    filename = run.__dict__['filename']
+    if str(filename[-1]) == 'w':
+           days = int(filename.split('_')[2].replace('w', ''))*7
+    if str(filename[-1]) == 'd':
+           days = int(filename.split('_')[2].replace('d', ''))
+           
+    if str(filename[0]) == 'm':
+           condition = 1  # mi
+    else:
+           condition = 0 # sham
+           
+    r_strain_peak_std = np.std(run.__dict__['r_peakvals'])
+    c_strain_peak_std = np.std(run.__dict__['c_peakvals'])
+    
+    # expressed as percentage of cardiac cycle duration
+    r_strain_peaktime_std = 100*np.std(run.__dict__['r_peaktime'])/T_ed_list[-1]
+    c_strain_peaktime_std = 100*np.std(run.__dict__['c_peaktime'])/T_ed_list[-1]
+    
+    # dataframe row
+    df_list.append([filename, days, r_strain_peak_std, c_strain_peak_std, r_strain_peaktime_std, c_strain_peaktime_std, condition])
 
 #%%
 # strain
@@ -177,6 +205,79 @@ plt.show()
 
 auc_mi = np.array(auc_mi)
 auc_sham = np.array(auc_sham)
+
+#%%
+# dataframe analyisis
+
+# Create the pandas DataFrame 
+df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak std', 'C-peak std', 'Radial dyssynchrony', 'Circ dyssynchrony', 'Condition']) 
+
+# display 8 random data samples
+print(f'Shape of dataset (instances, features): {df.shape}')
+#%%
+# correlation analysis
+# https://www.kaggle.com/code/datafan07/heart-disease-and-some-scikit-learn-magic/notebook
+
+#Compute pairwise correlation of columns, excluding NA/null values.
+correlation = df.corr(method='pearson')
+
+mask = np.triu(correlation) #diagonal + upper triangle redundant
+fig=plt.figure(figsize=(14,12))
+sns.heatmap(correlation, mask=mask, cmap='coolwarm', center = 0, annot=True, annot_kws={'size':14}, fmt='.2f')
+plt.xticks(fontsize=12); plt.yticks(fontsize=12)
+fig.get_axes()[1].remove()#; plt.savefig('Corr_Heatmap')
+plt.show()
+
+
+#%%
+# peak values and dyssynchrony over time
+
+#convert from numeric to categorical for correct label
+df['condition'] = pandas.Categorical(df['Condition'])
+T_ = df['Day'].max(); t = np.arange(0, T_)  # x lim
+
+
+df_sham = df[df['Condition'] == 0]
+df_mi = df[df['Condition'] == 1]
+
+plt.rcParams.update({'font.size': 12})
+fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
+
+cmap = 'coolwarm'
+
+a, b = np.polyfit(df_sham['Day'], df_sham['C-peak std'], 1)
+c, d = np.polyfit(df_mi['Day'], df_mi['C-peak std'], 1)
+df.plot.scatter(x="Day", y="C-peak std", c="Condition", cmap=cmap, s=50, ax=ax1, alpha=0.8)
+ax1.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
+ax1.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
+ax1.set_ylabel('C-peak std [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+
+a, b = np.polyfit(df_sham['Day'], df_sham['Radial dyssynchrony'], 1)
+c, d = np.polyfit(df_mi['Day'], df_mi['Radial dyssynchrony'], 1)
+df.plot.scatter(x="Day", y="Radial dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax2, alpha=0.8)
+ax2.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 5)}')
+ax2.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 5)}')
+ax2.set_ylabel('R dys'); ax2.set_xlabel(''); ax2.legend(loc = 1)
+
+a, b = np.polyfit(df_sham['Day'], df_sham['R-peak std'], 1)
+c, d = np.polyfit(df_mi['Day'], df_mi['R-peak std'], 1)
+df.plot.scatter(x="Day", y="R-peak std", c="Condition", cmap=cmap, s=50, ax=ax3, alpha=0.8)
+ax3.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
+ax3.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
+ax3.set_xlabel('Days', fontsize=15); ax3.set_ylabel('R-peak std [%]', fontsize=15); ax3.legend(loc = 1)
+
+a, b = np.polyfit(df_sham['Day'], df_sham['Circ dyssynchrony'], 1)
+c, d = np.polyfit(df_mi['Day'], df_mi['Circ dyssynchrony'], 1)
+df.plot.scatter(x="Day", y="Circ dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax4, alpha=0.8)
+ax4.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 5)}')
+ax4.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 5)}')
+ax4.set_ylabel('Circ dys'); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
+
+# removing the first three colorbars
+for i in range(3): fig.get_axes()[4].remove()
+
+plt.subplots_adjust(wspace=0.0005, hspace=0.15)#; plt.savefig('Heart_Scatter')
+plt.show()
 
 #%% angle concentration AUC over time 
 

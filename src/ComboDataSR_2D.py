@@ -255,7 +255,7 @@ class ComboDataSR_2D:
                 os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
         
         print(f'Calculating Global Strain rate for {self.filename}...')
-        for t in self.range_[:self.T_ed+1]:
+        for t in self.range_[:self.T_ed]:
 
             # combodata mask 
             mask_t = self.mask[:, :, 0, t] #mask at this timepoint
@@ -468,7 +468,7 @@ class ComboDataSR_2D:
         
         # mean stretch/compression (a1/a2) angles
         a1_mean = np.zeros((4, self.T)); a2_mean = np.zeros((4, self.T))
-        for t in self.range_:
+        for t in self.range_[:self.T_ed]:
             for sector in range(4):
                 a1_mean[sector, t] = np.mean(self.a1[sector, t])
                 a2_mean[sector, t] = np.mean(self.a2[sector, t])
@@ -476,6 +476,18 @@ class ComboDataSR_2D:
         # mean angles
         a1_mean_global = np.sum(a1_mean, axis = 0)[:self.T_ed] / 4
         a2_mean_global = np.sum(a2_mean, axis = 0)[:self.T_ed] / 4
+        
+        # strain curve analysis, synchrony of sectors
+        self.c_peakvals = np.zeros(4); self.r_peakvals = np.zeros(4)
+        self.c_peaktime = np.zeros(4); self.r_peaktime = np.zeros(4)
+        
+        for sector in range(4):
+            rs = 100*self._strain(self.r_matrix[sector, :])
+            cs = 100*self._strain(self.c_matrix[sector, :])
+            
+            # this regional data can be aquired for segment == 0 as well
+            self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR
+            self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR
             
         if plot == 1:
             # plot global strain rate
@@ -523,11 +535,6 @@ class ComboDataSR_2D:
         if plot == 1:
             # plot strain over time
 
-            # strain curve analysis, synchrony of sectors
-            self.c_peakvals = np.zeros(4); self.r_peakvals = np.zeros(4)
-            self.c_peaktime = np.zeros(4); self.r_peaktime = np.zeros(4)
-
-
             plt.figure(figsize=(8, 6))
 
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
@@ -537,25 +544,17 @@ class ComboDataSR_2D:
             plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
             plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
-
-            for sector in range(4):
-                rs = 100*self._strain(self.r_matrix[sector, :])
-                cs = 100*self._strain(self.c_matrix[sector, :])
                 
-                # this regional data can be aquired for segment == 0 as well
-                self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR
-                self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR
+            if segment == 1:
+                plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
                 
-                if segment == 1:
-                    plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
-                    
-                    plt.plot(self.range_TR[:self.T_ed], rs, c = c_cmap(sector), lw=2)
-                    plt.plot(self.range_TR[:self.T_ed], cs, c = c_cmap(sector), lw=2)
-                    
-                    plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
-                    plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
-                    
-                    plt.legend(handles = legend_handles1)
+                plt.plot(self.range_TR[:self.T_ed], rs, c = c_cmap(sector), lw=2)
+                plt.plot(self.range_TR[:self.T_ed], cs, c = c_cmap(sector), lw=2)
+                
+                plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                
+                plt.legend(handles = legend_handles1)
                     
             if segment == 0:
                 plt.title(f'Global Strain over time ({self.filename})', fontsize = 15)
@@ -658,6 +657,6 @@ if __name__ == "__main__":
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(plot = 1, save = 0, segment = 0)
+    run1.strain_rate(plot = 1, save = 0, segment = 1)
     
-    #print(run1.__dict__['TR'])  # example of dictionary functionality
+    print(run1.__dict__['r_peakvals'])  # example of dictionary functionality
