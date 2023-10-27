@@ -32,7 +32,7 @@ df_list = []
 
 for file in os.listdir('R:\Lasse\combodata_shax'):
     file_ = os.path.splitext(file)
-    run = ComboDataSR_2D(file_[0], n = 2)
+    run = ComboDataSR_2D(file_[0], n = 1)  # n = 1 should be used for proper analysis
     run.strain_rate(save = 1, plot = 0)
     
     # collect parameters
@@ -55,8 +55,9 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     c_strain_peak_std = np.std(run.__dict__['c_peakvals'])
     
     # expressed as percentage of cardiac cycle duration
-    r_strain_peaktime_std = 100*np.std(run.__dict__['r_peaktime'])/T_ed_list[-1]
-    c_strain_peaktime_std = 100*np.std(run.__dict__['c_peaktime'])/T_ed_list[-1]
+    TR = run.__dict__['TR']
+    r_strain_peaktime_std = 100*np.std(run.__dict__['r_peaktime'])/(TR*T_ed_list[-1])
+    c_strain_peaktime_std = 100*np.std(run.__dict__['c_peaktime'])/(TR*T_ed_list[-1])
     
     # dataframe row
     df_list.append([filename, days, r_strain_peak_std, c_strain_peak_std, r_strain_peaktime_std, c_strain_peaktime_std, condition])
@@ -252,12 +253,12 @@ ax1.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3
 ax1.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
 ax1.set_ylabel('C-peak std [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
 
-a, b = np.polyfit(df_sham['Day'], df_sham['Radial dyssynchrony'], 1)
-c, d = np.polyfit(df_mi['Day'], df_mi['Radial dyssynchrony'], 1)
-df.plot.scatter(x="Day", y="Radial dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax2, alpha=0.8)
-ax2.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 5)}')
-ax2.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 5)}')
-ax2.set_ylabel('R dys'); ax2.set_xlabel(''); ax2.legend(loc = 1)
+a, b = np.polyfit(df_sham['Day'], df_sham['Circ dyssynchrony'], 1)
+c, d = np.polyfit(df_mi['Day'], df_mi['Circ dyssynchrony'], 1)
+df.plot.scatter(x="Day", y="Circ dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax2, alpha=0.8)
+ax2.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
+ax2.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
+ax2.set_ylabel('Circ dys [%]'); ax4.set_xlabel('Days', fontsize=15); ax2.legend(loc = 1)
 
 a, b = np.polyfit(df_sham['Day'], df_sham['R-peak std'], 1)
 c, d = np.polyfit(df_mi['Day'], df_mi['R-peak std'], 1)
@@ -266,12 +267,12 @@ ax3.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3
 ax3.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
 ax3.set_xlabel('Days', fontsize=15); ax3.set_ylabel('R-peak std [%]', fontsize=15); ax3.legend(loc = 1)
 
-a, b = np.polyfit(df_sham['Day'], df_sham['Circ dyssynchrony'], 1)
-c, d = np.polyfit(df_mi['Day'], df_mi['Circ dyssynchrony'], 1)
-df.plot.scatter(x="Day", y="Circ dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax4, alpha=0.8)
-ax4.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 5)}')
-ax4.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 5)}')
-ax4.set_ylabel('Circ dys'); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
+a, b = np.polyfit(df_sham['Day'], df_sham['Radial dyssynchrony'], 1)
+c, d = np.polyfit(df_mi['Day'], df_mi['Radial dyssynchrony'], 1)
+df.plot.scatter(x="Day", y="Radial dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax4, alpha=0.8)
+ax4.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
+ax4.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
+ax4.set_ylabel('R dys [%]'); ax4.set_xlabel(''); ax4.legend(loc = 1)
 
 # removing the first three colorbars
 for i in range(3): fig.get_axes()[4].remove()
