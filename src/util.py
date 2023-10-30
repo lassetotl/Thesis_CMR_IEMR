@@ -11,7 +11,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-#import pandas as pd
+import pandas
 #import seaborn as sns; sns.set()
 #import sklearn
 
@@ -113,8 +113,27 @@ def gaussian_2d(sigma):
             z[i, j] = np.exp(-0.5*((i - d/2)**2 + (j - d/2)**2)/sigma**2)/(2*np.pi*sigma**2)
     return z
 
-#https://stackoverflow.com/questions/11435809/compute-divergence-of-vector-field-using-python
+# https://stackoverflow.com/questions/11435809/compute-divergence-of-vector-field-using-python
 def divergence(F):
     """ compute the divergence of n-D scalar field `F` """
     return np.ufunc.reduce(np.add, np.gradient(F))
 
+# https://careerfoundry.com/en/blog/data-analytics/how-to-find-outliers/
+# interquartile range, returns outliers and df without outliers
+def drop_outliers_IQR(df, column_name):
+
+    q1 = df[column_name].quantile(0.25)
+
+    q3 = df[column_name].quantile(0.75)
+
+    IQR = q3 - q1
+    
+    # threshold of 1.5 is convention
+    outliers = df[(df[column_name] < q1 - 1.5*IQR) | (df[column_name] > q3 + 1.5*IQR)]
+
+    outliers_dropped = df.drop(outliers.index)
+    
+    # calculate linear fit for data withing treshhold
+    a, b = np.polyfit(outliers_dropped['Day'], outliers_dropped[column_name], 1)
+
+    return outliers, outliers_dropped, a, b

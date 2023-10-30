@@ -17,7 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumtrapz
-from util import running_average
+from util import running_average, drop_outliers_IQR
 import pandas 
 import seaborn as sns
 
@@ -229,6 +229,18 @@ plt.xticks(fontsize=12); plt.yticks(fontsize=12)
 fig.get_axes()[1].remove()#; plt.savefig('Corr_Heatmap')
 plt.show()
 
+#%%
+# internal function that does linear fit on non-outlier data and plot
+# only works with global values within this script
+def ax_corr(ax, column_name):
+    # create temporary dataframes 
+    temp_sham = drop_outliers_IQR(df_sham, column_name); temp_mi = drop_outliers_IQR(df_mi, column_name)
+    valid_data = pandas.concat([temp_sham[1], temp_mi[1]]); outliers = pandas.concat([temp_sham[0], temp_mi[0]])
+
+    valid_data.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, colorbar = 0)
+    outliers.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, marker = 'x', colorbar = 0)
+    ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}')
+    ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}')
 
 #%%
 # peak values and dyssynchrony over time
@@ -246,38 +258,20 @@ fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 
 cmap = 'coolwarm'
 
-a, b = np.polyfit(df_sham['Day'], df_sham['C-peak std'], 1)
-c, d = np.polyfit(df_mi['Day'], df_mi['C-peak std'], 1)
-df.plot.scatter(x="Day", y="C-peak std", c="Condition", cmap=cmap, s=50, ax=ax1, alpha=0.8)
-ax1.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
-ax1.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
+ax_corr(ax1, 'C-peak std')
 ax1.set_ylabel('C-peak std [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
 
-a, b = np.polyfit(df_sham['Day'], df_sham['Circ dyssynchrony'], 1)
-c, d = np.polyfit(df_mi['Day'], df_mi['Circ dyssynchrony'], 1)
-df.plot.scatter(x="Day", y="Circ dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax2, alpha=0.8)
-ax2.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
-ax2.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
-ax2.set_ylabel('Circ dys [%]'); ax4.set_xlabel('Days', fontsize=15); ax2.legend(loc = 1)
+ax_corr(ax2, 'Circ dyssynchrony')
+ax2.set_ylabel('Circumferential SDI [%]', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
 
-a, b = np.polyfit(df_sham['Day'], df_sham['R-peak std'], 1)
-c, d = np.polyfit(df_mi['Day'], df_mi['R-peak std'], 1)
-df.plot.scatter(x="Day", y="R-peak std", c="Condition", cmap=cmap, s=50, ax=ax3, alpha=0.8)
-ax3.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
-ax3.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
+ax_corr(ax3, 'R-peak std')
 ax3.set_xlabel('Days', fontsize=15); ax3.set_ylabel('R-peak std [%]', fontsize=15); ax3.legend(loc = 1)
 
-a, b = np.polyfit(df_sham['Day'], df_sham['Radial dyssynchrony'], 1)
-c, d = np.polyfit(df_mi['Day'], df_mi['Radial dyssynchrony'], 1)
-df.plot.scatter(x="Day", y="Radial dyssynchrony", c="Condition", cmap=cmap, s=50, ax=ax4, alpha=0.8)
-ax4.plot(t, a*t + b, c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(a, 3)}')
-ax4.plot(t, c*t + d, c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(c, 3)}')
-ax4.set_ylabel('R dys [%]'); ax4.set_xlabel(''); ax4.legend(loc = 1)
+ax_corr(ax4, 'Radial dyssynchrony')
+ax4.set_ylabel('Radial SDI [%]', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
 
-# removing the first three colorbars
-for i in range(3): fig.get_axes()[4].remove()
 
-plt.subplots_adjust(wspace=0.0005, hspace=0.15)#; plt.savefig('Heart_Scatter')
+plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
 plt.show()
 
 #%% angle concentration AUC over time 
