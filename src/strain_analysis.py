@@ -15,6 +15,7 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.colors import Normalize
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumtrapz
 from util import running_average, drop_outliers_IQR
@@ -138,7 +139,7 @@ for file in os.listdir('R:\Lasse\strain rate data'):
     r_strain_rate = np.load(fr'R:\Lasse\strain rate data\{str(file)}\r_strain_rate.npy', allow_pickle = 1)
     c_strain_rate = np.load(fr'R:\Lasse\strain rate data\{str(file)}\c_strain_rate.npy', allow_pickle = 1)
     
-    T_ = 63 # stops at respective end diastole
+    T_ = len(r_strain_rate) # stops at respective end diastole
     if str(file[0]) == 'm':
         ax1.plot(range_TR[:T_], r_strain_rate[:T_], 'lime', lw=1.3)
         ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'gold', lw=1.3)
@@ -192,13 +193,13 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
            
     if str(file[0]) == 'm':  # compare angle cohesion
         plt.plot(range_TR[:len(diff)], diff, 'r', lw=1.3)
-        auc_mi.append([days, sum(cumtrapz(diff[:]))])
+        auc_mi.append([days, sum(cumtrapz(diff[:u]))])
     else:
         plt.plot(range_TR[:len(diff)], diff, 'k', lw=1.3)
-        auc_sham.append([days, sum(cumtrapz(diff[:]))])
+        auc_sham.append([days, sum(cumtrapz(diff[:u]))])
 
 legend_handles1 = [Line2D([0], [0], color = 'k', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'r', lw = 1.3, label = '6w after MI')]
+          Line2D([0], [0], color = 'r', lw = 1.3, label = 'MI')]
 
 # difference
 plt.legend(handles = legend_handles1, loc = 'upper right')
@@ -206,6 +207,28 @@ plt.show()
 
 auc_mi = np.array(auc_mi)
 auc_sham = np.array(auc_sham)
+
+#%% angle concentration AUC over time 
+
+T_ = 47
+plt.figure(figsize = (8, 6))
+plt.title('Radial angle concentration', fontsize = 15)
+plt.xlim(0, T_)#; plt.ylim(0, 50)
+plt.xlabel('Time [days]', fontsize = 15)
+plt.ylabel('AUC', fontsize = 15)
+
+plt.scatter(auc_mi[:,0], auc_mi[:,1], c='r')
+plt.scatter(auc_sham[:,0], auc_sham[:,1], c='k')
+
+a, b = np.polyfit(auc_sham[:,0], auc_sham[:,1], 1)
+c, d = np.polyfit(auc_mi[:,0], auc_mi[:,1], 1)
+t = np.arange(0, T_)
+
+plt.plot(t, a*t + b, 'k', label = f'sham linear fit, slope = {np.round(a, 3)}')
+plt.plot(t, c*t + d, 'r', label = f'mi linear fit, slope = {np.round(c, 3)}')
+
+plt.legend()
+plt.show()
 
 #%%
 # dataframe analyisis
@@ -237,6 +260,7 @@ def ax_corr(ax, column_name):
     temp_sham = drop_outliers_IQR(df_sham, column_name); temp_mi = drop_outliers_IQR(df_mi, column_name)
     valid_data = pandas.concat([temp_sham[1], temp_mi[1]]); outliers = pandas.concat([temp_sham[0], temp_mi[0]])
 
+    print(outliers)
     valid_data.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, colorbar = 0)
     outliers.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, marker = 'x', colorbar = 0)
     ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}')
@@ -246,7 +270,7 @@ def ax_corr(ax, column_name):
 # peak values and dyssynchrony over time
 
 #convert from numeric to categorical for correct label
-df['condition'] = pandas.Categorical(df['Condition'])
+df['Condition'] = pandas.Categorical(df['Condition'])
 T_ = df['Day'].max(); t = np.arange(0, T_)  # x lim
 
 
@@ -272,26 +296,4 @@ ax4.set_ylabel('Radial SDI [%]', fontsize=15); ax4.set_xlabel('Days', fontsize=1
 
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
-plt.show()
-
-#%% angle concentration AUC over time 
-
-T_ = 47
-plt.figure(figsize = (8, 6))
-plt.title('Radial angle concentration', fontsize = 15)
-plt.xlim(0, T_)#; plt.ylim(0, 50)
-plt.xlabel('Time [days]', fontsize = 15)
-plt.ylabel('AUC', fontsize = 15)
-
-plt.scatter(auc_mi[:,0], auc_mi[:,1], c='r')
-plt.scatter(auc_sham[:,0], auc_sham[:,1], c='k')
-
-a, b = np.polyfit(auc_sham[:,0], auc_sham[:,1], 1)
-c, d = np.polyfit(auc_mi[:,0], auc_mi[:,1], 1)
-t = np.arange(0, T_)
-
-plt.plot(t, a*t + b, 'k', label = f'sham linear fit, slope = {np.round(a, 3)}')
-plt.plot(t, c*t + d, 'r', label = f'mi linear fit, slope = {np.round(c, 3)}')
-
-plt.legend()
 plt.show()
