@@ -15,7 +15,6 @@ import os
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.colors import Normalize
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumtrapz
 from util import running_average, drop_outliers_IQR
@@ -52,8 +51,8 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     else:
            condition = 0 # sham
            
-    r_strain_peak_std = np.std(run.__dict__['r_peakvals'])
-    c_strain_peak_std = np.std(run.__dict__['c_peakvals'])
+    r_strain_peak_mean = np.mean(run.__dict__['r_peakvals'])
+    c_strain_peak_mean = np.mean(run.__dict__['c_peakvals'])
     
     # expressed as percentage of cardiac cycle duration
     TR = run.__dict__['TR']
@@ -61,11 +60,11 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     c_strain_peaktime_std = 100*np.std(run.__dict__['c_peaktime'])/(TR*T_ed_list[-1])
     
     # dataframe row
-    df_list.append([filename, days, r_strain_peak_std, c_strain_peak_std, r_strain_peaktime_std, c_strain_peaktime_std, condition])
+    df_list.append([filename, days, r_strain_peak_mean, c_strain_peak_mean, r_strain_peaktime_std, c_strain_peaktime_std, condition])
 
 #%%
 # strain
-T = 63  # timepoints
+T = 77  # timepoints
 # one of the clips are longer for some reason, but we force it to stop at timepoint 62
 TR = run.__dict__['TR']
 range_ = np.arange(0, T)
@@ -168,7 +167,7 @@ plt.figure(figsize = (10, 8))
 plt.title('Radial angle concentration', fontsize = 15)
 plt.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 plt.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-plt.xlim(0, T*TR)#; plt.ylim(0, 50)
+plt.xlim(0, np.max(T_ed_list)*TR)#; plt.ylim(0, 50)
 plt.xlabel('Timepoints', fontsize = 15)
 plt.ylabel('Degrees', fontsize = 20)
 
@@ -234,7 +233,7 @@ plt.show()
 # dataframe analyisis
 
 # Create the pandas DataFrame 
-df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak std', 'C-peak std', 'Radial dyssynchrony', 'Circ dyssynchrony', 'Condition']) 
+df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', 'Rad SDI', 'Circ SDI', 'Condition']) 
 
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
@@ -260,7 +259,6 @@ def ax_corr(ax, column_name):
     temp_sham = drop_outliers_IQR(df_sham, column_name); temp_mi = drop_outliers_IQR(df_mi, column_name)
     valid_data = pandas.concat([temp_sham[1], temp_mi[1]]); outliers = pandas.concat([temp_sham[0], temp_mi[0]])
 
-    print(outliers)
     valid_data.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, colorbar = 0)
     outliers.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, marker = 'x', colorbar = 0)
     ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}')
@@ -282,16 +280,16 @@ fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 
 cmap = 'coolwarm'
 
-ax_corr(ax1, 'C-peak std')
-ax1.set_ylabel('C-peak std [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+ax_corr(ax1, 'C-peak mean')
+ax1.set_ylabel('C-peak mean [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
 
-ax_corr(ax2, 'Circ dyssynchrony')
+ax_corr(ax2, 'Circ SDI')
 ax2.set_ylabel('Circumferential SDI [%]', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
 
-ax_corr(ax3, 'R-peak std')
-ax3.set_xlabel('Days', fontsize=15); ax3.set_ylabel('R-peak std [%]', fontsize=15); ax3.legend(loc = 1)
+ax_corr(ax3, 'R-peak mean')
+ax3.set_xlabel('Days', fontsize=15); ax3.set_ylabel('R-peak mean [%]', fontsize=15); ax3.legend(loc = 1)
 
-ax_corr(ax4, 'Radial dyssynchrony')
+ax_corr(ax4, 'Rad SDI')
 ax4.set_ylabel('Radial SDI [%]', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
 
 

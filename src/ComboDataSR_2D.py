@@ -671,11 +671,11 @@ class ComboDataSR_2D:
 # example of use
 if __name__ == "__main__":
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D11-3_21d', n = 1)
+    run1 = ComboDataSR_2D('sham_D2-1_1d', n = 2)
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(plot = 1, save = 0, segment = 1)
+    run1.strain_rate(plot = 1, save = 0, segment = 0)
     
     print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
