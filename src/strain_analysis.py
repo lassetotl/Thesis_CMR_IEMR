@@ -50,7 +50,8 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
            condition = 1  # mi
     else:
            condition = 0 # sham
-           
+    
+    # collect strain curve parameters
     r_strain_peak_mean = np.mean(run.__dict__['r_peakvals'])
     c_strain_peak_mean = np.mean(run.__dict__['c_peakvals'])
     
@@ -59,8 +60,23 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     r_strain_peaktime_std = 100*np.std(run.__dict__['r_peaktime'])/(TR*T_ed_list[-1])
     c_strain_peaktime_std = 100*np.std(run.__dict__['c_peaktime'])/(TR*T_ed_list[-1])
     
+    # strain rate parameters
+    r_sr_max = run.__dict__['r_sr_max']
+    r_sr_min = run.__dict__['r_sr_min']
+    c_sr_max = run.__dict__['c_sr_max']
+    c_sr_min = run.__dict__['c_sr_min']
+    
+    # angle dist
+    a1_mean_max = run.__dict__['a1_mean_max']
+    a1_mean_min = run.__dict__['a1_mean_min']
+    a2_mean_max = run.__dict__['a2_mean_max']
+    a2_mean_min = run.__dict__['a2_mean_min']
+    
     # dataframe row
-    df_list.append([filename, days, r_strain_peak_mean, c_strain_peak_mean, r_strain_peaktime_std, c_strain_peaktime_std, condition])
+    df_list.append([filename, days, r_strain_peak_mean, c_strain_peak_mean, \
+                    r_strain_peaktime_std, c_strain_peaktime_std, r_sr_max, \
+                        r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
+                            a2_mean_max, a2_mean_min, condition])
 
 #%%
 # strain
@@ -164,7 +180,7 @@ plt.show()
 # angle distributions
 
 plt.figure(figsize = (10, 8))
-plt.title('Radial angle concentration', fontsize = 15)
+plt.title('Mean direction of compression', fontsize = 15)
 plt.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
 plt.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
 plt.xlim(0, np.max(T_ed_list)*TR)#; plt.ylim(0, 50)
@@ -178,7 +194,7 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
     a1 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_pos.npy', allow_pickle = 1)
     a2 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_neg.npy', allow_pickle = 1)
     
-    diff = running_average(abs(a1 - a2), 4)
+    diff = running_average(a2, 4)
     
     # auc at systole/diastole only
     u = int(np.mean(T_es_list))
@@ -207,34 +223,22 @@ plt.show()
 auc_mi = np.array(auc_mi)
 auc_sham = np.array(auc_sham)
 
-#%% angle concentration AUC over time 
-
-T_ = 47
-plt.figure(figsize = (8, 6))
-plt.title('Radial angle concentration', fontsize = 15)
-plt.xlim(0, T_)#; plt.ylim(0, 50)
-plt.xlabel('Time [days]', fontsize = 15)
-plt.ylabel('AUC', fontsize = 15)
-
-plt.scatter(auc_mi[:,0], auc_mi[:,1], c='r')
-plt.scatter(auc_sham[:,0], auc_sham[:,1], c='k')
-
-a, b = np.polyfit(auc_sham[:,0], auc_sham[:,1], 1)
-c, d = np.polyfit(auc_mi[:,0], auc_mi[:,1], 1)
-t = np.arange(0, T_)
-
-plt.plot(t, a*t + b, 'k', label = f'sham linear fit, slope = {np.round(a, 3)}')
-plt.plot(t, c*t + d, 'r', label = f'mi linear fit, slope = {np.round(c, 3)}')
-
-plt.legend()
-plt.show()
-
 #%%
-# dataframe analyisis
+# dataframe analysis
+
+# to analyze a generated csv file
+#df_list = 
 
 # Create the pandas DataFrame 
-df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', 'Rad SDI', 'Circ SDI', 'Condition']) 
+df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', \
+                                        'Rad SDI', 'Circ SDI', 'r_sr_max', \
+                                            'r_sr_min', 'c_sr_max', 'c_sr_min', \
+                                                'a1_mean_max', 'a1_mean_min', \
+                                                    'a2_mean_max', 'a2_mean_min', 'Condition']) 
 
+# uncomment
+df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
+    
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
 #%%
@@ -265,7 +269,7 @@ def ax_corr(ax, column_name):
     ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}')
 
 #%%
-# peak values and dyssynchrony over time
+# peak strain values and dyssynchrony over time
 
 #convert from numeric to categorical for correct label
 df['Condition'] = pandas.Categorical(df['Condition'])
@@ -277,6 +281,7 @@ df_mi = df[df['Condition'] == 1]
 
 plt.rcParams.update({'font.size': 12})
 fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
+#plt.title('Regional strain correlation analysis', fontsize = 15)
 
 cmap = 'coolwarm'
 
@@ -287,10 +292,60 @@ ax_corr(ax2, 'Circ SDI')
 ax2.set_ylabel('Circumferential SDI [%]', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
 
 ax_corr(ax3, 'R-peak mean')
-ax3.set_xlabel('Days', fontsize=15); ax3.set_ylabel('R-peak mean [%]', fontsize=15); ax3.legend(loc = 1)
+ax3.set_ylabel('R-peak mean [%]', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
 
 ax_corr(ax4, 'Rad SDI')
 ax4.set_ylabel('Radial SDI [%]', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
+
+
+plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
+plt.show()
+
+#%%
+# strain rate peaks and direction over time
+
+plt.rcParams.update({'font.size': 12})
+fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
+#plt.title('Strain rate correlation analysis', fontsize = 15)
+
+cmap = 'coolwarm'
+
+ax_corr(ax1, 'r_sr_max')
+ax1.set_ylabel('r_sr_max [$s^{-1}$]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+
+ax_corr(ax2, 'r_sr_min')
+ax2.set_ylabel('r_sr_min', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
+
+ax_corr(ax3, 'c_sr_max')
+ax3.set_ylabel('c_sr_max', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
+
+ax_corr(ax4, 'c_sr_min')
+ax4.set_ylabel('c_sr_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
+
+
+plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
+plt.show()
+
+#%%
+# strain rate peaks and direction over time
+
+plt.rcParams.update({'font.size': 12})
+fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
+#plt.title('Strain rate direction correlation analysis', fontsize = 15)
+
+cmap = 'coolwarm'
+
+ax_corr(ax1, 'a1_mean_max')
+ax1.set_ylabel('a1_mean_max [Degrees]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+
+ax_corr(ax2, 'a1_mean_min')
+ax2.set_ylabel('a1_mean_min', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
+
+ax_corr(ax3, 'a2_mean_max')
+ax3.set_ylabel('a2_mean_max', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
+
+ax_corr(ax4, 'a2_mean_min')
+ax4.set_ylabel('a2_mean_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
 
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')

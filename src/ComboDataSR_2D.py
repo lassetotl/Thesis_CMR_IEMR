@@ -466,16 +466,31 @@ class ComboDataSR_2D:
                 plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
                 plt.show(); plt.close()
         
+        # add strain rate parameters to dictionary
+        r_sr_global = np.sum(self.r_matrix, axis = 0) / 4
+        c_sr_global = np.sum(self.c_matrix, axis = 0) / 4
+        
+        self.c_sr_max = np.max(c_sr_global)
+        self.r_sr_max = np.max(r_sr_global)
+        self.c_sr_min = np.min(c_sr_global)
+        self.r_sr_min = np.min(r_sr_global)
+        
         # mean stretch/compression (a1/a2) angles
         a1_mean = np.zeros((4, self.T_ed)); a2_mean = np.zeros((4, self.T_ed))
         for t in self.range_:
             for sector in range(4):
                 a1_mean[sector, t] = np.mean(self.a1[sector, t])
                 a2_mean[sector, t] = np.mean(self.a2[sector, t])
-                
+             
         # mean angles
         a1_mean_global = np.sum(a1_mean, axis = 0) / 4
         a2_mean_global = np.sum(a2_mean, axis = 0) / 4
+        
+        # max/min of mean curve
+        self.a1_mean_max = np.max(a1_mean_global)
+        self.a1_mean_min = np.min(a1_mean_global)
+        self.a2_mean_max = np.max(a2_mean_global)
+        self.a2_mean_min = np.min(a2_mean_global)
         
         # strain curve analysis, synchrony of sectors
         self.c_peakvals = np.zeros(4); self.r_peakvals = np.zeros(4)
@@ -626,10 +641,10 @@ class ComboDataSR_2D:
                 plt.legend(loc = 'upper right')
 
             plt.show()
-            
+        
         if segment == 0:  # turn all return arrays global
-            self.r_matrix = np.sum(self.r_matrix, axis = 0) / 4
-            self.c_matrix = np.sum(self.c_matrix, axis = 0) / 4
+            self.r_matrix = r_sr_global
+            self.c_matrix = c_sr_global
             
             r_strain = 100*self._strain(self.r_matrix)
             c_strain = 100*self._strain(self.c_matrix)
