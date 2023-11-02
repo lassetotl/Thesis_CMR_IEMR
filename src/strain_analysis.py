@@ -178,7 +178,7 @@ plt.show()
 
 #%%
 # angle distributions
-
+'''
 plt.figure(figsize = (10, 8))
 plt.title('Mean direction of compression', fontsize = 15)
 plt.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
@@ -222,12 +222,9 @@ plt.show()
 
 auc_mi = np.array(auc_mi)
 auc_sham = np.array(auc_sham)
-
+'''
 #%%
 # dataframe analysis
-
-# to analyze a generated csv file
-df_list = pandas.read_csv('combodata_analysis')
 
 # Create the pandas DataFrame 
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', \
@@ -235,8 +232,10 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak me
                                             'r_sr_min', 'c_sr_max', 'c_sr_min', \
                                                 'a1_mean_max', 'a1_mean_min', \
                                                     'a2_mean_max', 'a2_mean_min', 'Condition']) 
-
-# uncomment
+# to analyze a generated csv file instead
+#df = pandas.read_csv('combodata_analysis')
+    
+# uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
@@ -260,7 +259,7 @@ plt.show()
 # only works with global values within this script
 def ax_corr(ax, column_name):
     # create temporary dataframes 
-    temp_sham = drop_outliers_IQR(df_sham, column_name); temp_mi = drop_outliers_IQR(df_mi, column_name)
+    temp_sham = drop_outliers_IQR(df_sham, column_name, 100); temp_mi = drop_outliers_IQR(df_mi, column_name, 100)
     valid_data = pandas.concat([temp_sham[1], temp_mi[1]]); outliers = pandas.concat([temp_sham[0], temp_mi[0]])
 
     valid_data.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, colorbar = 0)

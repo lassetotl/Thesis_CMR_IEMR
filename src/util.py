@@ -120,7 +120,8 @@ def divergence(F):
 
 # https://careerfoundry.com/en/blog/data-analytics/how-to-find-outliers/
 # interquartile range, returns outliers and df without outliers
-def drop_outliers_IQR(df, column_name):
+# set high threshold to include all data
+def drop_outliers_IQR(df, column_name, threshold = 1.5):
 
     q1 = df[column_name].quantile(0.25)
 
@@ -129,7 +130,7 @@ def drop_outliers_IQR(df, column_name):
     IQR = q3 - q1
     
     # threshold of 1.5 is convention
-    outliers = df[(df[column_name] < q1 - 1.5*IQR) | (df[column_name] > q3 + 1.5*IQR)]
+    outliers = df[(df[column_name] < q1 - threshold*IQR) | (df[column_name] > q3 + threshold*IQR)]
 
     outliers_dropped = df.drop(outliers.index)
     
