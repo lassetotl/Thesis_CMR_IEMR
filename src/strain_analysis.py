@@ -227,7 +227,7 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # to analyze a generated csv file
-#df_list = 
+df_list = pandas.read_csv('combodata_analysis')
 
 # Create the pandas DataFrame 
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', \
@@ -237,7 +237,7 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak me
                                                     'a2_mean_max', 'a2_mean_min', 'Condition']) 
 
 # uncomment
-df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
+#df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
