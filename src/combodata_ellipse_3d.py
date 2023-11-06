@@ -31,55 +31,72 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+#file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
 data = h5py.File(f'R:\Lasse\combodata_3d_shax\{file}.mat', 'r')['ComboData']
 
 pss0 = data['pss0']  # z position in MR scanner, index [i,0] refers to slice
 pss0_ = [float(data[pss0[i,0]][0,0]) for i in range(len(pss0))]  # dictionary with slice nr?
-    
-pss0_ = sorted(pss0_); print(pss0_)  # slice positions in order
 
-ShortDesc = data['ShortDesc'][9,0]
-print(chr(int(data[ShortDesc][24,0])))
+# sorted slice order and z positions
+idx, pss0_ = zip(*sorted(list(enumerate(pss0_)), reverse = True, key = lambda x: x[1]))
+print(idx, pss0_)  # slice positions in order
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
 #print(f'Combodata shape: {np.shape(data)}')
 
 #%%
 
-#velocity V field, and magnitudes
+#velocity V field, and magnitudes (the class should collect all requested slices)
+# global parameters for this set
 
-# shape of V is (1, 1), indexing necessary to 'unpack' the correct format (?)
-V = data['V'][0,0] #velocity field
-M = data['Magn'][0,0] #magnitudes
-mask = data['Mask'][0,0] #mask for non-heart tissue
+T_es = float(data[data['TimePointEndSystole'][0,0]][0,0])
+T_ed = float(data[data['TimePointEndDiastole'][0,0]][0,0])
+res = float(data[data['Resolution'][0,0]][0,0])  # spatial resolution in cm
+slicethickness = float(data[data['SliceThickness'][0,0]][0,0])  # in mm
+TR = float(data[data['TR'][0,0]][0,0])  # temporal resolution in s
+ShortDesc = data['ShortDesc']
+slices = len(ShortDesc)  # nr of slices in this file
 
-T = len(V[0,0,0,:,0]) #Total amount of time steps
-T_es = data['TimePointEndSystole'][0,0][0][0]
-T_ed = data['TimePointEndDiastole'][0,0][0][0]
-res = data['Resolution'][0,0][0][0]  # temporal resolution, need this for correct SR units?
-TR = data['TR'][0,0][0][0]
 
-# check if mi, collect infarct site mis if so
-'''
-mis = np.nan
-l = file.split('_')
-if (l[0] == 'mi') is True:
-    mis = data['InfarctSector'][0,0][0]
-    print(f'Infarct Sector at {mis}')
-'''
-print(f'{file} overview:')
-print(f'Velocity field shape: {np.shape(V)}')
-print(f'Magnitudes field shape: {np.shape(M)}')
-print(f'Mask shape: {np.shape(mask)}')
-print(f'{res}, {TR}')
-
-print(f'End systole at t={T_es}, end diastole at t={T_ed}')
+V = {}; M = {}; mask = {}  # dictionary keys for all slices
+for slice_ in range(slices):
+    # shape of V is (1, 1), indexing necessary to 'unpack' the correct format (?)
+    V[f'V{slice_ + 1}'] = np.array(data[data['V'][idx[slice_], 0]])  # velocity field for one slice
+    M[f'M{slice_ + 1}'] = np.array(data[data['Magn'][idx[slice_], 0]]) #magnitudes
+    mask[f'mask{slice_ + 1}'] = np.array(data[data['Mask'][idx[slice_], 0]]) #mask for non-heart tissue 
+    T = len(V[f'V{slice_ + 1}'][0,:,0,0,0]) #Total amount of time steps
+    
+    # check if mi, collect infarct site mis if so
+    '''
+    mis = np.nan
+    l = file.split('_')
+    if (l[0] == 'mi') is True:
+        mis = data['InfarctSector'][0,0][0]
+        print(f'Infarct Sector at {mis}')
+    '''
+    
+    a = []
+    for i in range(len(data[ShortDesc[0,0]])):
+        try: 
+            data[ShortDesc[idx[slice_], 0]][i,0]
+        except IndexError:
+            break
+        else:
+            a.append(chr(data[ShortDesc[idx[slice_], 0]][i,0]))
+    
+    plt.title(f'{"".join(a)}')
+    plt.imshow(M[f'M{slice_ + 1}'][0,0,:,:], origin = 'lower')
+    plt.show()
+    # dont need to transverse mask? this could lead to indexing confusion later
+    # has the structure organization changed from the original combodata?
 
 #%%
 # visualizing Strain Rate
+slice_ = 5
+
 # 'fov'
 f = 100
 
@@ -118,7 +135,7 @@ a2_std = np.zeros(T)
 d = np.zeros(T)
 
 # center of mass at t=0
-cx_0, cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[:, :, 0, 0]))
+cx_0, cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[f'mask{slice_+1}'][0, 0, :, :]))
 
 sub = 1 # Graph subplot on (1) or off (0)
 for t in range_:
@@ -129,7 +146,7 @@ for t in range_:
     #ax.set_facecolor('b')
     
     # combodata mask 
-    mask_t = mask[:, :, 0, t] #mask at this timepoint
+    mask_t = mask[f'mask{slice_+1}'][t, 0, :, :] #mask at this timepoint
     
     #find center of mass of filled mask (middle of the heart)
     cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
@@ -142,8 +159,8 @@ for t in range_:
     
     # plot magnitude M plot, normalize for certainty values
     # transpose to allign with mask
-    M_norm = (M[:, :, 0, t]/np.max(M[:, :, 0, t]))
-    plt.imshow(M_norm.T, origin = 'lower', cmap = 'gray', alpha = 1)
+    M_norm = (M[f'M{slice_+1}'][t, 0, :, :]/np.max(M[f'M{slice_+1}'][t, 0, :, :]))
+    plt.imshow(M_norm, origin = 'lower', cmap = 'gray', alpha = 1)
     #plt.imshow(mask_t.T, origin = 'lower', cmap = 'gray', alpha = 1)
     
     # reset radial and circumferential contributions from last frame / initialize

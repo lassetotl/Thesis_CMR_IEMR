@@ -307,8 +307,6 @@ plt.rcParams.update({'font.size': 12})
 fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 #plt.title('Strain rate correlation analysis', fontsize = 15)
 
-cmap = 'coolwarm'
-
 ax_corr(ax1, 'r_sr_max')
 ax1.set_ylabel('r_sr_max [$s^{-1}$]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
 
@@ -332,19 +330,17 @@ plt.rcParams.update({'font.size': 12})
 fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 #plt.title('Strain rate direction correlation analysis', fontsize = 15)
 
-cmap = 'coolwarm'
-
 ax_corr(ax1, 'a1_mean_max')
-ax1.set_ylabel('a1_mean_max [Degrees]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+ax1.set_ylabel('a1_mean_max [Degrees]', fontsize=15); ax1.set_xlabel(''); ax1.legend()
 
 ax_corr(ax2, 'a1_mean_min')
-ax2.set_ylabel('a1_mean_min', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
+ax2.set_ylabel('a1_mean_min', fontsize=15); ax2.set_xlabel(''); ax2.legend()
 
 ax_corr(ax3, 'a2_mean_max')
-ax3.set_ylabel('a2_mean_max', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
+ax3.set_ylabel('a2_mean_max', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend()
 
 ax_corr(ax4, 'a2_mean_min')
-ax4.set_ylabel('a2_mean_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
+ax4.set_ylabel('a2_mean_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend()
 
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')

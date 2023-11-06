@@ -686,7 +686,7 @@ class ComboDataSR_2D:
 # example of use
 if __name__ == "__main__":
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D2-1_1d', n = 2)
+    run1 = ComboDataSR_2D('sham_D4-4_1d', n = 2)
     
     # get info/generate data 
     run1.overview()

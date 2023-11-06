@@ -103,3 +103,10 @@ x = 6
 if x not in range(10, 20):
     print('a')
     
+#%%
+
+myList = [1, 2, 3, 100, 5]
+mylist_e = list(enumerate(myList))
+
+mylist_sorted = sorted(mylist_e, key=lambda x: x[1])
+print(mylist_sorted)

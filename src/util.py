@@ -59,6 +59,38 @@ def D_ij_2D(x, y, V, M, t, sigma, mask): #Construct SR tensor for specific point
     D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
     return D_ij
 
+def D_ij_3D(x, y, V, M, t, sigma, mask): #Construct SR tensor for specific point
+    L = np.zeros((3, 3), dtype = float) #Jacobian 3x3 matrix
+    
+    # calculate certainty matrix from normalized magnitude plot
+    C = M/np.max(M)
+    
+    vx = ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
+    vy = ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
+    vz = ndi.gaussian_filter(V[:, :, 0, t, 2]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
+    
+    #vza =  # z-velocity above 
+    #vzb =  # z-velocity below
+    
+    dy = dx = 1 # voxel length 1 in our image calculations
+    dz = 1  # slicethickness/(res*10)  # relative voxel height
+    
+    # note!: the diagonal has been switched for script testing!
+    L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+    L[1, 0] = -(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+    #L[2, 0] = 
+    
+    L[0, 1] = -(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+    L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+    #L[2, 1] =
+    
+    L[0, 2] = -(C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
+    L[1, 2] = (C[x,y+1]*(vz[x,y+1]-vy[x,y]) + C[x,y-1]*(vz[x,y]-vz[x,y-1])) / (dz*(C[x,y+1]+C[x,y-1]))      
+    #L[2, 2] =
+    
+    D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
+    return D_ij
+
 
 # Note: returns smallest angle in radians between vectors 
 def theta_rad(v, w):
