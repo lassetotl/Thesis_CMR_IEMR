@@ -11,7 +11,7 @@ curve analysis parameters collected and used to construct a pandas dataframe
 for correlation analysis
 """
 
-import os
+import os, time
 import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
@@ -30,6 +30,8 @@ T_ed_list = []
 
 df_list = []
 
+st = time.time()
+filenr = 0
 for file in os.listdir('R:\Lasse\combodata_shax'):
     file_ = os.path.splitext(file)
     run = ComboDataSR_2D(file_[0], n = 1)  # n = 1 should be used for proper analysis
@@ -77,6 +79,10 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
                     r_strain_peaktime_std, c_strain_peaktime_std, r_sr_max, \
                         r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
                             a2_mean_max, a2_mean_min, condition])
+    filenr += 1
+    
+et = time.time()
+print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st)/60)} minutes')  
 
 #%%
 # strain

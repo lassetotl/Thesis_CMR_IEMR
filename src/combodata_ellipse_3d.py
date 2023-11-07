@@ -31,18 +31,17 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-#file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+#file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
 data = h5py.File(f'R:\Lasse\combodata_3d_shax\{file}.mat', 'r')['ComboData']
 
-pss0 = data['pss0']  # z position in MR scanner, index [i,0] refers to slice
-pss0_ = [float(data[pss0[i,0]][0,0]) for i in range(len(pss0))]  # dictionary with slice nr?
+pss0 = [float(data[data['pss0'][i,0]][0,0]) for i in range(len(data['pss0']))]  # dictionary with slice nr?
 
 # sorted slice order and z positions
-idx, pss0_ = zip(*sorted(list(enumerate(pss0_)), reverse = True, key = lambda x: x[1]))
-print(idx, pss0_)  # slice positions in order
+idx, pss0 = zip(*sorted(list(enumerate(pss0)), reverse = True, key = lambda x: x[1]))
+print(idx, pss0)  # slice positions in order
 
 #print(f'Keys in dictionary: {dict.keys()}') #dict_keys(['StudyData', 'StudyParam'])
 #print(f'Combodata shape: {np.shape(data)}')
@@ -63,7 +62,6 @@ slices = len(ShortDesc)  # nr of slices in this file
 
 V = {}; M = {}; mask = {}  # dictionary keys for all slices
 for slice_ in range(slices):
-    # shape of V is (1, 1), indexing necessary to 'unpack' the correct format (?)
     V[f'V{slice_ + 1}'] = np.array(data[data['V'][idx[slice_], 0]])  # velocity field for one slice
     M[f'M{slice_ + 1}'] = np.array(data[data['Magn'][idx[slice_], 0]]) #magnitudes
     mask[f'mask{slice_ + 1}'] = np.array(data[data['Mask'][idx[slice_], 0]]) #mask for non-heart tissue 
@@ -78,7 +76,7 @@ for slice_ in range(slices):
         print(f'Infarct Sector at {mis}')
     '''
     
-    a = []
+    a = []  # construct ShortDescription
     for i in range(len(data[ShortDesc[0,0]])):
         try: 
             data[ShortDesc[idx[slice_], 0]][i,0]
@@ -87,8 +85,11 @@ for slice_ in range(slices):
         else:
             a.append(chr(data[ShortDesc[idx[slice_], 0]][i,0]))
     
-    plt.title(f'{"".join(a)}')
-    plt.imshow(M[f'M{slice_ + 1}'][0,0,:,:], origin = 'lower')
+    desc = ''.join(a)
+    print(desc.split(' ')[-2][-2:].lstrip('0'))  # slice nr
+    
+    plt.title(f'{desc}')
+    plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
     plt.show()
     # dont need to transverse mask? this could lead to indexing confusion later
     # has the structure organization changed from the original combodata?

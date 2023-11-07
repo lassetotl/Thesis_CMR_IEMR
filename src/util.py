@@ -59,17 +59,17 @@ def D_ij_2D(x, y, V, M, t, sigma, mask): #Construct SR tensor for specific point
     D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
     return D_ij
 
-def D_ij_3D(x, y, V, M, t, sigma, mask): #Construct SR tensor for specific point
+def D_ij_3D(x, y, V, M, t, sigma, mask, slice_): #Construct SR tensor for specific point
     L = np.zeros((3, 3), dtype = float) #Jacobian 3x3 matrix
     
     # calculate certainty matrix from normalized magnitude plot
     C = M/np.max(M)
     
-    vx = ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
-    vy = ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
-    vz = ndi.gaussian_filter(V[:, :, 0, t, 2]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
+    vx = ndi.gaussian_filter(V[f'V{slice_+1}'][:, :, 0, t, 0]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
+    vy = ndi.gaussian_filter(V[f'V{slice_+1}'][:, :, 0, t, 1]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
+    vz = ndi.gaussian_filter(V[f'V{slice_+1}'][:, :, 0, t, 2]*C, sigma)*mask / ndi.gaussian_filter(C, sigma)
     
-    #vza =  # z-velocity above 
+    #vza = ndi.gaussian_filter(V[f'V{slice_+2}'][:, :, 0, t, 2]*C, sigma)*mask / ndi.gaussian_filter(C, sigma) # z-velocity above 
     #vzb =  # z-velocity below
     
     dy = dx = 1 # voxel length 1 in our image calculations

@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct  3 12:14:22 2023
+Created on Tue Nov 11 2023
 
-This script contains a class that implements all of the work in the scripts combodataV and combodata_ellipse in 2d. 
-It lets us easily prepare many separate instances (different datasets) in one run, and refer to the methods needed
-(f.ex. to get a velocity plot, create ellipse animation, or just collect analysis data)
-
-Will be expanded to 3d eventually, but functionality will be similar.
+(WIP) Expansion of the ComboDataSR_2D class, but applied to series of combodata slices.
+The final class will perform similar calculations but for a main slice (slice06?)
+plus a range of slices above and below. Or just a given range?
 
 @author: lassetot
 """
@@ -32,10 +30,10 @@ import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import seaborn as sns
-
+import h5py
 
 # create instance for each dataset (of type combodata)
-class ComboDataSR_2D:
+class ComboDataSR_3D:
     def __init__(  # performs when an instance is created
             self,
             filename,  # combodata file in 
@@ -48,17 +46,34 @@ class ComboDataSR_2D:
         self.sigma = sigma
         
         # generalize: make filename be whole directory line?
-        self.data = sio.loadmat(f'R:\Lasse\combodata_shax\{filename}')["ComboData_thisonly"]
+        self.data = h5py.File(f'R:\Lasse\combodata_3d_shax\{self.filename}.mat', 'r')['ComboData']
+        
         self.V = self.data['V'][0,0] #velocity field
         self.M = self.data['Magn'][0,0] #magnitudes
         self.mask = self.data['Mask'][0,0] #mask for non-heart tissue
         self.mask_segment = self.data['MaskS_medium'][0,0]
         
-        self.T = len(self.V[0,0,0,:,0]) #Total amount of time steps
-        self.T_es = self.data['TimePointEndSystole'][0,0][0][0]
-        self.T_ed = self.data['TimePointEndDiastole'][0,0][0][0]
-        self.res = self.data['Resolution'][0,0][0][0]  # temporal resolution, need this for correct SR units?
-        self.TR = self.data['TR'][0,0][0][0]     
+        # global parameters for this set
+
+        self.T_es = float(self.data[self.ata['TimePointEndSystole'][0,0]][0,0])
+        self.T_ed = float(self.data[self.data['TimePointEndDiastole'][0,0]][0,0])
+        self.res = float(self.data[self.data['Resolution'][0,0]][0,0])  # spatial resolution in cm
+        self.slicethickness = float(self.data[self.data['SliceThickness'][0,0]][0,0])  # in mm
+        self.TR = float(self.data[self.data['TR'][0,0]][0,0])  # temporal resolution in s
+        self.ShortDesc = self.data['ShortDesc']
+        self.slices = len(self.ShortDesc)  # nr of slices in this file
+        
+        pss0 = [float(self.data[self.data['pss0'][i,0]][0,0]) for i in range(len(self.data['pss0']))]
+        # sorted slice order and z positions
+        idx, pss0 = zip(*sorted(list(enumerate(pss0)), reverse = True, key = lambda x: x[1]))
+        
+        self.V = {}; self.M = {}; self.mask = {}  # dictionary keys for all slices
+        for slice_ in range(self.slices):
+            self.V[f'V{slice_ + 1}'] = np.array(self.data[self.data['V'][idx[slice_], 0]])  # velocity field for one slice
+            self.M[f'M{slice_ + 1}'] = np.array(self.data[self.data['Magn'][idx[slice_], 0]]) #magnitudes
+            self.mask[f'mask{slice_ + 1}'] = np.array(self.data[self.data['Mask'][idx[slice_], 0]]) #mask for non-heart tissue 
+        
+        self.T = len(self.V[0,0,0,:,0]) #Total amount of time steps     
         
         # infarct sector, arbitrary if no infarct sector in metadata
         self.infarct = 0
@@ -79,19 +94,29 @@ class ComboDataSR_2D:
         
     # calculate strain rate tensor for given point (x, y) and time t, 
     # and a mask for this timepoint t using Selskog method
-    def _D_ij_2D(self, x, y, t): 
-        L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
+    def _D_ij_3D(self, x, y, t, slice_): 
+        L = np.zeros((3, 3), dtype = float) #Jacobian 3x3 matrix
         
         dy = dx = 1 # voxel length 1 in our image calculations
-        vx = self.vx; vy = self.vy; C = self.C
+        dz = self.slicethickness/(self.res*10)  # relative voxel height
+        vx = self.vx; vy = self.vy; vz = self.vz; C = self.C
+        vxa = self.vxa; vxb = self.vxb
+        vya = self.vya; vyb = self.vyb
+        vza = self.vza; vzb = self.vzb
         
         # note!: the diagonal has been switched for script testing!
         L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
         L[1, 0] = -(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+        L[2, 0] = (C[x,y]*(vxa[x,y]-vx[x,y]) + C[x,y]*(vxb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
         
         L[0, 1] = -(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
         L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
-                
+        L[2, 1] = (C[x,y]*(vya[x,y]-vx[x,y]) + C[x,y]*(vyb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
+        
+        L[0, 2] = -(C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
+        L[1, 2] = (C[x,y+1]*(vz[x,y+1]-vy[x,y]) + C[x,y-1]*(vz[x,y]-vz[x,y-1])) / (dz*(C[x,y+1]+C[x,y-1]))      
+        L[2, 2] = (C[x,y]*(vza[x,y]-vx[x,y]) + C[x,y]*(vzb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
+        
         D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
         return D_ij
     
@@ -120,8 +145,8 @@ class ComboDataSR_2D:
         else:
             print(f'No infarct sector found in this slice, sector 1 set as {self.mis}')
             
-    # plots vector field over time, saves video, returns global radial velocity
-    def velocity(self):
+    # plots vector field over time in one slice, saves video, returns global radial velocity
+    def velocity(self, slice_):
         # range of time-points
         self.range_ = range(self.T)
         
@@ -204,7 +229,7 @@ class ComboDataSR_2D:
     # set save = 0 to avoid overwriting current .mp4 and .npy files
     # set segment = 1 to calculate/plot strain rate over 4 sectors
     # (method always calculates in sectors, but sums sectors if segment = 0 after saving synchrony parameters)
-    def strain_rate(self, plot = 1, save = 1, segment = 0):  
+    def strain_rate(self, slice_, plot = 1, save = 1, segment = 0):  
         # range of time-points
         self.range_ = np.array(range(self.T_ed))
         self.range_TR = self.range_*self.TR
@@ -252,7 +277,7 @@ class ComboDataSR_2D:
         for t in self.range_:
 
             # combodata mask 
-            mask_t = self.mask[:, :, 0, t] #mask at this timepoint
+            mask_t = self.mask[f'V{slice_+1}'][t, 0, :, :] #mask at this timepoint
             mask_segment_t = self.mask_segment[:, :, 0, t] #mask at this timepoint
             
             #find center of mass of filled mask (middle of the heart)
@@ -280,13 +305,22 @@ class ComboDataSR_2D:
             e_count = np.zeros(4)
             
             # calculate certainty matrix from normalized magnitude plot
-            self.C = self.M[:, :, 0, t]/np.max(self.M[:, :, 0, t])
+            C = self.M[f'V{slice_+1}'][t, 0, :, :]/np.max(self.M[f'V{slice_+1}'][t, 0, :, :])
             
-            # certainty matrix and gaussian filter should compensate for border artifacts
-            self.vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*self.C, self.sigma)*mask_t \
-                / ndi.gaussian_filter(self.C, self.sigma)
-            self.vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*self.C, self.sigma)*mask_t \
-                / ndi.gaussian_filter(self.C, self.sigma)
+            self.vx = ndi.gaussian_filter(self.V[f'V{slice_+1}'][0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vy = ndi.gaussian_filter(self.V[f'V{slice_+1}'][1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vz = ndi.gaussian_filter(self.V[f'V{slice_+1}'][2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            
+            # the same fields one slice above and below
+            # should we do this for C as well?
+            self.vxa = ndi.gaussian_filter(self.V[f'V{slice_+2}'][0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma) 
+            self.vxb = ndi.gaussian_filter(self.V[f'V{slice_}'][0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            
+            self.vya = ndi.gaussian_filter(self.V[f'V{slice_+2}'][1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma) 
+            self.vyb = ndi.gaussian_filter(self.V[f'V{slice_}'][1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            
+            self.vza = ndi.gaussian_filter(self.V[f'V{slice_+2}'][2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vzb = ndi.gaussian_filter(self.V[f'V{slice_}'][2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
             
             #calculate eigenvalues and vectors
             for x in range(0, self.ax, self.n):
@@ -295,6 +329,8 @@ class ComboDataSR_2D:
                     if mask_e[x, y] == 1:
                         # SR tensor for point xy 
                         D_ = self._D_ij_2D(x, y, t) 
+                        
+                        # from this point on its besically the same but with 3d sr tensor
                         val, vec = np.linalg.eig(D_)
                         
                         # skip this voxel if eigenvalue signs are equal
@@ -690,7 +726,7 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
+    run1 = ComboDataSR_2D('sham_D4-4_1d', n = 2)
     
     # get info/generate data 
     run1.overview()
