@@ -694,8 +694,8 @@ if __name__ == "__main__":
     
     # get info/generate data 
     run1.overview()
-    #grv1 = run1.velocity()
-    run1.strain_rate(plot = 1, save = 0, segment = 0)
+    grv1 = run1.velocity()
+    #run1.strain_rate(plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

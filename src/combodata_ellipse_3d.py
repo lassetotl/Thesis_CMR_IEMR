@@ -61,6 +61,7 @@ slices = len(ShortDesc)  # nr of slices in this file
 
 
 V = {}; M = {}; mask = {}  # dictionary keys for all slices
+slicenr = {}  # dictionary of short descriptions
 for slice_ in range(slices):
     V[f'V{slice_ + 1}'] = np.array(data[data['V'][idx[slice_], 0]])  # velocity field for one slice
     M[f'M{slice_ + 1}'] = np.array(data[data['Magn'][idx[slice_], 0]]) #magnitudes
@@ -86,9 +87,11 @@ for slice_ in range(slices):
             a.append(chr(data[ShortDesc[idx[slice_], 0]][i,0]))
     
     desc = ''.join(a)
-    print(desc.split(' ')[-2][-2:].lstrip('0'))  # slice nr
+    snr = desc.split(' ')[-2][-2:].lstrip('0')
+    print(desc)  # slice nr
+    slicenr[f'slice {slice_+1}'] = snr
     
-    plt.title(f'{desc}')
+    plt.title(f'Slice {desc}')
     plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
     plt.show()
     # dont need to transverse mask? this could lead to indexing confusion later

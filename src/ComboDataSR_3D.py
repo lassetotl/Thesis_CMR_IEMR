@@ -55,7 +55,7 @@ class ComboDataSR_3D:
         
         # global parameters for this set
 
-        self.T_es = float(self.data[self.ata['TimePointEndSystole'][0,0]][0,0])
+        self.T_es = float(self.data[self.data['TimePointEndSystole'][0,0]][0,0])
         self.T_ed = float(self.data[self.data['TimePointEndDiastole'][0,0]][0,0])
         self.res = float(self.data[self.data['Resolution'][0,0]][0,0])  # spatial resolution in cm
         self.slicethickness = float(self.data[self.data['SliceThickness'][0,0]][0,0])  # in mm
@@ -68,12 +68,27 @@ class ComboDataSR_3D:
         idx, pss0 = zip(*sorted(list(enumerate(pss0)), reverse = True, key = lambda x: x[1]))
         
         self.V = {}; self.M = {}; self.mask = {}  # dictionary keys for all slices
+        self.slicenr = {}
         for slice_ in range(self.slices):
             self.V[f'V{slice_ + 1}'] = np.array(self.data[self.data['V'][idx[slice_], 0]])  # velocity field for one slice
             self.M[f'M{slice_ + 1}'] = np.array(self.data[self.data['Magn'][idx[slice_], 0]]) #magnitudes
             self.mask[f'mask{slice_ + 1}'] = np.array(self.data[self.data['Mask'][idx[slice_], 0]]) #mask for non-heart tissue 
         
-        self.T = len(self.V[0,0,0,:,0]) #Total amount of time steps     
+            a = []  # construct ShortDescription
+            for i in range(len(self.data[self.ShortDesc[0,0]])):
+                try: 
+                    self.data[self.ShortDesc[idx[slice_], 0]][i,0]
+                except IndexError:
+                    break
+                else:
+                    a.append(chr(self.data[self.ShortDesc[idx[slice_], 0]][i,0]))
+            
+            desc = ''.join(a).split(' ')[-2][-2:].lstrip('0')
+            self.slicenr[f'slice {slice_+1}'] = desc
+        
+        a = ''.join(a).split(' ')[1:3]
+        self.ID = a
+        self.T = len(self.V['V1'][0,:,0,0,0]) #Total amount of time steps     
         
         # infarct sector, arbitrary if no infarct sector in metadata
         self.infarct = 0
@@ -134,11 +149,12 @@ class ComboDataSR_3D:
     
     
     def overview(self):
-        print(f'{self.filename} overview:')
-        print(f'Velocity field shape: {np.shape(self.V)}')
-        print(f'Magnitudes field shape: {np.shape(self.M)}')
-        print(f'Mask shape: {np.shape(self.mask)}')
+        print(f'{self.filename} global overview:')
+        print(f'Velocity field shape: {np.shape(self.V["V1"])}')
+        print(f'Magnitudes field shape: {np.shape(self.M["M1"])}')
+        print(f'Mask shape: {np.shape(self.mask["mask1"])}')
         print(f'End systole at t={self.T_es}, end diastole at t={self.T_ed}')
+        print(f'Number of slices: {self.slices}')
         
         if self.infarct == 1:
             print(f'Infarct sector at {self.mis}')
@@ -146,25 +162,35 @@ class ComboDataSR_3D:
             print(f'No infarct sector found in this slice, sector 1 set as {self.mis}')
             
     # plots vector field over time in one slice, saves video, returns global radial velocity
-    def velocity(self, slice_):
+    def velocity(self, slice_, save = 0):
+        # slice 6 should produce the same plot and radial vel curve as combodata
+        
+        # relevant matrices for this slice
+        V = self.V[f'V{slice_}']
+        M = self.M[f'M{slice_}']
+        mask = self.mask[f'mask{slice_}']
+        
         # range of time-points
         self.range_ = range(self.T)
         
+        slicenr = self.slicenr[f"slice {slice_}"]
+        id_ = self.ID[0] + ' ' + self.ID[1]
+        
         # get data axis dimensions
-        self.ax = len(self.mask[:,0,0,0])
-        self.ay = len(self.mask[0,:,0,0])
+        self.ax = len(mask[0,0,:,0])
+        self.ay = len(mask[0,0,0,:])
 
         # global rad and circ velocity
         self.gr = np.zeros(self.T)
         self.gc = np.zeros(self.T)
         
         # center of mass at t=0
-        self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
+        self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[0, 0, :, :].T))
         
         for t in self.range_:
             
-            frame1 = self.M[:, :, 0, t] #photon density at time t
-            mask_t = self.mask[:, :, 0, t]
+            frame1 = M[t, 0, :, :].T #photon density at time t
+            mask_t = mask[t, 0, :, :].T
             
             plt.subplots(figsize=(10,10))
             #ax = plt.gca()
@@ -175,15 +201,15 @@ class ComboDataSR_3D:
             #find center of mass of filled mask (middle of the heart)
             cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
             
-            plt.title(f'Velocity plot over proton density at timepoint t = {t} ({self.filename})', fontsize = 15)
+            plt.title(f'Velocity plot at t = {t} ({id_}, Slice {slicenr})', fontsize = 15)
             
             
             #certainty matrix
             C = frame1/np.max(frame1)
             
             #wiener noise reduction filter (?)
-            vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #x components of velocity w mask
-            vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #y components 
+            vx = ndi.gaussian_filter(V[0, t, 0, :, :].T*C, sigma = 2)*mask_t #x components of velocity w mask
+            vy = ndi.gaussian_filter(V[1, t, 0, :, :].T*C, sigma = 2)*mask_t #y components 
             
             # vector decomposition
             for x in range(0, self.ax, self.n):
@@ -199,7 +225,7 @@ class ComboDataSR_3D:
                         self.gr[t] += np.linalg.norm(v_)*np.cos(theta) 
                         self.gc[t] += np.linalg.norm(v_)*np.sin(theta) 
             
-            plt.scatter(cx, cy, marker = 'x', c = 'w')
+            plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
           
             w = 25 # +- window from center of mass at t = 0
             plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
@@ -207,7 +233,7 @@ class ComboDataSR_3D:
             plt.show()
             
         plt.figure(figsize=(10, 8))
-        plt.title(f'Global velocity over time ({self.filename})', fontsize = 15)
+        plt.title(f'Global radial velocity over time ({id_}, Slice {slicenr})', fontsize = 15)
         plt.axvline(self.T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
         plt.axvline(self.T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
         plt.axhline(0, c = 'k', lw = 1)
@@ -215,13 +241,14 @@ class ComboDataSR_3D:
         plt.plot(self.range_, self.gr, lw = 2, label = 'Radial')
         plt.legend()
         
-        # save video in folder named after filename
-        filenames = [f'R:\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
-
-        with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Velocity.mp4', fps=7) as writer:    # inputs: filename, frame per second
-            for filename in filenames:
-                image = imageio.imread(filename)                         # load the image file
-                writer.append_data(image)
+        if save == 1:
+            # save video in folder named after filename
+            filenames = [f'R:\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
+    
+            with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Velocity.mp4', fps=7) as writer:    # inputs: filename, frame per second
+                for filename in filenames:
+                    image = imageio.imread(filename)                         # load the image file
+                    writer.append_data(image)
         
         return self.gr
     
@@ -726,12 +753,12 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D4-4_1d', n = 2)
+    run1 = ComboDataSR_3D('ComboData_PC(SIMULA_220404_D4-4_s_2017051502)', n = 2)
     
     # get info/generate data 
     run1.overview()
-    #grv1 = run1.velocity()
-    run1.strain_rate(plot = 1, save = 0, segment = 0)
+    grv1 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
+    #run1.strain_rate(plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
