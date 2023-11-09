@@ -6,10 +6,13 @@ Created on Mon Sep 11 10:53:42 2023
 """
 
 import numpy as np
-from util import clockwise_angle, gaussian_2d
+from util import clockwise_angle, theta_rad, draw_ellipsoid
 from matplotlib.patches import Ellipse
+from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 import scipy.ndimage as ndi 
+import plotly.graph_objects as go
+from plotly.offline import plot
 
 #%%
 
@@ -110,3 +113,72 @@ mylist_e = list(enumerate(myList))
 
 mylist_sorted = sorted(mylist_e, key=lambda x: x[1])
 print(mylist_sorted)
+
+#%%
+
+val = np.array([-0.34593812,  0.48274582, -0.01614579])
+vec = np.array([[-0.99795097,  0.05704878,  0.02897064],
+         [ 0.05230986,  0.46671858,  0.88285755],
+         [-0.03684481, -0.882564,    0.46874647]])
+
+val = np.array([-0.34929624, -0.0105196, 0.48047776])
+vec = np.array([[-0.99099194, -0.13196083,  0.02283236],
+ [-0.10635986,  0.87911913,  0.46458275],
+ [ 0.08137908, -0.45796931,  0.88523531]])
+
+fig = plt.figure(figsize=plt.figaspect(1))
+ax = fig.add_subplot(111, projection='3d')
+plt.quiver(0, 0, 0, vec[0][0], vec[0][1], vec[0][2], color='k')
+plt.quiver(0, 0, 0, vec[1][0], vec[1][1], vec[1][2], color='r')
+plt.quiver(0, 0, 0, vec[2][0], vec[2][1], vec[2][2], color='g')
+lim = 1
+ax.set_xlim([-lim, lim])
+ax.set_ylim([-lim, lim])
+ax.set_zlim([-lim, lim])
+plt.show()
+
+# are the vectors orthoganal?
+print(theta_rad(vec[0], vec[1])*180/np.pi)
+print(theta_rad(vec[2], [0,0,1])*180/np.pi)
+print(theta_rad(vec[2], [1,0,0])*180/np.pi)
+print(theta_rad(vec[2], [0,1,0])*180/np.pi)
+#%%
+a, b, c = val
+u, v = np.mgrid[0:2*np.pi:40j, 0:np.pi:20j]
+x1 = a * np.cos(u) * np.sin(v)
+y1 = b * np.sin(u) * np.sin(v)
+z1 = c * np.cos(v)
+# points on the ellipsoid
+points = np.stack([t.flatten() for t in [x1, y1, z1]])
+
+v1, v2, v3 = vec
+# 3x3 transformation matrix
+T = np.array([v1, v2, v3]).T
+
+# transform coordinates to the new orthonormal basis
+new_points = T @ points
+x2 = new_points[0, :]
+y2 = new_points[1, :]
+z2 = new_points[2, :]
+x2, y2, z2 = [t.reshape(x1.shape) for t in [x2, y2, z2]]
+
+# scale vector for better visualization
+scale = 5
+v1, v2, v3 = [scale * t for t in [v1, v2, v3]]
+
+fig = go.Figure([
+    # axis on the standard base
+    go.Scatter3d(x=[0, 5], y=[0, 0], z=[0, 0], mode="lines", name="x1", line=dict(width=5, color="red")),
+    go.Scatter3d(x=[0, 0], y=[0, 5], z=[0, 0], mode="lines", name="y1", line=dict(width=5, color="green")),
+    go.Scatter3d(x=[0, 0], y=[0, 0], z=[0, 5], mode="lines", name="z1", line=dict(width=5, color="blue")),
+    # axis on the new orthonormal base
+    go.Scatter3d(x=[0, v1[0]], y=[0, v1[1]], z=[0, v1[2]], mode="lines", name="x2", line=dict(width=2, color="red")),
+    go.Scatter3d(x=[0, v2[0]], y=[0, v2[1]], z=[0, v2[2]], mode="lines", name="y2", line=dict(width=2, color="green")),
+    go.Scatter3d(x=[0, v3[0]], y=[0, v3[1]], z=[0, v3[2]], mode="lines", name="z2", line=dict(width=2, color="blue")),
+    # original ellipsoid aligned to the standard base
+    go.Surface(x=x1, y=y1, z=z1, opacity=0.35, colorscale="plotly3", surfacecolor=y1, cmin=y1.min(), cmax=y1.max(), colorbar=dict(len=0.6, yanchor="bottom", y=0)),
+    # final ellipsoid aligned to the new orthonormal base
+    go.Surface(x=x2, y=y2, z=z2, opacity=1, colorscale="aggrnyl", surfacecolor=y1, cmin=y1.min(), cmax=y1.max(), colorbar=dict(len=0.6, yanchor="bottom", y=0, x=0.95))
+])
+fig.update_layout({"scene": {"aspectmode": "auto"}})
+plot(fig, auto_open=True)

@@ -174,7 +174,7 @@ class ComboDataSR_2D:
                         self.gr[t] += np.linalg.norm(v_)*np.cos(theta) 
                         self.gc[t] += np.linalg.norm(v_)*np.sin(theta) 
             
-            plt.scatter(cx, cy, marker = 'x', c = 'w')
+            plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
           
             w = 25 # +- window from center of mass at t = 0
             plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
@@ -204,7 +204,7 @@ class ComboDataSR_2D:
     # set save = 0 to avoid overwriting current .mp4 and .npy files
     # set segment = 1 to calculate/plot strain rate over 4 sectors
     # (method always calculates in sectors, but sums sectors if segment = 0 after saving synchrony parameters)
-    def strain_rate(self, plot = 1, save = 1, segment = 0):  
+    def strain_rate(self, ellipse = 1, plot = 1, save = 1, segment = 0):  
         # range of time-points
         self.range_ = np.array(range(self.T_ed))
         self.range_TR = self.range_*self.TR
@@ -223,6 +223,8 @@ class ComboDataSR_2D:
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
+        
+        self.d = np.zeros(self.T_ed)
         
         # setup segmentation
         if segment == 1:  # segmentation plot, colors for each segment
@@ -261,7 +263,7 @@ class ComboDataSR_2D:
             # erode mask 
             mask_e = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
             
-            if plot == 1:
+            if ellipse == 1:
                 plt.subplots(figsize=(10,10))
                 ax = plt.gca()
                 # plot magnitude M plot, normalize for certainty values
@@ -297,6 +299,7 @@ class ComboDataSR_2D:
                         D_ = self._D_ij_2D(x, y, t) 
                         val, vec = np.linalg.eig(D_)
                         
+                        self.d[t] += sum(val)
                         # skip this voxel if eigenvalue signs are equal
                         #if np.sign(val[0]) == np.sign(val[1]):
                             #continue
@@ -397,7 +400,7 @@ class ComboDataSR_2D:
                             a2_[sector].append(theta_)
                         
                         
-                        if plot == 1:
+                        if ellipse == 1:
                             # hex code, inputs in range (0, 1) so theta is scaled
                             if segment == 1:
                                 # color code after sector 1 to 4
@@ -431,7 +434,7 @@ class ComboDataSR_2D:
                 self.a2[sector, t] = np.array(a2_[sector])*180/np.pi
             
             # ellipse plot
-            if plot == 1: 
+            if ellipse == 1: 
                 plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
                 #plt.scatter(mis[0], mis[1], marker = 'x', c = 'r')
              
@@ -694,8 +697,8 @@ if __name__ == "__main__":
     
     # get info/generate data 
     run1.overview()
-    grv1 = run1.velocity()
-    #run1.strain_rate(plot = 1, save = 0, segment = 0)
+    #grv1 = run1.velocity()
+    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

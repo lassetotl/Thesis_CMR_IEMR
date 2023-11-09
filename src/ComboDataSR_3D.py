@@ -17,16 +17,13 @@ from matplotlib import patches
 from matplotlib.lines import Line2D
 
 from numpy.linalg import norm
-from util import D_ij_2D, theta_rad, running_average, clockwise_angle
-from util import gaussian_2d, theta_extreme
+from util import theta_rad, running_average, clockwise_angle
 
 import scipy.io as sio
 import scipy.ndimage as ndi 
-from scipy.signal import convolve2d
 import scipy.interpolate as scint
 from scipy.integrate import cumtrapz
 import imageio
-import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import seaborn as sns
@@ -48,15 +45,10 @@ class ComboDataSR_3D:
         # generalize: make filename be whole directory line?
         self.data = h5py.File(f'R:\Lasse\combodata_3d_shax\{self.filename}.mat', 'r')['ComboData']
         
-        self.V = self.data['V'][0,0] #velocity field
-        self.M = self.data['Magn'][0,0] #magnitudes
-        self.mask = self.data['Mask'][0,0] #mask for non-heart tissue
-        self.mask_segment = self.data['MaskS_medium'][0,0]
-        
         # global parameters for this set
 
-        self.T_es = float(self.data[self.data['TimePointEndSystole'][0,0]][0,0])
-        self.T_ed = float(self.data[self.data['TimePointEndDiastole'][0,0]][0,0])
+        self.T_es = int(self.data[self.data['TimePointEndSystole'][0,0]][0,0])
+        self.T_ed = int(self.data[self.data['TimePointEndDiastole'][0,0]][0,0])
         self.res = float(self.data[self.data['Resolution'][0,0]][0,0])  # spatial resolution in cm
         self.slicethickness = float(self.data[self.data['SliceThickness'][0,0]][0,0])  # in mm
         self.TR = float(self.data[self.data['TR'][0,0]][0,0])  # temporal resolution in s
@@ -67,12 +59,14 @@ class ComboDataSR_3D:
         # sorted slice order and z positions
         idx, pss0 = zip(*sorted(list(enumerate(pss0)), reverse = True, key = lambda x: x[1]))
         
+        # matrices and values that differ between slices collected here
         self.V = {}; self.M = {}; self.mask = {}  # dictionary keys for all slices
-        self.slicenr = {}
+        self.mask_segment = {}; self.slicenr = {}
         for slice_ in range(self.slices):
             self.V[f'V{slice_ + 1}'] = np.array(self.data[self.data['V'][idx[slice_], 0]])  # velocity field for one slice
             self.M[f'M{slice_ + 1}'] = np.array(self.data[self.data['Magn'][idx[slice_], 0]]) #magnitudes
             self.mask[f'mask{slice_ + 1}'] = np.array(self.data[self.data['Mask'][idx[slice_], 0]]) #mask for non-heart tissue 
+            self.mask_segment[f'mask_segment{slice_ + 1}'] = np.array(self.data[self.data['MaskS_medium'][idx[slice_], 0]])
         
             a = []  # construct ShortDescription
             for i in range(len(self.data[self.ShortDesc[0,0]])):
@@ -84,7 +78,7 @@ class ComboDataSR_3D:
                     a.append(chr(self.data[self.ShortDesc[idx[slice_], 0]][i,0]))
             
             desc = ''.join(a).split(' ')[-2][-2:].lstrip('0')
-            self.slicenr[f'slice {slice_+1}'] = desc
+            self.slicenr[f'slice {slice_ + 1}'] = desc
         
         a = ''.join(a).split(' ')[1:3]
         self.ID = a
@@ -109,7 +103,7 @@ class ComboDataSR_3D:
         
     # calculate strain rate tensor for given point (x, y) and time t, 
     # and a mask for this timepoint t using Selskog method
-    def _D_ij_3D(self, x, y, t, slice_): 
+    def _D_ij_3D(self, x, y, t): 
         L = np.zeros((3, 3), dtype = float) #Jacobian 3x3 matrix
         
         dy = dx = 1 # voxel length 1 in our image calculations
@@ -119,18 +113,20 @@ class ComboDataSR_3D:
         vya = self.vya; vyb = self.vyb
         vza = self.vza; vzb = self.vzb
         
-        # note!: the diagonal has been switched for script testing!
+        ## exclude data / interpolate / approximate if values above/below are zero ##
+        # ...
+        
         L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
-        L[1, 0] = -(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+        L[1, 0] = (C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
         L[2, 0] = (C[x,y]*(vxa[x,y]-vx[x,y]) + C[x,y]*(vxb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
         
-        L[0, 1] = -(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+        L[0, 1] = (C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
         L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
-        L[2, 1] = (C[x,y]*(vya[x,y]-vx[x,y]) + C[x,y]*(vyb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[2, 1] = (C[x,y]*(vya[x,y]-vy[x,y]) + C[x,y]*(vyb[x,y]-vy[x,y])) / (dz*(C[x,y]+C[x,y]))
         
-        L[0, 2] = -(C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
+        L[0, 2] = (C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
         L[1, 2] = (C[x,y+1]*(vz[x,y+1]-vy[x,y]) + C[x,y-1]*(vz[x,y]-vz[x,y-1])) / (dz*(C[x,y+1]+C[x,y-1]))      
-        L[2, 2] = (C[x,y]*(vza[x,y]-vx[x,y]) + C[x,y]*(vzb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[2, 2] = (C[x,y]*(vza[x,y]-vz[x,y]) + C[x,y]*(vzb[x,y]-vz[x,y])) / (dz*(C[x,y]+C[x,y]))
         
         D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
         return D_ij
@@ -256,14 +252,28 @@ class ComboDataSR_3D:
     # set save = 0 to avoid overwriting current .mp4 and .npy files
     # set segment = 1 to calculate/plot strain rate over 4 sectors
     # (method always calculates in sectors, but sums sectors if segment = 0 after saving synchrony parameters)
-    def strain_rate(self, slice_, plot = 1, save = 1, segment = 0):  
+    def strain_rate(self, slice_, ellipse = 1, plot = 1, save = 1, segment = 0):  
+        # relevant matrices for this slice
+        V = self.V[f'V{slice_}']
+        M = self.M[f'M{slice_}']
+        mask = self.mask[f'mask{slice_}']
+        mask_segment = self.mask_segment[f'mask_segment{slice_}']
+        
+        try:
+            Va = self.V[f'V{slice_+1}']  # above
+            Vb = self.V[f'V{slice_-1}']  # below
+            
+        except KeyError:
+            raise Exception(f'\nSlice {slice_} is missing a slice above or below. \
+                            \nChoose a slice between slices: \n{self.V.keys()}')
+        
         # range of time-points
         self.range_ = np.array(range(self.T_ed))
         self.range_TR = self.range_*self.TR
         
         # get data axis dimensions
-        self.ax = len(self.mask[:,0,0,0])
-        self.ay = len(self.mask[0,:,0,0])
+        self.ax = len(mask[0,0,:,0])
+        self.ay = len(mask[0,0,0,:])
         
         # each row contains strain rate data for sector 1, 2, 3, 4
         self.r_matrix = np.zeros((4, self.T_ed)); self.r_matrix[:, :] = np.nan
@@ -274,7 +284,9 @@ class ComboDataSR_3D:
         self.a2 = np.zeros((4, self.T_ed), dtype = 'object') # 'negative' angles (compression direction)
         
         # center of mass at t=0
-        self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
+        self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[0, 0, :, :]))
+        
+        self.d = np.zeros(self.T_ed)
         
         # setup segmentation
         if segment == 1:  # segmentation plot, colors for each segment
@@ -304,8 +316,8 @@ class ComboDataSR_3D:
         for t in self.range_:
 
             # combodata mask 
-            mask_t = self.mask[f'V{slice_+1}'][t, 0, :, :] #mask at this timepoint
-            mask_segment_t = self.mask_segment[:, :, 0, t] #mask at this timepoint
+            mask_t = mask[t, 0, :, :].T #mask at this timepoint
+            mask_segment_t = mask_segment[t, 0, :, :].T #mask at this timepoint
             
             #find center of mass of filled mask (middle of the heart)
             cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
@@ -313,12 +325,15 @@ class ComboDataSR_3D:
             # erode mask 
             mask_e = ndi.binary_erosion(mask_t).astype(mask_t.dtype)
             
-            if plot == 1:
+            # calculate certainty matrix from normalized magnitude plot
+            self.C = M[t, 0, :, :].T/np.max(M[t, 0, :, :].T); C = self.C
+            
+            if ellipse == 1:
                 plt.subplots(figsize=(10,10))
                 ax = plt.gca()
                 # plot magnitude M plot, normalize for certainty values
                 # transpose in imshow to allign with mask
-                plt.imshow(self.M[:, :, 0, t].T, origin = 'lower', cmap = 'gray', alpha = 1)
+                plt.imshow(C.T, origin = 'lower', cmap = 'gray', alpha = 1)
             
             sector = 0  # reset sector number
             
@@ -331,23 +346,20 @@ class ComboDataSR_3D:
             # amount of ellipses in this timepoint in each sector 1-4 is stored here
             e_count = np.zeros(4)
             
-            # calculate certainty matrix from normalized magnitude plot
-            C = self.M[f'V{slice_+1}'][t, 0, :, :]/np.max(self.M[f'V{slice_+1}'][t, 0, :, :])
-            
-            self.vx = ndi.gaussian_filter(self.V[f'V{slice_+1}'][0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
-            self.vy = ndi.gaussian_filter(self.V[f'V{slice_+1}'][1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
-            self.vz = ndi.gaussian_filter(self.V[f'V{slice_+1}'][2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vx = ndi.gaussian_filter(V[0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
+            self.vy = ndi.gaussian_filter(V[1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
+            self.vz = ndi.gaussian_filter(V[2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
             
             # the same fields one slice above and below
             # should we do this for C as well?
-            self.vxa = ndi.gaussian_filter(self.V[f'V{slice_+2}'][0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma) 
-            self.vxb = ndi.gaussian_filter(self.V[f'V{slice_}'][0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vxa = ndi.gaussian_filter(Va[0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T 
+            self.vxb = ndi.gaussian_filter(Vb[0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
             
-            self.vya = ndi.gaussian_filter(self.V[f'V{slice_+2}'][1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma) 
-            self.vyb = ndi.gaussian_filter(self.V[f'V{slice_}'][1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vya = ndi.gaussian_filter(Va[1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T 
+            self.vyb = ndi.gaussian_filter(Vb[1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
             
-            self.vza = ndi.gaussian_filter(self.V[f'V{slice_+2}'][2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
-            self.vzb = ndi.gaussian_filter(self.V[f'V{slice_}'][2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vza = ndi.gaussian_filter(Va[2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
+            self.vzb = ndi.gaussian_filter(Vb[2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
             
             #calculate eigenvalues and vectors
             for x in range(0, self.ax, self.n):
@@ -355,25 +367,28 @@ class ComboDataSR_3D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         # SR tensor for point xy 
-                        D_ = self._D_ij_2D(x, y, t) 
+                        D_ = self._D_ij_3D(x, y, t) 
                         
-                        # from this point on its besically the same but with 3d sr tensor
+                        # from this point on its besically the same;
+                        # 2d slice with but with 3d sr tensors
                         val, vec = np.linalg.eig(D_)
-                        
+                        self.d[t] += sum(val)
                         # skip this voxel if eigenvalue signs are equal
                         #if np.sign(val[0]) == np.sign(val[1]):
                             #continue
                         
-                        # vector between center of mass and point (x, y) 
-                        r = np.array([x - cx, y - cy])
+                        # vector between center of mass and point (x, y, 0) 
+                        r = np.array([x - cx, y - cy, 0])
                         #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
                         
                         # index of eigenvalues
                         val_max_i = np.argmax(val)  # most positive value
                         val_min_i = np.argmin(val)  # most negative
+                        val_last_i = 3 - val_min_i - val_max_i
                         
                         theta = theta_rad(r, vec[val_max_i])  # angle between highest eigenvector and r
                         theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
+                        theta__ = theta_rad(r, vec[val_last_i]) # angle between third eigenvector and r
                         
                         # local contribution
                         sect_xy = mask_segment_t[x, y]  # sector value in (x,y)
@@ -404,9 +419,9 @@ class ComboDataSR_3D:
                             sector = 0
                             e_count[sector] += 1
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
+                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
+                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
                             
                         
                         # adjacent (green)
@@ -416,9 +431,9 @@ class ComboDataSR_3D:
                             sector = 1
                             e_count[sector] += 1
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
+                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
+                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
                             
                             
                         # medial (blue)                
@@ -428,9 +443,9 @@ class ComboDataSR_3D:
                             sector = 2
                             e_count[sector] += 1
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
+                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
+                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
                         
                         
                         # remote (purple)
@@ -440,9 +455,9 @@ class ComboDataSR_3D:
                             
                             e_count[sector] += 1
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
+                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
+                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
                         
                         else:  # avoid plotting ellipses in invalid ranges
                             continue
@@ -453,14 +468,18 @@ class ComboDataSR_3D:
                             a1_[sector].append(theta) 
                         if val[val_min_i] > 0:
                             a1_[sector].append(theta_)
+                        if val[val_last_i] > 0:
+                            a1_[sector].append(theta__)
                             
                         if val[val_max_i] < 0:
                             a2_[sector].append(theta) 
                         if val[val_min_i] < 0:
                             a2_[sector].append(theta_)
+                        if val[val_last_i] < 0:
+                            a2_[sector].append(theta__)
                         
                         
-                        if plot == 1:
+                        if ellipse == 1:
                             # hex code, inputs in range (0, 1) so theta is scaled
                             if segment == 1:
                                 # color code after sector 1 to 4
@@ -494,7 +513,7 @@ class ComboDataSR_3D:
                 self.a2[sector, t] = np.array(a2_[sector])*180/np.pi
             
             # ellipse plot
-            if plot == 1: 
+            if ellipse == 1: 
                 plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
                 #plt.scatter(mis[0], mis[1], marker = 'x', c = 'r')
              
@@ -668,9 +687,10 @@ class ComboDataSR_3D:
                 
                 plt.legend()
             
-
             plt.subplots_adjust(wspace=0.25)
-            plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
+            if save == 1:
+                plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
+                
             plt.show()
             
             #angles over time
@@ -751,14 +771,17 @@ class ComboDataSR_3D:
 #%%
 # example of use
 if __name__ == "__main__":
+    file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+    #file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+    
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_3D('ComboData_PC(SIMULA_220404_D4-4_s_2017051502)', n = 2)
+    run1 = ComboDataSR_3D(file, n = 2)
     
     # get info/generate data 
     run1.overview()
-    grv1 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
-    #run1.strain_rate(plot = 1, save = 0, segment = 0)
+    #grv2 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
+    run1.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

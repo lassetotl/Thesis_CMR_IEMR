@@ -22,6 +22,8 @@ import scipy.interpolate as scint
 import imageio
 import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
+import plotly.graph_objects as go
+from plotly.offline import plot
 
 #from numba import njit #  use this to compile?
 
@@ -170,3 +172,40 @@ def drop_outliers_IQR(df, column_name, threshold = 1.5):
     a, b = np.polyfit(outliers_dropped['Day'], outliers_dropped[column_name], 1)
 
     return outliers, outliers_dropped, a, b
+
+def draw_ellipsoid(vec, val):
+    # compute ellipsoid coordinates on standard basis
+    # https://stackoverflow.com/questions/72153185/plot-an-ellipsoid-from-three-orthonormal-vectors-and-the-magnitudes-using-matplo
+    a, b, c = val
+    u, v = np.mgrid[0:2*np.pi:40j, 0:np.pi:20j]
+    x1 = a * np.cos(u) * np.sin(v)
+    y1 = b * np.sin(u) * np.sin(v)
+    z1 = c * np.cos(v)
+    # points on the ellipsoid
+    points = np.stack([t.flatten() for t in [x1, y1, z1]])
+
+    v1, v2, v3 = vec
+    # 3x3 transformation matrix
+    T = np.array([v1, v2, v3]).T
+
+    # transform coordinates to the new orthonormal basis
+    new_points = T @ points
+    x2 = new_points[0, :]
+    y2 = new_points[1, :]
+    z2 = new_points[2, :]
+    x2, y2, z2 = [t.reshape(x1.shape) for t in [x2, y2, z2]]
+
+    # scale vector for better visualization
+    scale = 5
+    v1, v2, v3 = [scale * t for t in [v1, v2, v3]]
+
+    fig = go.Figure([
+        # axis on the new orthonormal base
+        go.Scatter3d(x=[0, v1[0]], y=[0, v1[1]], z=[0, v1[2]], mode="lines", name="x2", line=dict(width=2, color="red")),
+        go.Scatter3d(x=[0, v2[0]], y=[0, v2[1]], z=[0, v2[2]], mode="lines", name="y2", line=dict(width=2, color="green")),
+        go.Scatter3d(x=[0, v3[0]], y=[0, v3[1]], z=[0, v3[2]], mode="lines", name="z2", line=dict(width=2, color="blue")),
+        
+        # final ellipsoid aligned to the new orthonormal base
+        go.Surface(x=x2, y=y2, z=z2, opacity=1, colorscale="aggrnyl", surfacecolor=y1, cmin=y1.min(), cmax=y1.max(), colorbar=dict(len=0.6, yanchor="bottom", y=0, x=0.95))
+    ])
+    fig.update_layout({"scene": {"aspectmode": "auto"}})
