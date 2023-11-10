@@ -367,6 +367,7 @@ class ComboDataSR_3D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         # SR tensor for point xy 
+                        ## check if Va[x, y] or Vb[x, y] = 0 here, exclude if so (later, interpolate)
                         D_ = self._D_ij_3D(x, y, t) 
                         
                         # from this point on its besically the same;
