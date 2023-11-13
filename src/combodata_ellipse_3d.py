@@ -31,8 +31,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-#file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+#file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
 data = h5py.File(f'R:\Lasse\combodata_3d_shax\{file}.mat', 'r')['ComboData']
@@ -115,8 +115,10 @@ for t in range(T):
         for i in range(0, len(mask_stack[0, 0]), n):
             for j in range(0, len(mask_stack[0, 1]), n):
                 if mask_stack[slice_, i, j] == 1:
+                    # in class: color scaled to radial angle and alpha to invariant?
                     ax.scatter(i, j, slice_, color = 'k', alpha = 0.5)
     
+    # in class, center on cx0, cy0 for selected slice
     ax.set_xlim([40, 80])
     ax.set_ylim([40, 80])
     ax.set_zlim([0, 8])

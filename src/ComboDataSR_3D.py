@@ -117,17 +117,33 @@ class ComboDataSR_3D:
         # ...
         
         L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
-        L[1, 0] = (C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
-        L[2, 0] = (C[x,y]*(vxa[x,y]-vx[x,y]) + C[x,y]*(vxb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[1, 0] =-(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+        L[2, 0] =-(C[x,y]*(vxa[x,y]-vx[x,y]) + C[x,y]*(vxb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
         
-        L[0, 1] = (C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+        L[0, 1] =-(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
         L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
-        L[2, 1] = (C[x,y]*(vya[x,y]-vy[x,y]) + C[x,y]*(vyb[x,y]-vy[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[2, 1] =-(C[x,y]*(vya[x,y]-vy[x,y]) + C[x,y]*(vyb[x,y]-vy[x,y])) / (dz*(C[x,y]+C[x,y]))
         
-        L[0, 2] = (C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
+        L[0, 2] =-(C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
         L[1, 2] = (C[x,y+1]*(vz[x,y+1]-vy[x,y]) + C[x,y-1]*(vz[x,y]-vz[x,y-1])) / (dz*(C[x,y+1]+C[x,y-1]))      
-        L[2, 2] = (C[x,y]*(vza[x,y]-vz[x,y]) + C[x,y]*(vzb[x,y]-vz[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[2, 2] =-(C[x,y]*(vza[x,y]-vz[x,y]) + C[x,y]*(vzb[x,y]-vz[x,y])) / (dz*(C[x,y]+C[x,y]))
         
+        D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
+        return D_ij
+    
+    def _D_ij_2D(self, x, y, t): 
+        L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
+        
+        dy = dx = 1 # voxel length 1 in our image calculations
+        vx = self.vx; vy = self.vy; C = self.C
+        
+        # note!: the diagonal has been switched for script testing!
+        L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+        L[1, 0] = -(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+        
+        L[0, 1] = -(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+        L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+                
         D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
         return D_ij
     
@@ -366,8 +382,14 @@ class ComboDataSR_3D:
                 for y in range(0, self.ay, self.n): 
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
-                        # SR tensor for point xy 
                         ## check if Va[x, y] or Vb[x, y] = 0 here, exclude if so (later, interpolate)
+                        if (self.vxa[x, y] != 0) or (self.vxb[x, y] != 0) is True:
+                            pass
+                        else:
+                            print('b')
+                            continue
+                        
+                        # SR tensor for point xy 
                         D_ = self._D_ij_3D(x, y, t) 
                         
                         # from this point on its besically the same;
