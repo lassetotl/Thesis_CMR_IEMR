@@ -81,7 +81,7 @@ class ComboDataSR_3D:
             self.slicenr[f'slice {slice_ + 1}'] = desc
         
         a = ''.join(a).split(' ')[1:3]
-        self.ID = a
+        self.ID = a[0] + ' ' + a[1]
         self.T = len(self.V['V1'][0,:,0,0,0]) #Total amount of time steps     
         
         # infarct sector, arbitrary if no infarct sector in metadata
@@ -113,20 +113,17 @@ class ComboDataSR_3D:
         vya = self.vya; vyb = self.vyb
         vza = self.vza; vzb = self.vzb
         
-        ## exclude data / interpolate / approximate if values above/below are zero ##
-        # ...
-        
         L[0, 0] = (C[x+1,y]*(vx[x+1,y]-vx[x,y]) + C[x-1,y]*(vx[x,y]-vx[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
-        L[1, 0] =-(C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
-        L[2, 0] =-(C[x,y]*(vxa[x,y]-vx[x,y]) + C[x,y]*(vxb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[1, 0] = (C[x,y+1]*(vx[x,y+1]-vx[x,y]) + C[x,y-1]*(vx[x,y]-vx[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
+        L[2, 0] = (C[x,y]*(vxa[x,y]-vx[x,y]) + C[x,y]*(vxb[x,y]-vx[x,y])) / (dz*(C[x,y]+C[x,y]))
         
-        L[0, 1] =-(C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
+        L[0, 1] = (C[x+1,y]*(vy[x+1,y]-vy[x,y]) + C[x-1,y]*(vy[x,y]-vy[x-1,y])) / (dx*(C[x+1,y]+C[x-1,y]))
         L[1, 1] = (C[x,y+1]*(vy[x,y+1]-vy[x,y]) + C[x,y-1]*(vy[x,y]-vy[x,y-1])) / (dy*(C[x,y+1]+C[x,y-1]))
-        L[2, 1] =-(C[x,y]*(vya[x,y]-vy[x,y]) + C[x,y]*(vyb[x,y]-vy[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[2, 1] = (C[x,y]*(vya[x,y]-vy[x,y]) + C[x,y]*(vyb[x,y]-vy[x,y])) / (dz*(C[x,y]+C[x,y]))
         
-        L[0, 2] =-(C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
+        L[0, 2] = (C[x+1,y]*(vz[x+1,y]-vy[x,y]) + C[x-1,y]*(vz[x,y]-vz[x-1,y])) / (dz*(C[x+1,y]+C[x-1,y]))
         L[1, 2] = (C[x,y+1]*(vz[x,y+1]-vy[x,y]) + C[x,y-1]*(vz[x,y]-vz[x,y-1])) / (dz*(C[x,y+1]+C[x,y-1]))      
-        L[2, 2] =-(C[x,y]*(vza[x,y]-vz[x,y]) + C[x,y]*(vzb[x,y]-vz[x,y])) / (dz*(C[x,y]+C[x,y]))
+        L[2, 2] = (C[x,y]*(vza[x,y]-vz[x,y]) + C[x,y]*(vzb[x,y]-vz[x,y])) / (dz*(C[x,y]+C[x,y]))
         
         D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
         return D_ij
@@ -173,7 +170,7 @@ class ComboDataSR_3D:
         else:
             print(f'No infarct sector found in this slice, sector 1 set as {self.mis}')
             
-    # plots vector field over time in one slice, saves video, returns global radial velocity
+    # plots vector field  in one slice, saves video, returns global radial velocity
     def velocity(self, slice_, save = 0):
         # slice 6 should produce the same plot and radial vel curve as combodata
         
@@ -245,7 +242,7 @@ class ComboDataSR_3D:
             plt.show()
             
         plt.figure(figsize=(10, 8))
-        plt.title(f'Global radial velocity over time ({id_}, Slice {slicenr})', fontsize = 15)
+        plt.title(f'Global radial velocity ({id_}, Slice {slicenr})', fontsize = 15)
         plt.axvline(self.T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
         plt.axvline(self.T_ed, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
         plt.axhline(0, c = 'k', lw = 1)
@@ -295,9 +292,11 @@ class ComboDataSR_3D:
         self.r_matrix = np.zeros((4, self.T_ed)); self.r_matrix[:, :] = np.nan
         self.c_matrix = np.zeros((4, self.T_ed)); self.c_matrix[:, :] = np.nan
 
-        # for each segment, we store angles corresponding to positive/negative eigenvalues 
-        self.a1 = np.zeros((4, self.T_ed), dtype = 'object') # 'positive' angles (stretch direction)
-        self.a2 = np.zeros((4, self.T_ed), dtype = 'object') # 'negative' angles (compression direction)
+        # for each segment, we store angles distributions corresponding to positive/negative eigenvalues 
+        self.theta1 = np.zeros((4, self.T_ed), dtype = 'object') # 'positive' angles (stretch direction)
+        self.theta2 = np.zeros((4, self.T_ed), dtype = 'object') # 'negative' angles (compression direction)
+        self.phi1 = np.zeros((4, self.T_ed), dtype = 'object') 
+        self.phi2 = np.zeros((4, self.T_ed), dtype = 'object')
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[0, 0, :, :]))
@@ -357,25 +356,25 @@ class ComboDataSR_3D:
             self.r_matrix[:, t] = 0; self.c_matrix[:, t] = 0
             
             # angles from sectors appended here, reset every t
-            a1_ = [[], [], [], []]; a2_ = [[], [], [], []]
+            theta1_ = [[], [], [], []]; theta2_ = [[], [], [], []]
             
             # amount of ellipses in this timepoint in each sector 1-4 is stored here
             e_count = np.zeros(4)
             
-            self.vx = ndi.gaussian_filter(V[0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
-            self.vy = ndi.gaussian_filter(V[1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
-            self.vz = ndi.gaussian_filter(V[2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
+            self.vx = ndi.gaussian_filter(V[0, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vy = ndi.gaussian_filter(V[1, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vz = ndi.gaussian_filter(V[2, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
             
             # the same fields one slice above and below
             # should we do this for C as well?
-            self.vxa = ndi.gaussian_filter(Va[0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T 
-            self.vxb = ndi.gaussian_filter(Vb[0, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
+            self.vxa = ndi.gaussian_filter(Va[0, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma) 
+            self.vxb = ndi.gaussian_filter(Vb[0, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
             
-            self.vya = ndi.gaussian_filter(Va[1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T 
-            self.vyb = ndi.gaussian_filter(Vb[1, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
+            self.vya = ndi.gaussian_filter(Va[1, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma) 
+            self.vyb = ndi.gaussian_filter(Vb[1, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
             
-            self.vza = ndi.gaussian_filter(Va[2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
-            self.vzb = ndi.gaussian_filter(Vb[2, t, 0, :, :]*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma).T
+            self.vza = ndi.gaussian_filter(Va[2, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vzb = ndi.gaussian_filter(Vb[2, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
             
             #calculate eigenvalues and vectors
             for x in range(0, self.ax, self.n):
@@ -387,21 +386,24 @@ class ComboDataSR_3D:
                             pass
                         else:
                             print('b')
-                            continue
+                            pass
                         
                         # SR tensor for point xy 
                         D_ = self._D_ij_3D(x, y, t) 
+                        #D_ = self._D_ij_2D(x, y, t) 
                         
                         # from this point on its besically the same;
                         # 2d slice with but with 3d sr tensors
                         val, vec = np.linalg.eig(D_)
-                        self.d[t] += sum(val)
+                        
                         # skip this voxel if eigenvalue signs are equal
-                        #if np.sign(val[0]) == np.sign(val[1]):
-                            #continue
+                        if np.sign(val[0]) == np.sign(val[1]) == np.sign(val[2]):
+                            continue
+                        
+                        self.d[t] += sum(val)
                         
                         # vector between center of mass and point (x, y, 0) 
-                        r = np.array([x - cx, y - cy, 0])
+                        r = np.array([x - cx, y - cy])
                         #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
                         
                         # index of eigenvalues
@@ -409,9 +411,15 @@ class ComboDataSR_3D:
                         val_min_i = np.argmin(val)  # most negative
                         val_last_i = 3 - val_min_i - val_max_i
                         
-                        theta = theta_rad(r, vec[val_max_i])  # angle between highest eigenvector and r
-                        theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
-                        theta__ = theta_rad(r, vec[val_last_i]) # angle between third eigenvector and r
+                        # find angle between xy-projections and r
+                        theta = theta_rad(r, vec[val_max_i][:-1])  # highest eigenvector 
+                        theta_ = theta_rad(r, vec[val_min_i][:-1]) # lowest eigenvector
+                        theta__ = theta_rad(r, vec[val_last_i][:-1]) # third eigenvector 
+                        
+                        # use theta to align with z, r plane?
+                        #phi = theta_rad([0, 0, 1], vec[val_max_i])  # angle between highest eigenvector and z-axis
+                        #phi_ = theta_rad([0, 0, 1], vec[val_min_i]) # angle between lowest eigenvector and z-axis
+                        #phi__ = theta_rad([0, 0, 1], vec[val_last_i]) # angle between third eigenvector and z-axis
                         
                         # local contribution
                         sect_xy = mask_segment_t[x, y]  # sector value in (x,y)
@@ -444,7 +452,7 @@ class ComboDataSR_3D:
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
                                 + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
+                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
                             
                         
                         # adjacent (green)
@@ -456,7 +464,7 @@ class ComboDataSR_3D:
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
                                 + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
+                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
                             
                             
                         # medial (blue)                
@@ -468,7 +476,7 @@ class ComboDataSR_3D:
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
                                 + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
+                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
                         
                         
                         # remote (purple)
@@ -480,7 +488,7 @@ class ComboDataSR_3D:
                             self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
                                 + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
                             self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))  + (val[val_last_i])*abs(np.sin(theta__))
+                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
                         
                         else:  # avoid plotting ellipses in invalid ranges
                             continue
@@ -488,18 +496,18 @@ class ComboDataSR_3D:
                         # angle sum collected, scaled to get average angle each t
                         # does not assume that each 2d tensor has a positive and negative eigenvector
                         if val[val_max_i] > 0:
-                            a1_[sector].append(theta) 
+                            theta1_[sector].append(theta) 
                         if val[val_min_i] > 0:
-                            a1_[sector].append(theta_)
+                            theta1_[sector].append(theta_)
                         if val[val_last_i] > 0:
-                            a1_[sector].append(theta__)
+                            theta1_[sector].append(theta__)
                             
                         if val[val_max_i] < 0:
-                            a2_[sector].append(theta) 
+                            theta2_[sector].append(theta) 
                         if val[val_min_i] < 0:
-                            a2_[sector].append(theta_)
+                            theta2_[sector].append(theta_)
                         if val[val_last_i] < 0:
-                            a2_[sector].append(theta__)
+                            theta2_[sector].append(theta__)
                         
                         
                         if ellipse == 1:
@@ -532,8 +540,8 @@ class ComboDataSR_3D:
                 self.c_matrix[sector, t] = self.c_matrix[sector, t] / (e_count[sector]*self.res)  
             
                 # collect angles in degrees
-                self.a1[sector, t] = np.array(a1_[sector])*180/np.pi
-                self.a2[sector, t] = np.array(a2_[sector])*180/np.pi
+                self.theta1[sector, t] = np.array(theta1_[sector])*180/np.pi
+                self.theta2[sector, t] = np.array(theta2_[sector])*180/np.pi
             
             # ellipse plot
             if ellipse == 1: 
@@ -583,22 +591,22 @@ class ComboDataSR_3D:
         self.c_sr_min = np.min(c_sr_global)
         self.r_sr_min = np.min(r_sr_global)
         
-        # mean stretch/compression (a1/a2) angles
-        a1_mean = np.zeros((4, self.T_ed)); a2_mean = np.zeros((4, self.T_ed))
+        # mean stretch/compression (theta1/theta2) angles
+        theta1_mean = np.zeros((4, self.T_ed)); theta2_mean = np.zeros((4, self.T_ed))
         for t in self.range_:
             for sector in range(4):
-                a1_mean[sector, t] = np.mean(self.a1[sector, t])
-                a2_mean[sector, t] = np.mean(self.a2[sector, t])
+                theta1_mean[sector, t] = np.mean(self.theta1[sector, t])
+                theta2_mean[sector, t] = np.mean(self.theta2[sector, t])
              
         # mean angles
-        a1_mean_global = np.sum(a1_mean, axis = 0) / 4
-        a2_mean_global = np.sum(a2_mean, axis = 0) / 4
+        theta1_mean_global = np.sum(theta1_mean, axis = 0) / 4
+        theta2_mean_global = np.sum(theta2_mean, axis = 0) / 4
         
         # max/min of mean curve
-        self.a1_mean_max = np.max(a1_mean_global)
-        self.a1_mean_min = np.min(a1_mean_global)
-        self.a2_mean_max = np.max(a2_mean_global)
-        self.a2_mean_min = np.min(a2_mean_global)
+        self.theta1_mean_max = np.max(theta1_mean_global)
+        self.theta1_mean_min = np.min(theta1_mean_global)
+        self.theta2_mean_max = np.max(theta2_mean_global)
+        self.theta2_mean_min = np.min(theta2_mean_global)
         
         # strain curve analysis, synchrony of sectors
         self.c_peakvals = np.zeros(4); self.r_peakvals = np.zeros(4)
@@ -617,7 +625,7 @@ class ComboDataSR_3D:
 
             plt.figure(figsize=(10, 8))
 
-            plt.title(f'Global Strain rate over time ({self.filename})', fontsize = 15)
+            plt.title(f'Global Strain Rate ({self.ID})', fontsize = 15)
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
             plt.axhline(0, c = 'k', lw = 1)
@@ -627,7 +635,7 @@ class ComboDataSR_3D:
             plt.ylabel('$s^{-1}$', fontsize = 20)
             
             if segment == 1:
-                plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
+                plt.title(f'Regional Strain Rate ({self.ID})', fontsize = 15)
                 
                 for sector in range(4):
                     rs = self.r_matrix[sector, :]
@@ -643,7 +651,7 @@ class ComboDataSR_3D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain over time ({self.filename})', fontsize = 15)
+                plt.title(f'Global Strain Rate  ({self.ID})', fontsize = 15)
                 
                 rsr = np.sum(self.r_matrix, axis = 0) / 4
                 csr = np.sum(self.c_matrix, axis = 0) / 4
@@ -672,7 +680,7 @@ class ComboDataSR_3D:
             plt.show()
                 
         if plot == 1:
-            # plot strain over time
+            # plot strain 
 
             plt.figure(figsize=(8, 6))
 
@@ -685,7 +693,7 @@ class ComboDataSR_3D:
             plt.ylabel('%', fontsize = 15)
                 
             if segment == 1:
-                plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
+                plt.title(f'Regional Strain  ({self.ID})', fontsize = 15)
                 
                 for sector in range(4):
                     rs = 100*self._strain(self.r_matrix[sector, :])
@@ -700,7 +708,7 @@ class ComboDataSR_3D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain over time ({self.filename})', fontsize = 15)
+                plt.title(f'Global Strain  ({self.ID})', fontsize = 15)
                 
                 rs = 100*self._strain(np.sum(self.r_matrix, axis = 0) / 4)
                 cs = 100*self._strain(np.sum(self.c_matrix, axis = 0) / 4)
@@ -716,10 +724,10 @@ class ComboDataSR_3D:
                 
             plt.show()
             
-            #angles over time
+            # theta distribution 
 
             plt.figure(figsize = (10, 8))
-            plt.title(f'Regional radial concentration over time ({self.filename})', fontsize = 15)
+            plt.title(f'Radial angle ($\\theta$) concentration  ({self.ID})', fontsize = 15)
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
             plt.xlabel('Timepoints', fontsize = 15)
@@ -728,24 +736,24 @@ class ComboDataSR_3D:
             if segment == 1:  # mean angles segments
                 for sector in range(4):
                     # which parameter is interesting to plot here?
-                    #plt.plot(range_TR, a1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
-                    #plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
+                    #plt.plot(range_TR, theta1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
+                    #plt.plot(range_TR, theta2_std, 'g', label = 'Negative eigenvectors (compression)')
                     # difference
-                    plt.plot(self.range_TR, abs(a1_mean[sector, :] - a2_mean[sector, :]), color = c_cmap(sector))
+                    plt.plot(self.range_TR, abs(theta1_mean[sector, :] - theta2_mean[sector, :]), color = c_cmap(sector))
                     plt.legend(handles = legend_handles1, loc = 'lower right')
                       
             else:  # global angle distribution 
                 for i in self.range_:
                     for sector in range(4):
-                        #print(i, len(self.a1[sector, i]), len(self.a2[sector, i]))
-                        plt.scatter([self.range_TR[i]]*len(self.a1[sector, i]), self.a1[sector, i], color = 'r', alpha = 0.03)
-                        plt.scatter([self.range_TR[i]]*len(self.a2[sector, i]), self.a2[sector, i], color = 'g', alpha = 0.03)
+                        #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
+                        plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.03)
+                        plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.03)
 
                 
-                plt.plot(self.range_TR , a1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
-                plt.plot(self.range_TR , a2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
+                plt.plot(self.range_TR, theta1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
+                plt.plot(self.range_TR, theta2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
                 # difference
-                plt.plot(self.range_TR , abs(a1_mean_global - a2_mean_global), \
+                plt.plot(self.range_TR , abs(theta1_mean_global - theta2_mean_global), \
                          'darkgray', ls = '--', label = 'Difference')
                 plt.legend(loc = 'upper right')
 
@@ -758,12 +766,12 @@ class ComboDataSR_3D:
             r_strain = 100*self._strain(self.r_matrix)
             c_strain = 100*self._strain(self.c_matrix)
             
-            self.a1 = a1_mean_global
-            self.a2 = a2_mean_global
+            self.theta1 = theta1_mean_global
+            self.theta2 = theta2_mean_global
             
         else:
-            self.a1 = a1_mean
-            self.a2 = a2_mean
+            self.theta1 = theta1_mean
+            self.theta2 = theta2_mean
             
         if save == 1:
             # save strain/strain rate/angle dist npy files for analysis
@@ -783,19 +791,19 @@ class ComboDataSR_3D:
             if os.path.exists(f'R:\Lasse\\angle distribution data\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\\angle distribution data\{self.filename}')
             
-            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_pos', self.a1)
-            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_neg', self.a2)
+            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_pos', self.theta1)
+            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_neg', self.theta2)
                 
         # if save = 0 the parameters can still be collected from return statement without overwriting 
-        return self.r_matrix, self.c_matrix, self.a1, self.a2
+        return self.r_matrix, self.c_matrix, self.theta1, self.theta2
             
         
         
 #%%
 # example of use
 if __name__ == "__main__":
-    file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-    #file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+    #file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+    file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
     
     st = time.time()
     # create instance for input combodata file

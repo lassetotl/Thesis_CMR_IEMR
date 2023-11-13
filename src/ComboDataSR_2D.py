@@ -218,8 +218,8 @@ class ComboDataSR_2D:
         self.c_matrix = np.zeros((4, self.T_ed)); self.c_matrix[:, :] = np.nan
 
         # for each segment, we store angles corresponding to positive/negative eigenvalues 
-        self.a1 = np.zeros((4, self.T_ed), dtype = 'object') # 'positive' angles (stretch direction)
-        self.a2 = np.zeros((4, self.T_ed), dtype = 'object') # 'negative' angles (compression direction)
+        self.theta1 = np.zeros((4, self.T_ed), dtype = 'object') # 'positive' angles (stretch direction)
+        self.theta2 = np.zeros((4, self.T_ed), dtype = 'object') # 'negative' angles (compression direction)
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
@@ -276,7 +276,7 @@ class ComboDataSR_2D:
             self.r_matrix[:, t] = 0; self.c_matrix[:, t] = 0
             
             # angles from sectors appended here, reset every t
-            a1_ = [[], [], [], []]; a2_ = [[], [], [], []]
+            theta1_ = [[], [], [], []]; theta2_ = [[], [], [], []]
             
             # amount of ellipses in this timepoint in each sector 1-4 is stored here
             e_count = np.zeros(4)
@@ -299,10 +299,11 @@ class ComboDataSR_2D:
                         D_ = self._D_ij_2D(x, y, t) 
                         val, vec = np.linalg.eig(D_)
                         
-                        self.d[t] += sum(val)
                         # skip this voxel if eigenvalue signs are equal
                         #if np.sign(val[0]) == np.sign(val[1]):
                             #continue
+                        
+                        self.d[t] += sum(val)
                         
                         # vector between center of mass and point (x, y) 
                         r = np.array([x - cx, y - cy])
@@ -390,14 +391,14 @@ class ComboDataSR_2D:
                         # angle sum collected, scaled to get average angle each t
                         # does not assume that each 2d tensor has a positive and negative eigenvector
                         if val[val_max_i] > 0:
-                            a1_[sector].append(theta) 
+                            theta1_[sector].append(theta) 
                         if val[val_min_i] > 0:
-                            a1_[sector].append(theta_)
+                            theta1_[sector].append(theta_)
                             
                         if val[val_max_i] < 0:
-                            a2_[sector].append(theta) 
+                            theta2_[sector].append(theta) 
                         if val[val_min_i] < 0:
-                            a2_[sector].append(theta_)
+                            theta2_[sector].append(theta_)
                         
                         
                         if ellipse == 1:
@@ -430,8 +431,8 @@ class ComboDataSR_2D:
                 self.c_matrix[sector, t] = self.c_matrix[sector, t] / (e_count[sector]*self.res)  
             
                 # collect angles in degrees
-                self.a1[sector, t] = np.array(a1_[sector])*180/np.pi
-                self.a2[sector, t] = np.array(a2_[sector])*180/np.pi
+                self.theta1[sector, t] = np.array(theta1_[sector])*180/np.pi
+                self.theta2[sector, t] = np.array(theta2_[sector])*180/np.pi
             
             # ellipse plot
             if ellipse == 1: 
@@ -481,22 +482,22 @@ class ComboDataSR_2D:
         self.c_sr_min = np.min(c_sr_global)
         self.r_sr_min = np.min(r_sr_global)
         
-        # mean stretch/compression (a1/a2) angles
-        a1_mean = np.zeros((4, self.T_ed)); a2_mean = np.zeros((4, self.T_ed))
+        # mean stretch/compression (theta1/theta2) angles
+        theta1_mean = np.zeros((4, self.T_ed)); theta2_mean = np.zeros((4, self.T_ed))
         for t in self.range_:
             for sector in range(4):
-                a1_mean[sector, t] = np.mean(self.a1[sector, t])
-                a2_mean[sector, t] = np.mean(self.a2[sector, t])
+                theta1_mean[sector, t] = np.mean(self.theta1[sector, t])
+                theta2_mean[sector, t] = np.mean(self.theta2[sector, t])
              
         # mean angles
-        a1_mean_global = np.sum(a1_mean, axis = 0) / 4
-        a2_mean_global = np.sum(a2_mean, axis = 0) / 4
+        theta1_mean_global = np.sum(theta1_mean, axis = 0) / 4
+        theta2_mean_global = np.sum(theta2_mean, axis = 0) / 4
         
         # max/min of mean curve
-        self.a1_mean_max = np.max(a1_mean_global)
-        self.a1_mean_min = np.min(a1_mean_global)
-        self.a2_mean_max = np.max(a2_mean_global)
-        self.a2_mean_min = np.min(a2_mean_global)
+        self.theta1_mean_max = np.max(theta1_mean_global)
+        self.theta1_mean_min = np.min(theta1_mean_global)
+        self.theta2_mean_max = np.max(theta2_mean_global)
+        self.theta2_mean_min = np.min(theta2_mean_global)
         
         # strain curve analysis, synchrony of sectors
         self.c_peakvals = np.zeros(4); self.r_peakvals = np.zeros(4)
@@ -625,24 +626,24 @@ class ComboDataSR_2D:
             if segment == 1:  # mean angles segments
                 for sector in range(4):
                     # which parameter is interesting to plot here?
-                    #plt.plot(range_TR, a1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
-                    #plt.plot(range_TR, a2_std, 'g', label = 'Negative eigenvectors (compression)')
+                    #plt.plot(range_TR, theta1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
+                    #plt.plot(range_TR, theta2_std, 'g', label = 'Negative eigenvectors (compression)')
                     # difference
-                    plt.plot(self.range_TR, abs(a1_mean[sector, :] - a2_mean[sector, :]), color = c_cmap(sector))
+                    plt.plot(self.range_TR, abs(theta1_mean[sector, :] - theta2_mean[sector, :]), color = c_cmap(sector))
                     plt.legend(handles = legend_handles1, loc = 'lower right')
                       
             else:  # global angle distribution 
                 for i in self.range_:
                     for sector in range(4):
-                        #print(i, len(self.a1[sector, i]), len(self.a2[sector, i]))
-                        plt.scatter([self.range_TR[i]]*len(self.a1[sector, i]), self.a1[sector, i], color = 'r', alpha = 0.03)
-                        plt.scatter([self.range_TR[i]]*len(self.a2[sector, i]), self.a2[sector, i], color = 'g', alpha = 0.03)
+                        #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
+                        plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.03)
+                        plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.03)
 
                 
-                plt.plot(self.range_TR , a1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
-                plt.plot(self.range_TR , a2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
+                plt.plot(self.range_TR , theta1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
+                plt.plot(self.range_TR , theta2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
                 # difference
-                plt.plot(self.range_TR , abs(a1_mean_global - a2_mean_global), \
+                plt.plot(self.range_TR , abs(theta1_mean_global - theta2_mean_global), \
                          'darkgray', ls = '--', label = 'Difference')
                 plt.legend(loc = 'upper right')
 
@@ -655,12 +656,12 @@ class ComboDataSR_2D:
             r_strain = 100*self._strain(self.r_matrix)
             c_strain = 100*self._strain(self.c_matrix)
             
-            self.a1 = a1_mean_global
-            self.a2 = a2_mean_global
+            self.theta1 = theta1_mean_global
+            self.theta2 = theta2_mean_global
             
         else:
-            self.a1 = a1_mean
-            self.a2 = a2_mean
+            self.theta1 = theta1_mean
+            self.theta2 = theta2_mean
             
         if save == 1:
             # save strain/strain rate/angle dist npy files for analysis
@@ -680,11 +681,11 @@ class ComboDataSR_2D:
             if os.path.exists(f'R:\Lasse\\angle distribution data\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\\angle distribution data\{self.filename}')
             
-            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_pos', self.a1)
-            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_neg', self.a2)
+            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_pos', self.theta1)
+            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_neg', self.theta2)
                 
         # if save = 0 the parameters can still be collected from return statement without overwriting 
-        return self.r_matrix, self.c_matrix, self.a1, self.a2
+        return self.r_matrix, self.c_matrix, self.theta1, self.theta2
             
         
         

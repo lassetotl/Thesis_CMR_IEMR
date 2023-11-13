@@ -116,21 +116,16 @@ print(mylist_sorted)
 
 #%%
 
-val = np.array([-0.34593812,  0.48274582, -0.01614579])
-vec = np.array([[-0.99795097,  0.05704878,  0.02897064],
-         [ 0.05230986,  0.46671858,  0.88285755],
-         [-0.03684481, -0.882564,    0.46874647]])
-
-val = np.array([-0.34929624, -0.0105196, 0.48047776])
-vec = np.array([[-0.99099194, -0.13196083,  0.02283236],
- [-0.10635986,  0.87911913,  0.46458275],
- [ 0.08137908, -0.45796931,  0.88523531]])
+a, b, c = np.array([-0.61191069, 0.14524356, 0.46811077])
+vec = np.array([[ 0.53578182, 0.74326574, 0.40061687],
+ [ 0.5657862, -0.6682228, 0.48307791],
+ [-0.62675659, 0.03216087, 0.77855113]])
 
 fig = plt.figure(figsize=plt.figaspect(1))
 ax = fig.add_subplot(111, projection='3d')
-plt.quiver(0, 0, 0, vec[0][0], vec[0][1], vec[0][2], color='r')
-plt.quiver(0, 0, 0, vec[1][0], vec[1][1], vec[1][2], color='g')
-plt.quiver(0, 0, 0, vec[2][0], vec[2][1], vec[2][2], color='b')
+plt.quiver(0, 0, 0, a*vec[0][0], a*vec[0][1], a*vec[0][2], color='r')
+plt.quiver(0, 0, 0, b*vec[1][0], b*vec[1][1], b*vec[1][2], color='g')
+plt.quiver(0, 0, 0, c*vec[2][0], c*vec[2][1], c*vec[2][2], color='b')
 lim = 1
 ax.set_xlim([-lim, lim])
 ax.set_ylim([-lim, lim])
@@ -143,7 +138,6 @@ print(theta_rad(vec[2], [0,0,1])*180/np.pi)
 print(theta_rad(vec[2], [1,0,0])*180/np.pi)
 print(theta_rad(vec[2], [0,1,0])*180/np.pi)
 #%%
-a, b, c = val
 u, v = np.mgrid[0:2*np.pi:40j, 0:np.pi:20j]
 x1 = a * np.cos(u) * np.sin(v)
 y1 = b * np.sin(u) * np.sin(v)
@@ -182,3 +176,10 @@ fig = go.Figure([
 ])
 fig.update_layout({"scene": {"aspectmode": "auto"}})
 plot(fig, auto_open=True)
+
+#%%
+
+a = np.array([3,3,4])
+
+phi = theta_rad(np.array([0,0,1]), a)
+print(phi)
