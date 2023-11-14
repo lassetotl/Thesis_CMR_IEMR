@@ -305,6 +305,9 @@ class ComboDataSR_2D:
                         
                         self.d[t] += sum(val)
                         
+                        # scale color transparency with invariant, set I = 1 to get alpha = 1
+                        I = val[0]**2 + val[1]**2
+                        
                         # vector between center of mass and point (x, y) 
                         r = np.array([x - cx, y - cy])
                         #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
@@ -321,7 +324,6 @@ class ComboDataSR_2D:
                         
                         # need two ranges for every segment to counter invalid ranges (f.ex. range(33, 17))
                         # all values that add/subtract risk becoming negative or >36, thus % application
-
                         mis = self.mis; sl = self.sl
                         range0 = range(mis[0], mis[1]); range0_ = range(mis[1], mis[0])
                         range1 = range((mis[0]-sl)%36, mis[0]); range1_ = range(mis[0], (mis[0]-sl)%36)
@@ -344,49 +346,32 @@ class ComboDataSR_2D:
                         if sect_xy in range0 or (sect_xy not in range0_)*any(range0_):  
                             sector = 0
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
-                            
                         
                         # adjacent (green)
                         elif sect_xy in range1 or (sect_xy not in range1_)*any(range1_) \
                             or sect_xy in range11 or (sect_xy not in range11_)*any(range11_):   
-                                
                             sector = 1
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
-                            
                             
                         # medial (blue)                
                         elif sect_xy in range2 or (sect_xy not in range2_)*any(range2_) \
                             or sect_xy in range22 or (sect_xy not in range22_)*any(range22_):   
-                                
                             sector = 2
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
-                        
                         
                         # remote (purple)
                         elif sect_xy in range(p_end, n_end) \
                             or (sect_xy not in range(n_end, p_end))*any(range(n_end, p_end)):
                             sector = 3
-                            
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_))
                         
                         else:  # avoid plotting ellipses in invalid ranges
                             continue
+                        
+                        self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
+                            + (val[val_min_i])*abs(np.cos(theta_))
+                        self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
+                            + (val[val_min_i])*abs(np.sin(theta_))
                         
                         # angle sum collected, scaled to get average angle each t
                         # does not assume that each 2d tensor has a positive and negative eigenvector
@@ -400,16 +385,14 @@ class ComboDataSR_2D:
                         if val[val_min_i] < 0:
                             theta2_[sector].append(theta_)
                         
-                        
-                        if ellipse == 1:
+                        if (ellipse == 1) is True:
                             # hex code, inputs in range (0, 1) so theta is scaled
                             if segment == 1:
                                 # color code after sector 1 to 4
                                 hx = mpl.colors.rgb2hex(list(c_cmap(sector)))
                             else:
                                 hx = mpl.colors.rgb2hex(c_cmap(theta/(np.pi/2)))  # code with
-                                #hx = mpl.colors.rgb2hex(c_cmap(I))  # color code with invariant?
-                            
+                                
                             # angle between eigenvector and x-axis, converted to degrees anti-clockwise
                             # clockwise theta needed
                             theta_c = clockwise_angle(r, vec[val_max_i])
@@ -417,27 +400,17 @@ class ComboDataSR_2D:
                             
                             # draw ellipses that are spanned by eigenvectors
                             # eigenvalues are transformed (1 + tanh(val)) to have a circular unit ellipse
-                            ellipse = patches.Ellipse((x, y), (1 + np.tanh(val[val_max_i])), (1 + np.tanh(val[val_min_i])), 
-                                                      angle = e_angle, color = hx)
+                            ellipse_ = patches.Ellipse((x, y), (1 + np.tanh(val[val_max_i])), (1 + np.tanh(val[val_min_i])), 
+                                                      angle = e_angle, color = hx, alpha = np.tanh(I/0.3)) # alpha = I
                             
                             #unit ellipse
                             #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
                             
-                            ax.add_artist(ellipse)
-            
-        
-            for sector in range(4):  # scaling for correct units 
-                self.r_matrix[sector, t] = self.r_matrix[sector, t] / (e_count[sector]*self.res)
-                self.c_matrix[sector, t] = self.c_matrix[sector, t] / (e_count[sector]*self.res)  
-            
-                # collect angles in degrees
-                self.theta1[sector, t] = np.array(theta1_[sector])*180/np.pi
-                self.theta2[sector, t] = np.array(theta2_[sector])*180/np.pi
-            
+                            ax.add_artist(ellipse_)
+                            
             # ellipse plot
             if ellipse == 1: 
                 plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
-                #plt.scatter(mis[0], mis[1], marker = 'x', c = 'r')
              
                 plt.title(f'Strain Rate at t = {t} ({self.filename})', fontsize = 15)
                 
@@ -471,7 +444,15 @@ class ComboDataSR_2D:
                 plt.tight_layout()
                 
                 plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
-                plt.show(); plt.close()
+                plt.show(); plt.close()    
+        
+            for sector in range(4):  # scaling for correct units 
+                self.r_matrix[sector, t] = self.r_matrix[sector, t] / (e_count[sector]*self.res)
+                self.c_matrix[sector, t] = self.c_matrix[sector, t] / (e_count[sector]*self.res)  
+            
+                # collect angles in degrees
+                self.theta1[sector, t] = np.array(theta1_[sector])*180/np.pi
+                self.theta2[sector, t] = np.array(theta2_[sector])*180/np.pi
         
         # add strain rate parameters to dictionary
         r_sr_global = np.sum(self.r_matrix, axis = 0) / 4
@@ -562,8 +543,8 @@ class ComboDataSR_2D:
                 
                 filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in self.range_]  
                   
-                with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.mp4', 
-                                        fps=7, macro_block_size = 1) as writer:    # inputs: filename, frame per second
+                with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.gif', 
+                                        fps=7) as writer:    # inputs: filename, frame per second
                     for filename in filenames:
                         image = imageio.imread(filename)                         # load the image file
                         writer.append_data(image)
@@ -662,6 +643,8 @@ class ComboDataSR_2D:
         else:
             self.theta1 = theta1_mean
             self.theta2 = theta2_mean
+            r_strain = rs
+            c_strain = cs
             
         if save == 1:
             # save strain/strain rate/angle dist npy files for analysis
@@ -694,12 +677,12 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
+    run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run1.strain_rate(ellipse = 1, plot = 1, save = 1, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

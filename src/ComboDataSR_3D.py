@@ -396,7 +396,7 @@ class ComboDataSR_3D:
                         # 2d slice with but with 3d sr tensors
                         val, vec = np.linalg.eig(D_)
                         
-                        # skip this voxel if eigenvalue signs are equal
+                        # skip this voxel if all eigenvalue signs are equal
                         if np.sign(val[0]) == np.sign(val[1]) == np.sign(val[2]):
                             continue
                         
@@ -449,49 +449,32 @@ class ComboDataSR_3D:
                         if sect_xy in range0 or (sect_xy not in range0_)*any(range0_):  
                             sector = 0
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
-                            
                         
                         # adjacent (green)
                         elif sect_xy in range1 or (sect_xy not in range1_)*any(range1_) \
                             or sect_xy in range11 or (sect_xy not in range11_)*any(range11_):   
-                                
                             sector = 1
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
-                            
                             
                         # medial (blue)                
                         elif sect_xy in range2 or (sect_xy not in range2_)*any(range2_) \
                             or sect_xy in range22 or (sect_xy not in range22_)*any(range22_):   
-                                
                             sector = 2
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
-                        
                         
                         # remote (purple)
                         elif sect_xy in range(p_end, n_end) \
                             or (sect_xy not in range(n_end, p_end))*any(range(n_end, p_end)):
                             sector = 3
-                            
                             e_count[sector] += 1
-                            self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                                + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
-                            self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                                + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
                         
                         else:  # avoid plotting ellipses in invalid ranges
                             continue
+                        
+                        self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
+                            + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
+                        self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
+                            + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
                         
                         # angle sum collected, scaled to get average angle each t
                         # does not assume that each 2d tensor has a positive and negative eigenvector
@@ -812,7 +795,7 @@ if __name__ == "__main__":
     # get info/generate data 
     run2.overview()
     #grv2 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 7, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

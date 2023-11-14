@@ -123,9 +123,9 @@ vec = np.array([[ 0.53578182, 0.74326574, 0.40061687],
 
 fig = plt.figure(figsize=plt.figaspect(1))
 ax = fig.add_subplot(111, projection='3d')
-plt.quiver(0, 0, 0, a*vec[0][0], a*vec[0][1], a*vec[0][2], color='r')
-plt.quiver(0, 0, 0, b*vec[1][0], b*vec[1][1], b*vec[1][2], color='g')
-plt.quiver(0, 0, 0, c*vec[2][0], c*vec[2][1], c*vec[2][2], color='b')
+plt.quiver(0, 0, 0, vec[0][0], vec[0][1], vec[0][2], color='r')
+plt.quiver(0, 0, 0, vec[1][0], vec[1][1], vec[1][2], color='g')
+plt.quiver(0, 0, 0, vec[2][0], vec[2][1], vec[2][2], color='b')
 lim = 1
 ax.set_xlim([-lim, lim])
 ax.set_ylim([-lim, lim])
