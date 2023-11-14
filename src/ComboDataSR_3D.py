@@ -382,10 +382,10 @@ class ComboDataSR_3D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         ## check if Va[x, y] or Vb[x, y] = 0 here, exclude if so (later, interpolate)
-                        if (self.vxa[x, y] != 0) or (self.vxb[x, y] != 0) is True:
-                            pass
-                        else:
+                        if (self.vxa[x, y] == 0) or (self.vxb[x, y] == 0) is True:
                             print('b')
+                            continue
+                        else:
                             pass
                         
                         # SR tensor for point xy 
@@ -802,19 +802,31 @@ class ComboDataSR_3D:
 #%%
 # example of use
 if __name__ == "__main__":
-    #file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-    file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+    file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+    #file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
     
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_3D(file, n = 2)
+    run2 = ComboDataSR_3D(file, n = 2)
     
     # get info/generate data 
-    run1.overview()
+    run2.overview()
     #grv2 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
-    run1.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 7, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
     et = time.time()
     print(f'Time elapsed: {et-st:.3f} s')
+    
+#%%
+    '''    
+    d2 = run2.__dict__['d']  # divergence over time
+    #d1 = run1.__dict__['d']
+    plt.plot(range(len(d2)), d2, label = '3d') 
+    plt.plot(range(len(d1)), d1, label = '2d')
+    plt.legend(); plt.show()
+    
+    print(sum(d2))
+    print(sum(d1))
+    '''

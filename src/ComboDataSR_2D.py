@@ -705,3 +705,6 @@ if __name__ == "__main__":
     
     et = time.time()
     print(f'Time elapsed: {et-st:.3f} s')
+
+#%%
+    d1 = run1.__dict__['d']  # divergence over time
