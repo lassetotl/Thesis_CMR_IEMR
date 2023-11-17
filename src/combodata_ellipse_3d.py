@@ -33,8 +33,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-#file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+#file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
 data = h5py.File(f'R:\Lasse\combodata_3d_shax\{file}.mat', 'r')['ComboData']
@@ -143,22 +143,20 @@ with imageio.get_writer('R:\Lasse\plots\MP4\\3D heart.gif', fps=7) as writer:   
 total_lsr = []
 total_csr = []
 total_rsr = []
-slice_selection = [2,3,4,5,6,7,8,9]
+slice_selection = [3,4,5,6,7,8]
 for slice_ in slice_selection:
     print(slice_)
-    run = ComboDataSR_3D(file, n = 2)
+    run = ComboDataSR_3D(file, n = 1)
     run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
     total_lsr.append(np.array(run.__dict__['l_strain'])[:51])
     total_csr.append(np.array(run.__dict__['c_strain'])[:51])
     total_rsr.append(np.array(run.__dict__['r_strain'])[:51])
 ID = run.__dict__['ID']
-    
-#%%
+
 lsr = np.sum(np.array(total_lsr), axis = 0) / len(slice_selection)
 csr = np.sum(np.array(total_csr), axis = 0) / len(slice_selection)
 rsr = np.sum(np.array(total_rsr), axis = 0) / len(slice_selection)
 
-#%%
 plt.figure(figsize=(8, 6))
 plt.title(f'Whole heart strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 plt.axhline(0, c = 'k', lw = 1)

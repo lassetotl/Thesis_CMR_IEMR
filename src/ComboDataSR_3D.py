@@ -167,10 +167,10 @@ class ComboDataSR_3D:
     def _strain(self, strain_rate, T_ed, weight = 10):
         # weighting for integrals in positive/flipped time directions
         # cyclic boundary conditions
-        w = np.tanh((T_ed-self.range_)/weight) 
+        w = np.tanh((T_ed - 1 - self.range_)/weight) 
         w_f = np.tanh(self.range_/weight) 
 
-        strain = cumtrapz(strain_rate , self.range_TR , initial=0)
+        strain = cumtrapz(strain_rate, self.range_TR, initial=0)
         strain_flipped = np.flip(cumtrapz(strain_rate[::-1], self.range_TR[::-1], initial=0))
         return (w*strain + w_f*strain_flipped)/2
     
@@ -404,15 +404,14 @@ class ComboDataSR_3D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         ## check if Va[x, y] or Vb[x, y] = 0 here, exclude if so (later, interpolate)
-                        if (self.vxa[x, y] == 0) or (self.vxb[x, y] == 0) is True:
+                        if (self.vxa[x, y] == 0) or (self.vxb[x, y] == 0) == True:
                             print('b')
                             continue
                         else:
                             pass
                         
                         # SR tensor for point xy 
-                        D_ = self._D_ij_3D(x, y, t) 
-                        #D_ = self._D_ij_2D(x, y, t) 
+                        D_ = self._D_ij_3D(x, y, t)
                         
                         # from this point on its besically the same;
                         # 2d slice with but with 3d sr tensors
@@ -438,11 +437,22 @@ class ComboDataSR_3D:
                         theta = theta_rad(r, vec[val_max_i][:-1])  # highest eigenvector 
                         theta_ = theta_rad(r, vec[val_min_i][:-1]) # lowest eigenvector
                         theta__ = theta_rad(r, vec[val_last_i][:-1]) # third eigenvector 
-                        
+                        '''
                         # angle between z and eigenvectors
                         phi = theta_rad(z, vec[val_max_i])  # angle between highest eigenvector and z-axis
                         phi_ = theta_rad(z, vec[val_min_i]) # angle between lowest eigenvector and z-axis
                         phi__ = theta_rad(z, vec[val_last_i]) # angle between third eigenvector and z-axis
+                        
+                        '''
+                        # angle in (r,z)-plane
+                        a,b,c = vec[val_max_i]
+                        phi = theta_rad(z, [a*np.cos(theta), b*np.sin(theta), c])  # angle between highest eigenvector and z-axis
+                        
+                        a,b,c = vec[val_min_i]
+                        phi_ = theta_rad(z, [a*np.cos(theta_), b*np.sin(theta_), c]) # angle between lowest eigenvector and z-axis
+                        
+                        a,b,c = vec[val_last_i]
+                        phi__ = theta_rad(z, [a*np.cos(theta__), b*np.sin(theta__), c]) # angle between third eigenvector and z-axis
                         
                         # local contribution
                         sect_xy = mask_segment_t[x, y]  # sector value in (x,y)
@@ -752,7 +762,7 @@ class ComboDataSR_3D:
             
             f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
             
-            plt.suptitle(f'Angle distributions ({ID})', fontsize = 15)
+            plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
             ax1.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             ax1.set_xlim(0, T_ed*self.TR)
             ax1.set_xlabel('Time [s]', fontsize = 15)
@@ -784,9 +794,9 @@ class ComboDataSR_3D:
             
                 ax1.plot(self.range_TR, theta1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
                 ax1.plot(self.range_TR, theta2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
-                ax2.plot(self.range_TR, phi1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
-                ax2.plot(self.range_TR, phi2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
-                ax2.legend()
+                ax2.plot(self.range_TR, phi1_mean_global, 'r', label = 'Stretch')
+                ax2.plot(self.range_TR, phi2_mean_global, 'g', label = 'Compression')
+                ax2.legend(loc = 'lower right')
             
             plt.subplots_adjust(wspace=0.1)
             plt.show()
@@ -841,12 +851,12 @@ if __name__ == "__main__":
     
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D(file, n = 2)
+    run2 = ComboDataSR_3D(file, n = 3)
     
     # get info/generate data 
     run2.overview()
     #grv2 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 8, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

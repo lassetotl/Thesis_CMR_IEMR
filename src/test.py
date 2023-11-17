@@ -179,7 +179,28 @@ plot(fig, auto_open=True)
 
 #%%
 
-a = np.array([3,3,4])
+a = np.array([0.03,0.03,0.04])
 
 phi = theta_rad(np.array([0,0,1]), a)
 print(phi)
+
+#%%
+
+theta = np.deg2rad(0)
+rot = np.array([[np.cos(theta), -np.sin(theta)], [np.sin(theta), np.cos(theta)]])
+a_xy = [a[0], a[1]]
+
+a_xy_rot = np.dot(rot, a_xy)
+a2 = np.array([a_xy_rot[0], a_xy_rot[1], a[2]])
+a3 = np.array([a[0]*np.cos(theta), a[1]*np.sin(theta), a[2]])
+
+fig = plt.figure(figsize=plt.figaspect(1))
+ax = fig.add_subplot(111, projection='3d')
+plt.quiver(0, 0, 0, a[0], a[1], a[2], color='gray')
+plt.quiver(0, 0, 0, a2[0], a2[1], a2[2], color='b')
+plt.quiver(0, 0, 0, a3[0], a3[1], a3[2], color='r')
+lim = 0.05
+ax.set_xlim([-lim, lim])
+ax.set_ylim([-lim, lim])
+ax.set_zlim([-lim, lim])
+plt.show()
