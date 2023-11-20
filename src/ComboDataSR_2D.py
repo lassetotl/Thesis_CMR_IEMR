@@ -677,7 +677,7 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D3-2_42d', n = 2)
+    run1 = ComboDataSR_2D('sham_D11-1_40d', n = 2)
     
     # get info/generate data 
     run1.overview()

@@ -34,8 +34,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 #converts to dictionary (dict) format
 #file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-#file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
-file = 'ComboData_PC(SIMULA_220310_D11-1_s_2018021501)'
+file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+#file = 'ComboData_PC(SIMULA_220310_D11-1_s_2018021501)'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
@@ -190,9 +190,9 @@ norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Whole heart strain [$\%$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
-axs[0].imshow(np.array(total_rs), vmin = cmin, vmax = cmax, cmap = c_cmap)
-axs[1].imshow(np.array(total_cs), vmin = cmin, vmax = cmax, cmap = c_cmap)
-im = axs[2].imshow(np.array(total_ls), vmin = cmin, vmax = cmax, cmap = c_cmap)
+axs[0].imshow(np.array(total_rs), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+axs[1].imshow(np.array(total_cs), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+im = axs[2].imshow(np.array(total_ls), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
 axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
@@ -212,9 +212,9 @@ norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(fr'Whole heart strain rate [$1/s$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
-axs[0].imshow(np.array(total_rsr), vmin = cmin, vmax = cmax, cmap = c_cmap)
-axs[1].imshow(np.array(total_csr), vmin = cmin, vmax = cmax, cmap = c_cmap)
-im = axs[2].imshow(np.array(total_lsr), vmin = cmin, vmax = cmax, cmap = c_cmap)
+axs[0].imshow(np.array(total_rsr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+axs[1].imshow(np.array(total_csr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+im = axs[2].imshow(np.array(total_lsr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
 axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
