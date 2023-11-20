@@ -143,14 +143,21 @@ with imageio.get_writer('R:\Lasse\plots\MP4\\3D heart.gif', fps=7) as writer:   
 total_lsr = []
 total_csr = []
 total_rsr = []
-slice_selection = [3,4,5,6,7,8]
+total_ls = []
+total_cs = []
+total_rs = []
+slice_selection = [2,3,4,5,6,7,8,9]
 for slice_ in slice_selection:
     print(slice_)
     run = ComboDataSR_3D(file, n = 1)
     run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
-    total_lsr.append(np.array(run.__dict__['l_strain'])[:51])
-    total_csr.append(np.array(run.__dict__['c_strain'])[:51])
-    total_rsr.append(np.array(run.__dict__['r_strain'])[:51])
+    total_ls.append(np.array(run.__dict__['l_strain'])[:51])
+    total_cs.append(np.array(run.__dict__['c_strain'])[:51])
+    total_rs.append(np.array(run.__dict__['r_strain'])[:51])
+    total_lsr.append(np.array(run.__dict__['l_strain_rate'])[:51])
+    total_csr.append(np.array(run.__dict__['c_strain_rate'])[:51])
+    total_rsr.append(np.array(run.__dict__['r_strain_rate'])[:51])
+    
 ID = run.__dict__['ID']
 
 lsr = np.sum(np.array(total_lsr), axis = 0) / len(slice_selection)
@@ -166,3 +173,50 @@ plt.plot(range(len(csr)), csr, 'chocolate', label = 'Circumferential')
 plt.plot(range(len(rsr)), rsr, 'darkblue', label = 'Radial')
 
 plt.legend(); plt.show()
+
+#%%
+# strain plots with separated slices
+cmax = np.max(total_rs)
+cmin = np.min(total_cs)
+c = 'inferno'
+c_cmap = plt.get_cmap(c)
+norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
+
+fig, axs = plt.subplots(3, sharex=True)
+fig.suptitle(f'Whole heart strain [$\%$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
+
+axs[0].imshow(np.array(total_rs), vmin = cmin, vmax = cmax, cmap = c_cmap)
+axs[1].imshow(np.array(total_cs), vmin = cmin, vmax = cmax, cmap = c_cmap)
+im = axs[2].imshow(np.array(total_ls), vmin = cmin, vmax = cmax, cmap = c_cmap)
+axs[2].set_xlabel('Timepoints', fontsize = 15)
+
+axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
+
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+fig.colorbar(im, cax = cbar_ax, norm = norm_)
+
+plt.show()
+
+# strain rate plots with separated slices
+cmax = np.max(total_rsr)
+cmin = np.min(total_csr)
+c_cmap = plt.get_cmap(c)
+norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
+
+fig, axs = plt.subplots(3, sharex=True)
+fig.suptitle(fr'Whole heart strain rate [$1/s$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
+
+axs[0].imshow(np.array(total_rsr), vmin = cmin, vmax = cmax, cmap = c_cmap)
+axs[1].imshow(np.array(total_csr), vmin = cmin, vmax = cmax, cmap = c_cmap)
+im = axs[2].imshow(np.array(total_lsr), vmin = cmin, vmax = cmax, cmap = c_cmap)
+axs[2].set_xlabel('Timepoints', fontsize = 15)
+
+axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
+
+
+fig.subplots_adjust(right=0.8)
+cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
+fig.colorbar(im, cax = cbar_ax, norm = norm_)
+
+plt.show()

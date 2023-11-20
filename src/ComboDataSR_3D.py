@@ -802,9 +802,9 @@ class ComboDataSR_3D:
             plt.show()
         
         if segment == 0:  # turn all return arrays global
-            self.r_strain_rate = r_sr_global
-            self.c_strain_rate = c_sr_global
-            self.l_strain_rate = l_sr_global
+            self.r_strain_rate = running_average(r_sr_global, 4)
+            self.c_strain_rate = running_average(c_sr_global, 4)
+            self.l_strain_rate = running_average(l_sr_global, 4)
             
             self.r_strain = rs
             self.c_strain = cs
@@ -856,7 +856,7 @@ if __name__ == "__main__":
     # get info/generate data 
     run2.overview()
     #grv2 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 3, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
