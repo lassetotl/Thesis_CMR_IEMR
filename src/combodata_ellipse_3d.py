@@ -33,8 +33,10 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
+#file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
 #file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
+file = 'ComboData_PC(SIMULA_220310_D11-1_s_2018021501)'
+
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
 data = h5py.File(f'R:\Lasse\combodata_3d_shax\{file}.mat', 'r')['ComboData']
@@ -54,7 +56,7 @@ print(idx, pss0)  # slice positions in order
 # global parameters for this set
 
 T_es = float(data[data['TimePointEndSystole'][0,0]][0,0])
-T_ed = float(data[data['TimePointEndDiastole'][0,0]][0,0])
+T_ed = []
 res = float(data[data['Resolution'][0,0]][0,0])  # spatial resolution in cm
 slicethickness = float(data[data['SliceThickness'][0,0]][0,0])  # in mm
 TR = float(data[data['TR'][0,0]][0,0])  # temporal resolution in s
@@ -68,6 +70,8 @@ for slice_ in range(slices):
     V[f'V{slice_ + 1}'] = np.array(data[data['V'][idx[slice_], 0]])  # velocity field for one slice
     M[f'M{slice_ + 1}'] = np.array(data[data['Magn'][idx[slice_], 0]]) #magnitudes
     mask[f'mask{slice_ + 1}'] = np.array(data[data['Mask'][idx[slice_], 0]]) #mask for non-heart tissue 
+    
+    T_ed.append(int(data[data['TimePointEndDiastole'][idx[slice_],0]][0,0]))
     
     # check if mi, collect infarct site mis if so
     '''
@@ -147,16 +151,17 @@ total_ls = []
 total_cs = []
 total_rs = []
 slice_selection = [2,3,4,5,6,7,8,9]
+T_ed_min = np.min(np.array(T_ed))
 for slice_ in slice_selection:
     print(slice_)
     run = ComboDataSR_3D(file, n = 1)
     run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
-    total_ls.append(np.array(run.__dict__['l_strain'])[:51])
-    total_cs.append(np.array(run.__dict__['c_strain'])[:51])
-    total_rs.append(np.array(run.__dict__['r_strain'])[:51])
-    total_lsr.append(np.array(run.__dict__['l_strain_rate'])[:51])
-    total_csr.append(np.array(run.__dict__['c_strain_rate'])[:51])
-    total_rsr.append(np.array(run.__dict__['r_strain_rate'])[:51])
+    total_ls.append(np.array(run.__dict__['l_strain'])[:T_ed_min])
+    total_cs.append(np.array(run.__dict__['c_strain'])[:T_ed_min])
+    total_rs.append(np.array(run.__dict__['r_strain'])[:T_ed_min])
+    total_lsr.append(np.array(run.__dict__['l_strain_rate'])[:T_ed_min])
+    total_csr.append(np.array(run.__dict__['c_strain_rate'])[:T_ed_min])
+    total_rsr.append(np.array(run.__dict__['r_strain_rate'])[:T_ed_min])
     
 ID = run.__dict__['ID']
 
