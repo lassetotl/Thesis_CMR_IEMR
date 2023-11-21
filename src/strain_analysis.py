@@ -233,13 +233,15 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
+'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', \
                                         'Rad SDI', 'Circ SDI', 'r_sr_max', \
                                             'r_sr_min', 'c_sr_max', 'c_sr_min', \
                                                 'a1_mean_max', 'a1_mean_min', \
                                                     'a2_mean_max', 'a2_mean_min', 'Condition']) 
+'''
 # to analyze a generated csv file instead
-#df = pandas.read_csv('combodata_analysis')
+df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')

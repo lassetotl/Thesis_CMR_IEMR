@@ -239,7 +239,11 @@ class ComboDataSR_2D:
             legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = 'Infarct'),
                       Line2D([0], [0], color = c_cmap(1), lw = 2, label = 'Adjacent'),
                       Line2D([0], [0], color = c_cmap(2), lw = 2, label = 'Medial'),
-                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Remote')]
+                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Remote'),
+                      Line2D([0], [0], color = 'midnightblue', lw = 2, label = 'Control radial'),
+                      Line2D([0], [0], color = 'midnightblue', lw = 2, ls='--', label = 'Control circ')]
+            # remove controls
+            
         else:
             legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = 'Sector 1'),
                       Line2D([0], [0], color = c_cmap(1), lw = 2, label = 'Sector 2'),
@@ -565,17 +569,24 @@ class ComboDataSR_2D:
             plt.ylabel('%', fontsize = 15)
                 
             if segment == 1:
-                plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
+                plt.title(f'Regional Strain ({self.filename})', fontsize = 15)
                 
                 for sector in range(4):
                     rs = 100*self._strain(self.r_matrix[sector, :])
                     cs = 100*self._strain(self.c_matrix[sector, :])
                     
                     plt.plot(self.range_TR, rs, c = c_cmap(sector), lw=2)
-                    plt.plot(self.range_TR, cs, c = c_cmap(sector), lw=2)
+                    plt.plot(self.range_TR, cs, c = c_cmap(sector), lw=2, ls = '--')
                     
                     plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                     plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                
+                
+                # control
+                r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
+                c_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
+                plt.plot(self.range_TR, r_strain_[:self.T_ed], 'midnightblue', lw=2)
+                plt.plot(self.range_TR, c_strain_[:self.T_ed], 'midnightblue', lw=2, ls='--')
                 
                 plt.legend(handles = legend_handles1)
                     
@@ -677,12 +688,13 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D11-1_40d', n = 2)
+    run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    #run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 0)
+    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

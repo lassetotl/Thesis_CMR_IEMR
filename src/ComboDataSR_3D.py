@@ -89,7 +89,7 @@ class ComboDataSR_3D:
         self.T = len(self.V['V1'][0,:,0,0,0]) #Total amount of time steps     
         
         # infarct sector, arbitrary if no infarct sector in metadata
-        self.infarct = 0
+        self.infarct = 0  # true/false
         self.mis = [4, 13]  # arbitrary choice
         l = self.filename.split('_')
         if l[0] == 'mi' and (any(np.isnan(self.data['InfarctSector'][0,0][0])) == False):
@@ -404,8 +404,8 @@ class ComboDataSR_3D:
                     # search in eroded mask to avoid border artifacts
                     if mask_e[x, y] == 1:
                         ## check if Va[x, y] or Vb[x, y] = 0 here, exclude if so (later, interpolate)
-                        if (self.vxa[x, y] == 0) or (self.vxb[x, y] == 0) == True:
-                            print('b')
+                        if (Va[0, t, 0, x, y].T == 0) or (Vb[0, t, 0, x, y].T == 0) == True:
+                            print('!!!')
                             continue
                         else:
                             pass
@@ -444,7 +444,7 @@ class ComboDataSR_3D:
                         phi__ = theta_rad(z, vec[val_last_i]) # angle between third eigenvector and z-axis
                         
                         '''
-                        # angle in (r,z)-plane
+                        # projection angle in (r,z)-plane
                         a,b,c = vec[val_max_i]
                         phi = theta_rad(z, [a*np.cos(theta), b*np.sin(theta), c])  # angle between highest eigenvector and z-axis
                         
@@ -787,10 +787,10 @@ class ComboDataSR_3D:
                 for i in self.range_:
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
-                        ax1.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.005*self.n**2)
-                        ax1.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.005*self.n**2)
-                        ax2.scatter([self.range_TR[i]]*len(self.phi1[sector, i]), self.phi1[sector, i], color = 'r', alpha = 0.005*self.n**2)
-                        ax2.scatter([self.range_TR[i]]*len(self.phi2[sector, i]), self.phi2[sector, i], color = 'g', alpha = 0.005*self.n**2)
+                        ax1.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.006*self.n**2)
+                        ax1.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.006*self.n**2)
+                        ax2.scatter([self.range_TR[i]]*len(self.phi1[sector, i]), self.phi1[sector, i], color = 'r', alpha = 0.006*self.n**2)
+                        ax2.scatter([self.range_TR[i]]*len(self.phi2[sector, i]), self.phi2[sector, i], color = 'g', alpha = 0.006*self.n**2)
             
                 ax1.plot(self.range_TR, theta1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
                 ax1.plot(self.range_TR, theta2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
@@ -846,15 +846,12 @@ class ComboDataSR_3D:
 #%%
 # example of use
 if __name__ == "__main__":
-    file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-    #file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
-    
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D(file, n = 3)
+    run2 = ComboDataSR_3D('sham_D3-2_42d', n = 2)
     
     # get info/generate data 
-    run2.overview()
+    #run2.overview()
     #grv2 = run1.velocity(slice_ = 6)  # mostly useful to see how velocity field behaves
     run2.strain_rate(plot = 1, ellipse = 0, slice_ = 3, save = 0, segment = 0)
     
