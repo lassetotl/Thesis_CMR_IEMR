@@ -239,9 +239,9 @@ class ComboDataSR_2D:
             legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = 'Infarct'),
                       Line2D([0], [0], color = c_cmap(1), lw = 2, label = 'Adjacent'),
                       Line2D([0], [0], color = c_cmap(2), lw = 2, label = 'Medial'),
-                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Remote'),
-                      Line2D([0], [0], color = 'midnightblue', lw = 2, label = 'Control radial'),
-                      Line2D([0], [0], color = 'midnightblue', lw = 2, ls='--', label = 'Control circ')]
+                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Remote')]
+                      #Line2D([0], [0], color = 'midnightblue', lw = 2, label = 'Control radial'),
+                      #Line2D([0], [0], color = 'midnightblue', lw = 2, ls='--', label = 'Control circ')]
             # remove controls
             
         else:
@@ -583,10 +583,10 @@ class ComboDataSR_2D:
                 
                 
                 # control
-                r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
-                c_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
-                plt.plot(self.range_TR, r_strain_[:self.T_ed], 'midnightblue', lw=2)
-                plt.plot(self.range_TR, c_strain_[:self.T_ed], 'midnightblue', lw=2, ls='--')
+                #r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
+                #c_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
+                #plt.plot(self.range_TR, r_strain_[:self.T_ed], 'midnightblue', lw=2)
+                #plt.plot(self.range_TR, c_strain_[:self.T_ed], 'midnightblue', lw=2, ls='--')
                 
                 plt.legend(handles = legend_handles1)
                     
@@ -688,7 +688,7 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     #run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 

@@ -33,9 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-#file = 'ComboData_PC(SIMULA_220404_D4-4_s_2017051502)'
-file ='ComboData_PC(SIMULA_220407b_D3-2_s_2017050802)'
-#file = 'ComboData_PC(SIMULA_220310_D11-1_s_2018021501)'
+file = 'sham_D4-4_41d'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
