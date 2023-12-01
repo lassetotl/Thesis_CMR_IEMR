@@ -29,8 +29,6 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 import seaborn as sns
 import h5py
 
-#%%
-
 # create instance for each dataset (of type combodata)
 class ComboDataSR_3D:
     def __init__(  # performs when an instance is created
@@ -168,6 +166,14 @@ class ComboDataSR_3D:
                 
         D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
         return D_ij
+    
+    # return mean value of nearest neighbors
+    def _NN(self, array, x, y):
+        new_val = []
+        for i in range(-1, 2):  # eight closest pixels
+            for j in range(-1, 2):
+                new_val.append(array[x+i, x+j])
+        return np.mean(new_val)
     
     # input array of strain rate data
     # (used internally by later methods)
@@ -308,13 +314,15 @@ class ComboDataSR_3D:
         mask = self.mask[f'mask{slice_}']
         mask_segment = self.mask_segment[f'mask_segment{slice_}']
         ID = self.ID + f', slice {slice_}'
-        T_ed = self.T_ed[f'T_ed_{slice_}']
+        T_ed = self.T_ed[f'T_ed{slice_}']
         
         try:
             Va = self.V[f'V{slice_+1}']  # above
             Vb = self.V[f'V{slice_-1}']  # below
             Ma = self.M[f'M{slice_+1}']
             Mb = self.M[f'M{slice_-1}']
+            mask_a = self.mask[f'mask{slice_+1}']
+            mask_b = self.mask[f'mask{slice_-1}']
             
         except KeyError:
             raise Exception(f'\nSlice {slice_} is missing a slice above or below. \
@@ -373,6 +381,8 @@ class ComboDataSR_3D:
 
             # combodata mask 
             mask_t = mask[t, 0, :, :].T #mask at this timepoint
+            mask_ta = mask_a[t, 0, :, :].T #mask above
+            mask_tb = mask_b[t, 0, :, :].T #mask below
             mask_segment_t = mask_segment[t, 0, :, :].T #mask at this timepoint
             
             #find center of mass of filled mask (middle of the heart)
@@ -424,14 +434,28 @@ class ComboDataSR_3D:
             for x in range(0, self.ax, self.n):
                 for y in range(0, self.ay, self.n): 
                     # search in eroded mask to avoid border artifacts
+                    # get mask above and below, these are never exactly 0
                     if mask_e[x, y] == 1:
                         ## check if Va[x, y] or Vb[x, y] = 0 here, exclude if so (later, interpolate)
-                        if (Va[0, t, 0, x, y].T == 0) or (Vb[0, t, 0, x, y].T == 0) == True:
-                            print('!!!')  # this has never triggered
-                            continue
+                        '''
+                        if mask_ta[x,y] == 0:
+                            self.vxa[x,y] = self._NN(self.vxa, x, y)  # collect mean value of surrounding voxels
+                            self.vya[x,y] = self._NN(self.vya, x, y)
+                            self.vza[x,y] = self._NN(self.vza, x, y)
+                            if all([self.vxa[x,y], self.vya[x,y], self.vza[x,y]]) == False:
+                                print('a')
+                                continue  # if all surrounding voxels are 0, continue
+                        
+                        elif mask_tb[x,y] == 0:
+                            self.vxb[x,y] = self._NN(self.vxb, x, y)
+                            self.vyb[x,y] = self._NN(self.vyb, x, y)
+                            self.vzb[x,y] = self._NN(self.vzb, x, y)
+                            if all([self.vxb[x,y], self.vyb[x,y], self.vzb[x,y]]) == False:
+                                continue
+                            
                         else:
                             pass
-                        
+                        '''
                         # SR tensor for point xy 
                         D_ = self._D_ij_3D(x, y, t)
                         
@@ -828,6 +852,8 @@ class ComboDataSR_3D:
             
             self.theta1 = theta1_mean_global
             self.theta2 = theta2_mean_global
+            self.phi1 = phi1_mean_global
+            self.phi2 = phi2_mean_global
             
         else:
             self.theta1 = theta1_mean
@@ -862,14 +888,16 @@ class ComboDataSR_3D:
 #%%
 # example of use
 if __name__ == "__main__":
+    file = 'ten58\ComboData_PC(run_231121_TEN58_M2_TEN58_M2_s_2020071404_1_1_20200714_152554_43_tpm_CS_080719_RAT (E43))'
+    
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 2)
+    run2 = ComboDataSR_3D('sham_D11-1_40d', n = 2)
     
     # get info/generate data 
     run2.overview()
-    grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
-    #run2.strain_rate(plot = 1, ellipse = 0, slice_ = 3, save = 0, segment = 0)
+    #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 4, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

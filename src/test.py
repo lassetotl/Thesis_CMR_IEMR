@@ -204,3 +204,11 @@ ax.set_xlim([-lim, lim])
 ax.set_ylim([-lim, lim])
 ax.set_zlim([-lim, lim])
 plt.show()
+
+#%%
+
+a = range(-1, 2)
+print(a[0])
+
+a = [0,0,0,0,0]
+v = [0.1,11,-31,0.11,41]
