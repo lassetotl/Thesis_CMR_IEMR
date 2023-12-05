@@ -217,6 +217,8 @@ class ComboDataSR_3D:
         w = 25 # +- window from center of mass at t = 0
         if dim == '3D':
             c_cmap = plt.get_cmap('plasma')
+            norm_ = mpl.colors.Normalize(vmin = -1.2, vmax = 1.2)
+            sm = plt.cm.ScalarMappable(cmap = c_cmap, norm = norm_)
             w -= 12
         
         # get data axis dimensions
@@ -235,16 +237,20 @@ class ComboDataSR_3D:
             frame1 = M[t, 0, :, :].T #photon density at time t
             mask_t = mask[t, 0, :, :].T
             
+            #find center of mass of filled mask (middle of the heart)
+            cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
+            
             if dim == '2D':
                 fig, ax = plt.subplots(figsize=(10,10))
                 plt.imshow(frame1.T/np.max(frame1), origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
+                ax.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
                 
             else:
                 fig = plt.figure(figsize=(10,10))
                 ax = fig.add_subplot(111, projection='3d')
-            
-            #find center of mass of filled mask (middle of the heart)
-            cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
+                cbar = plt.colorbar(sm)
+                cbar.set_label('$v_z \ [cm/s]$', fontsize = 15)
+                ax.scatter(cx, cy, self.cx_0, marker = 'x', c = 'w', s = 210, linewidths = 3)
             
             plt.title(f'Velocity plot at t = {t} ({self.ID}, Slice {slicenr})', fontsize = 15)
             
@@ -269,7 +275,7 @@ class ComboDataSR_3D:
                             ax.quiver(x, y, v_[0], v_[1], color = 'w', scale = 10, minshaft = 1, minlength = 0, width = 0.005)
                         else:
                             v_ = np.array([vx[x, y], vy[x, y], vz[x, y]])
-                            hx = mpl.colors.rgb2hex(c_cmap(vz[x, y]))
+                            hx = mpl.colors.rgb2hex(c_cmap(norm_(vz[x, y])))
                             
                             ax.quiver(x, y, self.cx_0, v_[0], v_[1], v_[2], color = hx, linewidths = 2.8, arrow_length_ratio=0.8, length = 1.3)
                             ax.set_zlim(self.cx_0-w, self.cx_0+w)
@@ -277,8 +283,6 @@ class ComboDataSR_3D:
                         self.gr[t] += np.linalg.norm(v_)*np.cos(theta) 
                         self.gc[t] += np.linalg.norm(v_)*np.sin(theta) 
             
-            ax.scatter(cx, cy, self.cx_0, marker = 'x', c = 'w', s = 210, linewidths = 3)
-          
             plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
             plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
             plt.show()
@@ -893,8 +897,8 @@ if __name__ == "__main__":
     
     # get info/generate data 
     run2.overview()
-    #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 1)
+    grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
+    #run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
