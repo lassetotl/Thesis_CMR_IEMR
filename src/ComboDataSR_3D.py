@@ -183,8 +183,8 @@ class ComboDataSR_3D:
         w = np.tanh((T_ed - 1 - self.range_)/weight) 
         w_f = np.tanh(self.range_/weight) 
 
-        strain = cumtrapz(strain_rate, self.range_TR, initial=0)
-        strain_flipped = np.flip(cumtrapz(strain_rate[::-1], self.range_TR[::-1], initial=0))
+        strain = cumtrapz(strain_rate, self.range_TR/1000, initial=0)
+        strain_flipped = np.flip(cumtrapz(strain_rate[::-1]/1000, self.range_TR[::-1], initial=0))
         return (w*strain + w_f*strain_flipped)/2
     
     
@@ -321,8 +321,8 @@ class ComboDataSR_3D:
             Vb = self.V[f'V{slice_-1}']  # below
             Ma = self.M[f'M{slice_+1}']
             Mb = self.M[f'M{slice_-1}']
-            mask_a = self.mask[f'mask{slice_+1}']
-            mask_b = self.mask[f'mask{slice_-1}']
+            #mask_a = self.mask[f'mask{slice_+1}']
+            #mask_b = self.mask[f'mask{slice_-1}']
             
         except KeyError:
             raise Exception(f'\nSlice {slice_} is missing a slice above or below. \
@@ -330,7 +330,7 @@ class ComboDataSR_3D:
         
         # range of time-points
         self.range_ = np.array(range(T_ed))
-        self.range_TR = self.range_*self.TR
+        self.range_TR = self.range_*self.TR*1000  # plots in milliseconds
         
         # get data axis dimensions
         self.ax = len(mask[0,0,:,0])
@@ -381,8 +381,8 @@ class ComboDataSR_3D:
 
             # combodata mask 
             mask_t = mask[t, 0, :, :].T #mask at this timepoint
-            mask_ta = mask_a[t, 0, :, :].T #mask above
-            mask_tb = mask_b[t, 0, :, :].T #mask below
+            #mask_ta = mask_a[t, 0, :, :].T #mask above
+            #mask_tb = mask_b[t, 0, :, :].T #mask below
             mask_segment_t = mask_segment[t, 0, :, :].T #mask at this timepoint
             
             #find center of mass of filled mask (middle of the heart)
@@ -699,8 +699,8 @@ class ComboDataSR_3D:
             cs = 100*self._strain(self.c_matrix[sector, :], T_ed)
             
             # this regional data can be aquired for segment == 0 as well
-            self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR
-            self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR
+            self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR*1000
+            self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR*1000
             
         if plot == 1:
             # plot global strain rate
@@ -708,11 +708,11 @@ class ComboDataSR_3D:
             plt.figure(figsize=(10, 8))
 
             plt.title(f'Global Strain Rate ({ID})', fontsize = 15)
-            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axhline(0, c = 'k', lw = 1)
 
-            plt.xlim(0, T_ed*self.TR)#; plt.ylim(0, 50)
-            plt.xlabel('Time [s]', fontsize = 15)
+            plt.xlim(0, T_ed*self.TR*1000)#; plt.ylim(0, 50)
+            plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('$s^{-1}$', fontsize = 20)
             
             if segment == 1:
@@ -763,11 +763,11 @@ class ComboDataSR_3D:
 
             plt.figure(figsize=(8, 6))
 
-            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axhline(0, c = 'k', lw = 1)
 
-            plt.xlim(0, T_ed*self.TR)#; plt.ylim(0, 50)
-            plt.xlabel('Time [s]', fontsize = 15)
+            plt.xlim(0, T_ed*self.TR*1000)#; plt.ylim(0, 50)
+            plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
                 
             if segment == 1:
@@ -802,25 +802,24 @@ class ComboDataSR_3D:
             
             f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
             
-            plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
-            ax1.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            ax1.set_xlim(0, T_ed*self.TR)
-            ax1.set_xlabel('Time [s]', fontsize = 15)
+            plt.suptitle(f'Stretch direction ({ID})', fontsize = 15)
+            ax1.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            ax1.set_xlim(0, T_ed*self.TR*1000)
+            ax1.set_xlabel('Time [ms]', fontsize = 15)
             ax1.set_ylabel('$\\theta$', fontsize = 17)
 
             ax2.set_ylabel('$\\phi$', fontsize = 17)
-            ax2.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            ax2.set_xlim(0, T_ed*self.TR)
-            ax2.set_xlabel('Time [s]', fontsize = 15)
+            ax2.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            ax2.set_xlim(0, T_ed*self.TR*1000)
+            ax2.set_xlabel('Time [ms]', fontsize = 15)
             
             if segment == 1:  # mean angles segments
                 for sector in range(4):
-                    # which parameter is interesting to plot here?
-                    #plt.plot(range_TR, theta1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
-                    #plt.plot(range_TR, theta2_std, 'g', label = 'Negative eigenvectors (compression)')
-                    # difference
-                    ax1.plot(self.range_TR, abs(theta1_mean[sector, :] - theta2_mean[sector, :]), color = c_cmap(sector))
-                    ax2.plot(self.range_TR, abs(phi1_mean[sector, :] - phi2_mean[sector, :]), color = c_cmap(sector))
+                    # smoothed mean stretch / compression
+                    ax1.plot(self.range_TR, theta2_mean[sector, :], color = 'lightgray')
+                    ax2.plot(self.range_TR, phi2_mean[sector, :], color = 'lightgray')
+                    ax1.plot(self.range_TR, theta1_mean[sector, :], color = c_cmap(sector))
+                    ax2.plot(self.range_TR, phi1_mean[sector, :], color = c_cmap(sector))
                     ax2.legend(handles = legend_handles1, loc = 'lower right')
                       
             else:  # global angle distribution 
@@ -888,16 +887,14 @@ class ComboDataSR_3D:
 #%%
 # example of use
 if __name__ == "__main__":
-    file = 'ten58\ComboData_PC(run_231121_TEN58_M2_TEN58_M2_s_2020071404_1_1_20200714_152554_43_tpm_CS_080719_RAT (E43))'
-    
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D11-1_40d', n = 2)
+    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     run2.overview()
     #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 4, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

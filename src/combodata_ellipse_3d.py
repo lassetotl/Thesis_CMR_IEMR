@@ -33,8 +33,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-#file = 'sham_D3-2_42d'
-file = 'mi_ten66-m2_'
+file = 'sham_D11-1_40d'
+#file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
@@ -218,6 +218,8 @@ phi1 = np.sum(np.array(phi_stretch), axis = 0) / len(slice_selection)
 phi2 = np.sum(np.array(phi_comp), axis = 0) / len(slice_selection) 
 
 #%%
+yticks = [0, len(slice_selection)-1]
+yticks_new = [slice_selection[0], slice_selection[-1]]
 
 plt.figure(figsize=(8, 6))
 plt.title(f'Whole heart strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
@@ -242,6 +244,9 @@ axs[1].imshow(np.array(total_cs), vmin = cmin, vmax = cmax, cmap = c_cmap, aspec
 im = axs[2].imshow(np.array(total_ls), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
+for i in range(3):
+    axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
+
 axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
 
 fig.subplots_adjust(right=0.8)
@@ -263,6 +268,9 @@ axs[0].imshow(np.array(total_rsr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspe
 axs[1].imshow(np.array(total_csr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 im = axs[2].imshow(np.array(total_lsr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[2].set_xlabel('Timepoints', fontsize = 15)
+
+for i in range(3):
+    axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
 
 axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
 
@@ -290,6 +298,9 @@ axs[2].plot(range(len(theta1)), theta1, 'r')
 axs[2].plot(range(len(theta2)), theta2, 'g')
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
+for i in range(2):
+    axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
+
 axs[0].set_ylabel('Stretch'); axs[1].set_ylabel('Compression'); axs[2].set_ylabel('Mean')
 
 fig.subplots_adjust(right=0.8)
@@ -312,6 +323,9 @@ im = axs[1].imshow(np.array(phi_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, 
 axs[2].plot(range(len(phi1)), phi1, 'r')
 axs[2].plot(range(len(phi2)), phi2, 'g')
 axs[2].set_xlabel('Timepoints', fontsize = 15)
+
+for i in range(2):
+    axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
 
 axs[0].set_ylabel('Stretch'); axs[1].set_ylabel('Compression'); axs[2].set_ylabel('Mean')
 
