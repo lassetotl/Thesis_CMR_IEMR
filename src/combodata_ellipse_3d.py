@@ -292,7 +292,9 @@ fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Strain rate mean $\\theta$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(theta_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+axs[0].text(T_ed_min-0.5, 7, '∎', color = 'r', fontsize = 20)
 im = axs[1].imshow(np.array(theta_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+axs[1].text(T_ed_min-0.5, 7, '∎', color = 'g', fontsize = 20)
 
 axs[2].plot(range(len(theta1)), theta1, 'r')
 axs[2].plot(range(len(theta2)), theta2, 'g')
@@ -318,7 +320,9 @@ fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Strain rate mean $\\phi$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(phi_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+axs[0].text(T_ed_min-0.5, 7, '∎', color = 'r', fontsize = 20)
 im = axs[1].imshow(np.array(phi_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+axs[1].text(T_ed_min-0.5, 7, '∎', color = 'g', fontsize = 20)
 
 axs[2].plot(range(len(phi1)), phi1, 'r')
 axs[2].plot(range(len(phi2)), phi2, 'g')
