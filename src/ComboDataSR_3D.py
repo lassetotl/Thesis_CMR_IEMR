@@ -92,9 +92,9 @@ class ComboDataSR_3D:
         self.infarct = 0  # true/false
         self.mis = [4, 13]  # arbitrary choice
         l = self.filename.split('_')
-        if l[0] == 'mi' and (any(np.isnan(self.data['InfarctSector'][0,0][0])) == False):
-            self.mis = self.data['InfarctSector'][0,0][0]
-            self.infarct = 1  
+        #if l[0] == 'mi' and (any(np.isnan(self.data['InfarctSector'][0,0][0])) == False):
+        #    self.mis = self.data['InfarctSector'][0,0][0]
+        #    self.infarct = 1  
         
         # segment slices alloted to non-infarct sectors, rounded down to int
         if self.mis[0] < self.mis[1]:
@@ -893,12 +893,12 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 2)
+    run2 = ComboDataSR_3D('mi_D4-6_41d', n = 2)
     
     # get info/generate data 
     run2.overview()
-    grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
-    #run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 1)
+    #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 7, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
