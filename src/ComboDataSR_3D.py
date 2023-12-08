@@ -893,12 +893,12 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('mi_D4-6_41d', n = 2)
+    run2 = ComboDataSR_3D('sham_D11-1_10d', n = 2)
     
     # get info/generate data 
     run2.overview()
     #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 7, save = 0, segment = 1)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

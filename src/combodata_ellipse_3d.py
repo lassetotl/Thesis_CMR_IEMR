@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D4-6_41d'
+file = 'mi_D11-7_40d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -184,7 +184,7 @@ total_ls = []; total_cs = []; total_rs = []
 theta_stretch = []; theta_comp = []
 phi_stretch = []; phi_comp = []
 
-slice_selection = [2,3,4,5,6,7,8,9]
+slice_selection = [2,3,4,5,6]
 T_ed_min = np.min(np.array(T_ed))
 for slice_ in slice_selection:
     print(slice_)
@@ -292,9 +292,9 @@ fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Strain rate mean $\\theta$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(theta_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[0].text(T_ed_min-0.5, 7, '∎', color = 'r', fontsize = 20)
+axs[0].text(T_ed_min-0.5, 0.2, '∎', color = 'r', fontsize = 20)
 im = axs[1].imshow(np.array(theta_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[1].text(T_ed_min-0.5, 7, '∎', color = 'g', fontsize = 20)
+axs[1].text(T_ed_min-0.5, 0.2, '∎', color = 'g', fontsize = 20)
 
 axs[2].plot(range(len(theta1)), theta1, 'r')
 axs[2].plot(range(len(theta2)), theta2, 'g')
@@ -320,9 +320,9 @@ fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Strain rate mean $\\phi$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(phi_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[0].text(T_ed_min-0.5, 7, '∎', color = 'r', fontsize = 20)
+axs[0].text(T_ed_min-0.5, 0.2, '∎', color = 'r', fontsize = 20)
 im = axs[1].imshow(np.array(phi_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[1].text(T_ed_min-0.5, 7, '∎', color = 'g', fontsize = 20)
+axs[1].text(T_ed_min-0.5, 0.2, '∎', color = 'g', fontsize = 20)
 
 axs[2].plot(range(len(phi1)), phi1, 'r')
 axs[2].plot(range(len(phi2)), phi2, 'g')
