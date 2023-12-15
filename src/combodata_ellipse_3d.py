@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D11-7_40d'
+file = 'sham_D3-2_21d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -184,7 +184,7 @@ total_ls = []; total_cs = []; total_rs = []
 theta_stretch = []; theta_comp = []
 phi_stretch = []; phi_comp = []
 
-slice_selection = [2,3,4,5,6]
+slice_selection = [2,3,4,5,6,7,8,9]
 T_ed_min = np.min(np.array(T_ed))
 for slice_ in slice_selection:
     print(slice_)
