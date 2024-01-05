@@ -9,7 +9,7 @@
 
 import numpy as np
 import matplotlib.pyplot as plt
-from lasse_functions import divergence, theta_rad, clockwise_angle, gaussian_2d
+from util import divergence, theta_rad, clockwise_angle
 #import pandas as pd
 #import seaborn as sns
 #import sklearn
@@ -60,9 +60,6 @@ print(f'End systole at t={T_es}, end diastole at t={T_ed}')
 f = 100
 n = 2
 
-# generate 2d gaussian kernel for data smoothing
-g = gaussian_2d(sigma = 1)
-
 #axis lengths
 ax = len(mask[:,0,0,0])
 ay = len(mask[0,:,0,0])
@@ -99,30 +96,37 @@ for t in range_:
     C = frame1/np.max(frame1)
     
     #wiener noise reduction filter (?)
-    vx = ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #x components of velocity w mask
-    vy = ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #y components (negative?)
+    vx = V[:, :, 0, t, 0] #ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #x components of velocity w mask
+    vy = V[:, :, 0, t, 1] #ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #y components (negative?)
     #vz = ndi.gaussian_filter(V[:, :, 0, t, 2]*C, sigma = 2)*mask_t #y components (negative?)
     
     #vx = sig.convolve2d(V[:, :, 0, t, 1]*C, g) / sig.convolve2d(C, g)
     #vy = sig.convolve2d(V[:, :, 0, t, 0]*C, g) / sig.convolve2d(C, g)
     
+    X = np.arange(128); Y = np.arange(128)
+    X, Y = np.meshgrid(X, Y)
     
+    plt.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n].T, vy[::n, ::n].T, 
+                  color = 'w', scale = 100, minshaft = 1, minlength=0, width = 0.004)
+    '''
     # just for troubleshooting
     for x in range(0, f, n):
         for y in range(0, f, n):
+            
             if mask_t[x, y] == 1:
                 
                 r = np.array([x - cx, y - cy])
                 #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
                 
                 v_ = np.array([vx[x, y], vy[x, y]])
-                plt.quiver(x, y, v_[0], v_[1], color = 'w', scale = 10, minshaft = 1, minlength = 0, width = 0.005)
+                plt.quiver(x, y, v_[0], v_[1], color = 'w', scale = 10, minshaft = 1, minlength = 0, width = 0.004)
                 theta = clockwise_angle(r, v_) + np.pi
                 
                 gr[t] += np.linalg.norm(v_)*np.cos(theta) 
                 gc[t] += np.linalg.norm(v_)*np.sin(theta) 
+     '''       
     
-    plt.scatter(cx, cy, marker = 'x', c = 'w')
+    #plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 2)
     
     
     #2D vector visualization 128x128 res image in xy plane

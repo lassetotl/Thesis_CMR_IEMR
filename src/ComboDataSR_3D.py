@@ -601,6 +601,11 @@ class ComboDataSR_3D:
                             
                             ax.add_artist(ellipse)
             
+            # if any of these are zero, we have likely reached the end of the sector mask. 
+            # end here, if so, to avoid division by zero.
+            if np.all(e_count) == False:
+                print(f'Ellipse count at {t*self.TR*1000} ms: {e_count}. Skipping the last timepoints to avoid division by zero.')
+                continue
         
             for sector in range(4):  # scaling for correct units 
                 self.r_matrix[sector, t] = self.r_matrix[sector, t] / (e_count[sector]*self.res)
@@ -893,12 +898,12 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D11-1_10d', n = 2)
+    run2 = ComboDataSR_3D('sham_D7-1_40d', n = 2)
     
     # get info/generate data 
     run2.overview()
     #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
