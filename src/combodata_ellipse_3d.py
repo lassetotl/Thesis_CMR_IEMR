@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D7-1_40d'
+file = 'mi_D11-7_3d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -184,12 +184,13 @@ total_ls = []; total_cs = []; total_rs = []
 theta_stretch = []; theta_comp = []
 phi_stretch = []; phi_comp = []
 
-slice_selection = [2,3,4,5,6,7,8,9]
+slice_selection = [2,3,4,5,6,7,8]
 T_ed_min = np.min(np.array(T_ed))
+
+run = ComboDataSR_3D(file, n = 1)
 for slice_ in slice_selection:
-    print(slice_)
-    run = ComboDataSR_3D(file, n = 1)
     run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
+    print(slice_)
     total_ls.append(np.array(run.__dict__['l_strain'])[:T_ed_min])
     total_cs.append(np.array(run.__dict__['c_strain'])[:T_ed_min])
     total_rs.append(np.array(run.__dict__['r_strain'])[:T_ed_min])
