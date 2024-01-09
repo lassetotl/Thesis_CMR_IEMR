@@ -405,7 +405,7 @@ class ComboDataSR_2D:
                             # draw ellipses that are spanned by eigenvectors
                             # eigenvalues are transformed (1 + tanh(val)) to have a circular unit ellipse
                             ellipse_ = patches.Ellipse((x, y), (1 + np.tanh(val[val_max_i])), (1 + np.tanh(val[val_min_i])), 
-                                                      angle = e_angle, color = hx, alpha = np.tanh(I/0.3)) # alpha = I
+                                                      angle = e_angle, color = hx, alpha = np.tanh(I/0.1)) # alpha = I
                             
                             #unit ellipse
                             #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
@@ -414,6 +414,7 @@ class ComboDataSR_2D:
                             
             # ellipse plot
             if ellipse == 1: 
+                plt.axis('off')
                 plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
              
                 plt.title(f'Strain Rate at t = {t} ({self.filename})', fontsize = 15)
@@ -432,11 +433,12 @@ class ComboDataSR_2D:
                     plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, f'{int(sum(e_count))} Ellipses', 
                              color = 'w', fontsize = 15)
                     divider = make_axes_locatable(ax)
-                    cax = divider.append_axes("right", size="6%", pad=0.09)
+                    cax = divider.append_axes("right", size="7%", pad=0.09)
                     
                     sm = plt.cm.ScalarMappable(cmap = c_cmap, norm = norm_)
                     cbar = plt.colorbar(sm, cax = cax)
-                    cbar.set_label('$\Theta$ (degrees)', fontsize = 15)
+                    cbar.ax.tick_params(labelsize=18)
+                    cbar.set_label('$\Theta$ (degrees)', fontsize = 20)
                     
                 else:
                     plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, 'Ellipse count:', color = 'w', fontsize = 15)
@@ -688,13 +690,13 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D7-1_40d', n = 2)
+    run1 = ComboDataSR_2D('sham_D11-1_1d', n = 2)
     #run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 1)
+    run1.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

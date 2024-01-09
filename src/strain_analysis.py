@@ -32,10 +32,10 @@ df_list = []
 
 st = time.time()
 filenr = 0
-for file in os.listdir('R:\Lasse\combodata_shax'):
+for file in os.listdir('R:\Lasse\combodata_shax_sham_6w_mi'):
     file_ = os.path.splitext(file)
     run = ComboDataSR_2D(file_[0], n = 1)  # n = 1 should be used for proper analysis
-    run.strain_rate(save = 1, plot = 0)
+    run.strain_rate(save = 1, plot = 0, ellipse = 0)
     
     # collect parameters
     T_es_list.append(run.__dict__['T_es'])
@@ -69,10 +69,10 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     c_sr_min = run.__dict__['c_sr_min']
     
     # angle dist
-    a1_mean_max = run.__dict__['a1_mean_max']
-    a1_mean_min = run.__dict__['a1_mean_min']
-    a2_mean_max = run.__dict__['a2_mean_max']
-    a2_mean_min = run.__dict__['a2_mean_min']
+    a1_mean_max = run.__dict__['theta1_mean_max']
+    a1_mean_min = run.__dict__['theta1_mean_min']
+    a2_mean_max = run.__dict__['theta2_mean_max']
+    a2_mean_min = run.__dict__['theta2_mean_min']
     
     # dataframe row
     df_list.append([filename, days, r_strain_peak_mean, c_strain_peak_mean, \
@@ -110,6 +110,7 @@ ax2.set_xlim(0, np.max(T_ed_list)*TR)
 ax2.set_xlabel('Time [s]', fontsize = 15)
 
 for file in os.listdir('R:\Lasse\strain data'):
+    # drop this method and save matrices instead?
     r_strain = np.load(fr'R:\Lasse\strain data\{str(file)}\r_strain.npy', allow_pickle = 1)
     c_strain = np.load(fr'R:\Lasse\strain data\{str(file)}\c_strain.npy', allow_pickle = 1)
     
