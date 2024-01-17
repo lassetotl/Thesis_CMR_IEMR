@@ -30,9 +30,15 @@ T_ed_list = []
 
 df_list = []
 
+# sham, mi 1d and >40d in separate lists
+rs_sham = []; cs_sham = []
+rs_mi_1d = []; cs_mi_1d = []
+rs_mi_40d = []; cs_mi_40d = []
+tp = 60
+
 st = time.time()
 filenr = 0
-for file in os.listdir('R:\Lasse\combodata_shax_sham_6w_mi'):
+for file in os.listdir('R:\Lasse\combodata_shax'):
     file_ = os.path.splitext(file)
     run = ComboDataSR_2D(file_[0], n = 1)  # n = 1 should be used for proper analysis
     run.strain_rate(save = 1, plot = 0, ellipse = 0)
@@ -48,10 +54,27 @@ for file in os.listdir('R:\Lasse\combodata_shax_sham_6w_mi'):
     if str(filename[-1]) == 'd':
            days = int(filename.split('_')[2].replace('d', ''))
            
+    rs = run.__dict__['r_strain']
+    rs = np.pad(rs, (0, tp - len(rs)), 'constant', constant_values = (0))
+    
+    cs = run.__dict__['c_strain']
+    cs = np.pad(cs, (0, tp - len(cs)), 'constant', constant_values = (0))
+    
     if str(filename[0]) == 'm':
            condition = 1  # mi
+           if days == 1:
+               rs_mi_1d.append(rs)
+               cs_mi_1d.append(cs)
+           if days >= 40:
+               rs_mi_40d.append(rs)
+               cs_mi_40d.append(cs)
+               
     else:
            condition = 0 # sham
+           rs_sham.append(rs)
+           cs_sham.append(cs)
+    
+    print(np.shape(rs_sham))
     
     # collect strain curve parameters
     r_strain_peak_mean = np.mean(run.__dict__['r_peakvals'])
@@ -83,6 +106,56 @@ for file in os.listdir('R:\Lasse\combodata_shax_sham_6w_mi'):
     
 et = time.time()
 print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st)/60)} minutes')  
+
+#%%
+# mean strain with std
+T = 77  # timepoints
+# one of the clips are longer for some reason, but we force it to stop at timepoint 62
+TR = run.__dict__['TR']
+range_ = np.arange(0, T)
+range_TR = range_*TR
+
+f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
+
+ax1.set_title('Global Radial Strain over time', fontsize = 15)
+ax1.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+#ax1.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+ax1.axhline(0, c = 'k', lw = 1)
+ax1.set_xlim(0, np.mean(T_ed_list)*TR)
+ax1.set_xlabel('Time [s]', fontsize = 15)
+ax1.set_ylabel('%', fontsize = 17)
+
+ax2.set_title('Global Circumferential Strain over time', fontsize = 15)
+ax2.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+#ax2.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
+ax2.axhline(0, c = 'k', lw = 1)
+ax2.set_xlim(0, np.mean(T_ed_list)*TR)
+ax2.set_xlabel('Time [s]', fontsize = 15)
+
+rs_sham_ = np.sum(rs_sham, axis = 0)/len(rs_sham); T_ = len(rs_sham_)
+cs_sham_ = np.sum(cs_sham, axis = 0)/len(cs_sham)
+rs_mi_1d_ = np.sum(rs_mi_1d, axis = 0)/len(rs_mi_1d)
+cs_mi_1d_ = np.sum(cs_mi_1d, axis = 0)/len(rs_mi_1d)
+rs_mi_40d_ = np.sum(rs_mi_40d, axis = 0)/len(rs_mi_40d)
+cs_mi_40d_ = np.sum(cs_mi_40d, axis = 0)/len(rs_mi_40d)
+
+
+ax1.plot(range_TR[:T_], rs_sham_[:T_], lw=2, c='darkblue', label = 'Sham')
+ax1.plot(range_TR[:T_], rs_mi_1d_[:T_], lw=2, c='purple', label = 'MI 1 day')
+ax1.plot(range_TR[:T_], rs_mi_40d_[:T_], lw=2, c='red', label = 'MI 40+ days')
+
+ax2.plot(range_TR[:T_], cs_sham_[:T_], lw=2, c='chocolate', label = 'Sham') 
+ax2.plot(range_TR[:T_], cs_mi_1d_[:T_], lw=2, c='orangered', label = 'MI 1 day')
+ax2.plot(range_TR[:T_], cs_mi_40d_[:T_], lw=2, c='red', label = 'MI 40+ days')
+                       
+ax1.legend(fontsize = 12)
+ax2.legend(fontsize = 12)
+
+plt.subplots_adjust(wspace=0.07)
+plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
+plt.show()
+
+
 
 #%%
 # strain

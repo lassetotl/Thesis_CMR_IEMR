@@ -212,3 +212,9 @@ print(a[0])
 
 a = [0,0,0,0,0]
 v = [0.1,11,-31,0.11,41]
+
+#%%
+N = 15
+a = np.arange(1, 10)
+a_ = np.pad(a, (0, N-len(a)), 'constant', constant_values=(0))
+print(a_)

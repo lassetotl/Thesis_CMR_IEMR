@@ -96,8 +96,8 @@ for t in range_:
     C = frame1/np.max(frame1)
     
     #wiener noise reduction filter (?)
-    vx = V[:, :, 0, t, 0] #ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #x components of velocity w mask
-    vy = V[:, :, 0, t, 1] #ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #y components (negative?)
+    vx = ndi.gaussian_filter(V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #x components of velocity w mask
+    vy = ndi.gaussian_filter(V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #y components (negative?)
     #vz = ndi.gaussian_filter(V[:, :, 0, t, 2]*C, sigma = 2)*mask_t #y components (negative?)
     
     #vx = sig.convolve2d(V[:, :, 0, t, 1]*C, g) / sig.convolve2d(C, g)
@@ -107,7 +107,7 @@ for t in range_:
     X, Y = np.meshgrid(X, Y)
     
     plt.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n].T, vy[::n, ::n].T, 
-                  color = 'w', scale = 100, minshaft = 1, minlength=0, width = 0.004)
+                  color = 'w', scale = 10, minshaft = 1, minlength=0, width = 0.004)
     '''
     # just for troubleshooting
     for x in range(0, f, n):
@@ -124,7 +124,7 @@ for t in range_:
                 
                 gr[t] += np.linalg.norm(v_)*np.cos(theta) 
                 gc[t] += np.linalg.norm(v_)*np.sin(theta) 
-     '''       
+    '''
     
     #plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 2)
     

@@ -103,7 +103,7 @@ class ComboDataSR_2D:
         w = np.tanh((self.T_ed-self.range_)/weight) 
         w_f = np.tanh(self.range_/weight) 
 
-        strain = cumtrapz(strain_rate , self.range_TR , initial=0)
+        strain = cumtrapz(strain_rate, self.range_TR , initial=0)
         strain_flipped = np.flip(cumtrapz(strain_rate[::-1], self.range_TR[::-1], initial=0))
         return (w*strain + w_f*strain_flipped)/2
     
@@ -123,15 +123,15 @@ class ComboDataSR_2D:
     # plots vector field over time, saves video, returns global radial velocity
     def velocity(self):
         # range of time-points
-        self.range_ = range(self.T)
+        self.range_ = range(self.T_ed)
         
         # get data axis dimensions
         self.ax = len(self.mask[:,0,0,0])
         self.ay = len(self.mask[0,:,0,0])
 
         # global rad and circ velocity
-        self.gr = np.zeros(self.T)
-        self.gc = np.zeros(self.T)
+        self.gr = np.zeros(self.T_ed)
+        self.gc = np.zeros(self.T_ed)
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
@@ -193,7 +193,7 @@ class ComboDataSR_2D:
         # save video in folder named after filename
         filenames = [f'R:\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
 
-        with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Velocity.mp4', fps=7) as writer:    # inputs: filename, frame per second
+        with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Velocity.gif', fps=5) as writer:    # inputs: filename, frame per second
             for filename in filenames:
                 image = imageio.imread(filename)                         # load the image file
                 writer.append_data(image)
@@ -550,7 +550,7 @@ class ComboDataSR_2D:
                 filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in self.range_]  
                   
                 with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.gif', 
-                                        fps=7) as writer:    # inputs: filename, frame per second
+                                        fps=5) as writer:    # inputs: filename, frame per second
                     for filename in filenames:
                         image = imageio.imread(filename)                         # load the image file
                         writer.append_data(image)
@@ -613,9 +613,10 @@ class ComboDataSR_2D:
             plt.figure(figsize = (10, 8))
             plt.title(f'Regional radial concentration over time ({self.filename})', fontsize = 15)
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
             plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
             plt.xlabel('Timepoints', fontsize = 15)
-            plt.ylabel('Degrees', fontsize = 20)
+            plt.ylabel('Eigenvector angle $\\theta$', fontsize = 20)
 
             if segment == 1:  # mean angles segments
                 for sector in range(4):
@@ -630,15 +631,12 @@ class ComboDataSR_2D:
                 for i in self.range_:
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
-                        plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.03)
-                        plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.03)
+                        plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.011*self.n**2)
+                        plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.011*self.n**2)
 
                 
-                plt.plot(self.range_TR , theta1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
-                plt.plot(self.range_TR , theta2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
-                # difference
-                plt.plot(self.range_TR , abs(theta1_mean_global - theta2_mean_global), \
-                         'darkgray', ls = '--', label = 'Difference')
+                plt.plot(self.range_TR, theta1_mean_global, 'r', lw=2, label = 'Positive eigenvectors (stretch)')
+                plt.plot(self.range_TR, theta2_mean_global, 'g', lw=2, label = 'Negative eigenvectors (compression)')
                 plt.legend(loc = 'upper right')
 
             plt.show()
@@ -647,8 +645,11 @@ class ComboDataSR_2D:
             self.r_matrix = r_sr_global
             self.c_matrix = c_sr_global
             
-            r_strain = 100*self._strain(self.r_matrix)
-            c_strain = 100*self._strain(self.c_matrix)
+            #r_strain = 100*self._strain(self.r_matrix)
+            #c_strain = 100*self._strain(self.c_matrix)
+            
+            self.r_strain = rs
+            self.c_strain = cs
             
             self.theta1 = theta1_mean_global
             self.theta2 = theta2_mean_global
@@ -656,8 +657,8 @@ class ComboDataSR_2D:
         else:
             self.theta1 = theta1_mean
             self.theta2 = theta2_mean
-            r_strain = rs
-            c_strain = cs
+            self.r_strain = rs
+            self.c_strain = cs
             
         if save == 1:
             # save strain/strain rate/angle dist npy files for analysis
@@ -665,8 +666,8 @@ class ComboDataSR_2D:
             if os.path.exists(f'R:\Lasse\strain data\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\strain data\{self.filename}')
                 
-            np.save(fr'R:\Lasse\strain data\{self.filename}\r_strain', r_strain)
-            np.save(fr'R:\Lasse\strain data\{self.filename}\c_strain', c_strain)
+            np.save(fr'R:\Lasse\strain data\{self.filename}\r_strain', self.r_strain)
+            np.save(fr'R:\Lasse\strain data\{self.filename}\c_strain', self.c_strain)
                 
             if os.path.exists(f'R:\Lasse\strain rate data\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\strain rate data\{self.filename}')
@@ -690,13 +691,13 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D11-1_1d', n = 2)
+    run1 = ComboDataSR_2D('mi_D9-3_6w', n = 2)
     #run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 0)
+    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
