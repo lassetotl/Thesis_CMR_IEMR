@@ -499,13 +499,10 @@ class ComboDataSR_2D:
             self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR
             
         if plot == 1:
-            # plot global strain rate
+            # plot strain rate
 
-            plt.figure(figsize=(10, 8))
-
-            plt.title(f'Global Strain rate over time ({self.filename})', fontsize = 15)
+            plt.figure(figsize=(8, 6))
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
             plt.axhline(0, c = 'k', lw = 1)
 
             plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
@@ -513,14 +510,13 @@ class ComboDataSR_2D:
             plt.ylabel('$s^{-1}$', fontsize = 20)
             
             if segment == 1:
-                plt.title(f'Regional Strain over time ({self.filename})', fontsize = 15)
-                
+                plt.title(f'Regional Strain rate ({self.filename})', fontsize = 15)
                 for sector in range(4):
-                    rs = self.r_matrix[sector, :]
-                    cs = self.c_matrix[sector, :]
+                    rsr = self.r_matrix[sector, :]
+                    csr = self.c_matrix[sector, :]
                     
-                    plt.plot(self.range_TR, running_average(rs, 4), c = c_cmap(sector), lw=2)
-                    plt.plot(self.range_TR, running_average(cs, 4), c = c_cmap(sector), lw=2)
+                    plt.plot(self.range_TR, running_average(rsr, 4), c = c_cmap(sector), lw=2)
+                    plt.plot(self.range_TR, running_average(csr, 4), c = c_cmap(sector), lw=2)
                     
                     #include curve parameters in these plots too?
                     #plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
@@ -529,13 +525,12 @@ class ComboDataSR_2D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain over time ({self.filename})', fontsize = 15)
-                
+                plt.title(f'Global Strain rate ({self.filename})', fontsize = 15)
                 rsr = np.sum(self.r_matrix, axis = 0) / 4
                 csr = np.sum(self.c_matrix, axis = 0) / 4
                 
-                plt.plot(self.range_TR, running_average(rsr, 4), c = 'darkblue', lw=2, label = 'Radial strain')
-                plt.plot(self.range_TR, running_average(csr, 4), c = 'chocolate', lw=2, label = 'Circumferential strain')
+                plt.plot(self.range_TR, running_average(rsr, 4), c = 'darkblue', lw=2, label = 'Radial')
+                plt.plot(self.range_TR, running_average(csr, 4), c = 'chocolate', lw=2, label = 'Circumferential')
                 
                 plt.legend()
 
@@ -569,6 +564,7 @@ class ComboDataSR_2D:
             plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
             plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
+            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
                 
             if segment == 1:
                 plt.title(f'Regional Strain ({self.filename})', fontsize = 15)
@@ -593,17 +589,16 @@ class ComboDataSR_2D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain over time ({self.filename})', fontsize = 15)
+                plt.title(f'Global Strain ({self.filename})', fontsize = 15)
                 
                 rs = 100*self._strain(np.sum(self.r_matrix, axis = 0) / 4)
                 cs = 100*self._strain(np.sum(self.c_matrix, axis = 0) / 4)
                 
-                plt.plot(self.range_TR, rs, c = 'darkblue', lw=2, label = 'Radial strain')
-                plt.plot(self.range_TR, cs, c = 'chocolate', lw=2, label = 'Circumferential strain')
+                plt.plot(self.range_TR, rs, c = 'darkblue', lw=2, label = 'Radial')
+                plt.plot(self.range_TR, cs, c = 'chocolate', lw=2, label = 'Circumferential')
                 
                 plt.legend()
             
-
             plt.subplots_adjust(wspace=0.25)
             plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
             plt.show()
@@ -611,7 +606,7 @@ class ComboDataSR_2D:
             #angles over time
 
             plt.figure(figsize = (10, 8))
-            plt.title(f'Regional radial concentration over time ({self.filename})', fontsize = 15)
+            plt.title(f'Regional radial concentration ({self.filename})', fontsize = 15)
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
             plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
@@ -691,8 +686,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run1 = ComboDataSR_2D('sham_D11-1_1d', n = 2)
-    run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    run1 = ComboDataSR_2D('sham_D11-1_1d', n = 2)
+    #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 
     run1.overview()
@@ -703,7 +698,7 @@ if __name__ == "__main__":
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
-    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
+    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
