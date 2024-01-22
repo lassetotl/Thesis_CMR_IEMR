@@ -12,7 +12,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
-from lasse_functions import D_ij_2D, theta_rad
+from util import D_ij_2D, theta_rad
 #import pandas as pd
 #import seaborn as sns; sns.set()
 #import sklearn
@@ -27,7 +27,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D7-1_6w'
+file = 'sham_D7-1_40d'
 dict = sio.loadmat(f'R:\Lasse\combodata_shax\{file}.mat')
 data = dict["ComboData_thisonly"]
 
@@ -42,6 +42,7 @@ print(f'Combodata shape: {np.shape(data)}')
 V = data['V'][0,0] #velocity field
 M = data['Magn'][0,0] #magnitudes
 mask = data['Mask'][0,0] #mask for non-heart tissue
+mask_s = data['MaskS_medium'][0,0]
 
 T = len(V[0,0,0,:,0]) #Total amount of time steps
 T_es = data['TimePointEndSystole']
@@ -56,8 +57,8 @@ print(f'Mask shape: {np.shape(mask)}')
 #dilate original mask and locate additions from dilation
 #then weighted average? interpolate?
 
-f = 80
-mask_t = mask[:f, :f, 0, 0]
+f = 100
+mask_t = mask[:f, :f, 0, 17]
 mask_d = ndi.binary_dilation(mask_t).astype(mask_t.dtype) - mask_t
 #plt.imshow(mask_d, cmap = 'gray')
 
@@ -78,13 +79,16 @@ for p in range(len(np.where(mask_d == 1)[0])):
 
 #%%
 #https://stackoverflow.com/questions/18159874/making-image-white-space-transparent-overlay-onto-imshow
-my_cmap = copy.copy(plt.cm.get_cmap('plasma')) # get a copy of the gray color map
+my_cmap = copy.copy(plt.cm.get_cmap('gray')) # get a copy of the gray color map
 my_cmap.set_under(alpha=0) # set how the colormap handles 'bad' values
 
-plt.imshow(M[:f, :f, 0, 30]/np.max(M[:f, :f, 0, 30]), cmap = 'gray')
+#plt.imshow(M[:f, :f, 0, 30]/np.max(M[:f, :f, 0, 30]), cmap = 'gray')
+plt.figure(figsize=(8,8))
+plt.imshow(M[:f, :f, 0, 17], cmap = 'gray')
 
-dm = plt.imshow(test, origin = 'lower', cmap = my_cmap, vmin = 0.01)
-plt.colorbar(dm)
+#dm = plt.imshow(test, origin = 'lower', cmap = my_cmap, vmin = 0.01)
+#plt.colorbar()
+plt.axis('off')
 plt.show()
 #%%
 #visualizing Strain Rate

@@ -721,7 +721,7 @@ class ComboDataSR_3D:
             plt.axhline(0, c = 'k', lw = 1)
 
             plt.xlim(0, T_ed*self.TR*1000)#; plt.ylim(0, 50)
-            plt.xlabel('Time [ms]', fontsize = 15)
+            plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('$s^{-1}$', fontsize = 20)
             
             if segment == 1:
@@ -776,7 +776,7 @@ class ComboDataSR_3D:
             plt.axhline(0, c = 'k', lw = 1)
 
             plt.xlim(0, T_ed*self.TR*1000)#; plt.ylim(0, 50)
-            plt.xlabel('Time [ms]', fontsize = 15)
+            plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
                 
             if segment == 1:
@@ -814,13 +814,13 @@ class ComboDataSR_3D:
             plt.suptitle(f'Stretch direction ({ID})', fontsize = 15)
             ax1.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             ax1.set_xlim(0, T_ed*self.TR*1000)
-            ax1.set_xlabel('Time [ms]', fontsize = 15)
+            ax1.set_xlabel('Time [s]', fontsize = 15)
             ax1.set_ylabel('$\\theta$', fontsize = 17)
 
             ax2.set_ylabel('$\\phi$', fontsize = 17)
             ax2.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             ax2.set_xlim(0, T_ed*self.TR*1000)
-            ax2.set_xlabel('Time [ms]', fontsize = 15)
+            ax2.set_xlabel('Time [s]', fontsize = 15)
             
             if segment == 1:  # mean angles segments
                 for sector in range(4):
@@ -903,6 +903,10 @@ if __name__ == "__main__":
     # get info/generate data 
     run2.overview()
     #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
+    # plot = 1: show strain, strain rate, angle distribution
+    # save = 1: save data arrays, videos to folder
+    # segment = 1: regional analysis
+    # slice: choose a slice between slices
     run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality

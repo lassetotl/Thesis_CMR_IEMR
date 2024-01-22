@@ -239,9 +239,9 @@ class ComboDataSR_2D:
             legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = 'Infarct'),
                       Line2D([0], [0], color = c_cmap(1), lw = 2, label = 'Adjacent'),
                       Line2D([0], [0], color = c_cmap(2), lw = 2, label = 'Medial'),
-                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Remote'),
-                      Line2D([0], [0], color = 'midnightblue', lw = 2, label = 'Control radial'),
-                      Line2D([0], [0], color = 'midnightblue', lw = 2, ls='--', label = 'Control circ')]
+                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Remote')]
+                      #Line2D([0], [0], color = 'midnightblue', lw = 2, label = 'Control radial'),
+                      #Line2D([0], [0], color = 'midnightblue', lw = 2, ls='--', label = 'Control circ')]
             # remove controls
             
         else:
@@ -585,10 +585,10 @@ class ComboDataSR_2D:
                 
                 
                 # control
-                r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
-                c_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
-                plt.plot(self.range_TR, r_strain_[:self.T_ed], 'midnightblue', lw=2)
-                plt.plot(self.range_TR, c_strain_[:self.T_ed], 'midnightblue', lw=2, ls='--')
+                #r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
+                #c_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
+                #plt.plot(self.range_TR[:self.T_ed], r_strain_[:self.T_ed], 'midnightblue', lw=2)
+                #plt.plot(self.range_TR[:self.T_ed], c_strain_[:self.T_ed], 'midnightblue', lw=2, ls='--')
                 
                 plt.legend(handles = legend_handles1)
                     
@@ -615,7 +615,7 @@ class ComboDataSR_2D:
             plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
             plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
-            plt.xlabel('Timepoints', fontsize = 15)
+            plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('Eigenvector angle $\\theta$', fontsize = 20)
 
             if segment == 1:  # mean angles segments
@@ -691,13 +691,19 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('mi_D9-3_6w', n = 2)
-    #run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
+    #run1 = ComboDataSR_2D('sham_D11-1_1d', n = 2)
+    run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 
     run1.overview()
     #grv1 = run1.velocity()
-    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    
+    ### strain rate analysis ###
+    # ellipse = 1: show ellipse plot for entire heart cycle
+    # plot = 1: show strain, strain rate, angle distribution
+    # save = 1: save data arrays, videos to folder
+    # segment = 1: regional analysis
+    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
