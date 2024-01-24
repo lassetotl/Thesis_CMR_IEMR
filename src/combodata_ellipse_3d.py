@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D12-8_45d'
+file = 'sham_D9-1_1d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -184,7 +184,8 @@ total_ls = []; total_cs = []; total_rs = []
 theta_stretch = []; theta_comp = []
 phi_stretch = []; phi_comp = []
 
-slice_selection = [2,3,4,5,6,7,8]
+slice_selection = np.arange(2, slices) 
+#slice_selection = [2,3,4,5,6,7,8,9]
 T_ed_min = np.min(np.array(T_ed))
 
 run = ComboDataSR_3D(file, n = 1)
@@ -219,23 +220,40 @@ phi1 = np.sum(np.array(phi_stretch), axis = 0) / len(slice_selection)
 phi2 = np.sum(np.array(phi_comp), axis = 0) / len(slice_selection) 
 
 #%%
-yticks = [0, len(slice_selection)-1]
-yticks_new = [slice_selection[0], slice_selection[-1]]
+# total strain and strain rate
 
-plt.figure(figsize=(8, 6))
-plt.title(f'Whole heart strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
-plt.axhline(0, c = 'k', lw = 1)
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
-plt.plot(range(len(ls)), ls, 'darkgreen', label = 'Longitudinal strain')
-plt.plot(range(len(lsr)), lsr, 'darkgreen', ls = '--', label = 'Longitudinal strain rate')
-plt.legend(); plt.show()
+ax2.axhline(0, c = 'k', lw = 1)
+ax2.plot(range(len(ls)), ls, 'darkgreen', label = 'Longitudinal strain')
+ax2.plot(range(len(cs)), cs, 'chocolate', label = 'Circumferential strain')
+ax2.plot(range(len(rs)), rs, 'darkblue', label = 'Radial strain')
 
+ax1.axhline(0, c = 'k', lw = 1)
+ax1.plot(range(len(lsr)), lsr, 'darkgreen', label = 'Longitudinal strain rate')
+ax1.plot(range(len(csr)), csr, 'chocolate', label = 'Circumferential strain rate')
+ax1.plot(range(len(rsr)), rsr, 'darkblue', label = 'Radial strain rate')
+
+plt.suptitle(f'Whole heart strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
+ax1.set_ylabel('$s^{-1}$', fontsize = 15)
+
+ax2.set_ylabel('%', fontsize = 17)
+#ax2.set_xlabel('Time [s]', fontsize = 15)
+
+
+plt.subplots_adjust(wspace=0.3)
+ax1.legend(); ax2.legend(); plt.show()
+
+#%%
 # strain plots with separated slices
 cmax = np.max(total_rs)
 cmin = np.min(total_cs)
 c = 'inferno'
 c_cmap = plt.get_cmap(c)
 norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
+
+yticks = [0, len(slice_selection)-1]
+yticks_new = [slice_selection[0], slice_selection[-1]]
 
 fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Whole heart strain [$\%$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)

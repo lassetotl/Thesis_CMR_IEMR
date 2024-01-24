@@ -600,7 +600,8 @@ class ComboDataSR_2D:
                 plt.legend()
             
             plt.subplots_adjust(wspace=0.25)
-            plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
+            if save == 1:
+                plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
             plt.show()
             
             #angles over time
@@ -686,7 +687,7 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D11-1_1d', n = 2)
+    run1 = ComboDataSR_2D('sham_D9-1_1d', n = 2)
     #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 

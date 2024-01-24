@@ -898,7 +898,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D11-1_1d', n = 2)
+    run2 = ComboDataSR_3D('sham_D9-1_1d', n = 2)
     
     # get info/generate data 
     run2.overview()
@@ -907,7 +907,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 1)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
