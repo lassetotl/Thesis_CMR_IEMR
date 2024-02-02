@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D9-1_1d'
+file = 'mi_D12-8_21d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -42,6 +42,7 @@ file = 'sham_D9-1_1d'
 
 # sorts h5py compatible files and not
 try:
+    # use this method 
     data = h5py.File(f'R:\Lasse\combodata_3d_shax\{file}.mat', 'r')['ComboData']
     pss0 = [float(data[data['pss0'][i,0]][0,0]) for i in range(len(data['pss0']))]  # dictionary with slice nr?
     # sorted slice order and z positions
@@ -141,7 +142,7 @@ except OSError:
 
 #%%
 #3d plot of mask layers
-
+'''
 n = 3
 for t in range(T):
     stack = []
@@ -174,6 +175,7 @@ with imageio.get_writer('R:\Lasse\plots\MP4\\3D heart.gif', fps=7) as writer:   
     for filename in filenames:
         image = imageio.imread(filename)                         # load the image file
         writer.append_data(image)
+        '''
 
 #%%
 # using 3d class to calculate strain in whole heart
@@ -191,18 +193,21 @@ T_ed_min = np.min(np.array(T_ed))
 run = ComboDataSR_3D(file, n = 1)
 for slice_ in slice_selection:
     run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
-    print(slice_)
-    total_ls.append(np.array(run.__dict__['l_strain'])[:T_ed_min])
-    total_cs.append(np.array(run.__dict__['c_strain'])[:T_ed_min])
-    total_rs.append(np.array(run.__dict__['r_strain'])[:T_ed_min])
-    total_lsr.append(np.array(run.__dict__['l_strain_rate'])[:T_ed_min])
-    total_csr.append(np.array(run.__dict__['c_strain_rate'])[:T_ed_min])
-    total_rsr.append(np.array(run.__dict__['r_strain_rate'])[:T_ed_min])
+    print(f'[{slice_} / {slice_selection[-1]}]')
     
-    theta_stretch.append(np.array(run.__dict__['theta1'])[:T_ed_min])
-    theta_comp.append(np.array(run.__dict__['theta2'])[:T_ed_min])
-    phi_stretch.append(np.array(run.__dict__['phi1'])[:T_ed_min])
-    phi_comp.append(np.array(run.__dict__['phi2'])[:T_ed_min])
+    # sector mask issues can be spotted like this:
+    if all(np.array(run.__dict__['theta1'])[:T_ed_min]) == True:
+        total_ls.append(np.array(run.__dict__['l_strain'])[:T_ed_min])
+        total_cs.append(np.array(run.__dict__['c_strain'])[:T_ed_min])
+        total_rs.append(np.array(run.__dict__['r_strain'])[:T_ed_min])
+        total_lsr.append(np.array(run.__dict__['l_strain_rate'])[:T_ed_min])
+        total_csr.append(np.array(run.__dict__['c_strain_rate'])[:T_ed_min])
+        total_rsr.append(np.array(run.__dict__['r_strain_rate'])[:T_ed_min])
+        
+        theta_stretch.append(np.array(run.__dict__['theta1'])[:T_ed_min])
+        theta_comp.append(np.array(run.__dict__['theta2'])[:T_ed_min])
+        phi_stretch.append(np.array(run.__dict__['phi1'])[:T_ed_min])
+        phi_comp.append(np.array(run.__dict__['phi2'])[:T_ed_min])
     
 ID = run.__dict__['ID']
 

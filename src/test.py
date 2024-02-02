@@ -218,3 +218,23 @@ N = 15
 a = np.arange(1, 10)
 a_ = np.pad(a, (0, N-len(a)), 'constant', constant_values=(0))
 print(a_)
+
+#%%
+
+def nearest_nonzero_idx(a,x,y):
+    idx = np.argwhere(a)
+
+    # If (x,y) itself is also non-zero, we want to avoid those, so delete that
+    # But, if we are sure that (x,y) won't be non-zero, skip the next step
+    #idx = idx[~(idx == [x,y]).all(1)]
+
+    return idx[((idx - [x,y])**2).sum(1).argmin()]
+
+
+a = [[0,0,0,0,0],
+     [0,0,0,0,0],
+     [0,0,0,1,0],
+     [0,0,0,0,0],
+     [0,0,3,0,0]]
+
+c,d = nearest_nonzero_idx(a, 1, 1)

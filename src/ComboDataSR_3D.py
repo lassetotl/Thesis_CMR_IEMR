@@ -167,13 +167,10 @@ class ComboDataSR_3D:
         D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
         return D_ij
     
-    # return mean value of nearest neighbors
-    def _NN(self, array, x, y):
-        new_val = []
-        for i in range(-1, 2):  # eight closest pixels
-            for j in range(-1, 2):
-                new_val.append(array[x+i, x+j])
-        return np.mean(new_val)
+    # find nearest non-zero index in 2d array    
+    def _nearest_nonzero_idx(self, a, x, y):
+        idx = np.argwhere(a)
+        return idx[((idx - [x,y])**2).sum(1).argmin()]
     
     # input array of strain rate data
     # (used internally by later methods)
@@ -325,8 +322,8 @@ class ComboDataSR_3D:
             Vb = self.V[f'V{slice_-1}']  # below
             Ma = self.M[f'M{slice_+1}']
             Mb = self.M[f'M{slice_-1}']
-            #mask_a = self.mask[f'mask{slice_+1}']
-            #mask_b = self.mask[f'mask{slice_-1}']
+            mask_a = self.mask[f'mask{slice_+1}']
+            mask_b = self.mask[f'mask{slice_-1}']
             
         except KeyError:
             raise Exception(f'\nSlice {slice_} is missing a slice above or below. \
@@ -385,8 +382,8 @@ class ComboDataSR_3D:
 
             # combodata mask 
             mask_t = mask[t, 0, :, :].T #mask at this timepoint
-            #mask_ta = mask_a[t, 0, :, :].T #mask above
-            #mask_tb = mask_b[t, 0, :, :].T #mask below
+            mask_ta = mask_a[t, 0, :, :].T #mask above
+            mask_tb = mask_b[t, 0, :, :].T #mask below
             mask_segment_t = mask_segment[t, 0, :, :].T #mask at this timepoint
             
             #find center of mass of filled mask (middle of the heart)
@@ -434,32 +431,36 @@ class ComboDataSR_3D:
             self.vza = ndi.gaussian_filter(Va[2, t, 0, :, :].T*Ca, self.sigma)*mask_t / ndi.gaussian_filter(Ca, self.sigma)
             self.vzb = ndi.gaussian_filter(Vb[2, t, 0, :, :].T*Cb, self.sigma)*mask_t / ndi.gaussian_filter(Cb, self.sigma)
             
-            #calculate eigenvalues and vectors
+            # calculate eigenvalues and vectors
             for x in range(0, self.ax, self.n):
                 for y in range(0, self.ay, self.n): 
                     # search in eroded mask to avoid border artifacts
                     # get mask above and below, these are never exactly 0
                     if mask_e[x, y] == 1:
-                        ## check if Va[x, y] or Vb[x, y] = 0 here, exclude if so (later, interpolate)
-                        '''
+                        ## check if Va[x, y] or Vb[x, y] = 0 here, find nearest non-zero if so
                         if mask_ta[x,y] == 0:
-                            self.vxa[x,y] = self._NN(self.vxa, x, y)  # collect mean value of surrounding voxels
-                            self.vya[x,y] = self._NN(self.vya, x, y)
-                            self.vza[x,y] = self._NN(self.vza, x, y)
+                            # find closest non-zero index
+                            idx, idy = self._nearest_nonzero_idx(mask_ta, x, y)
+                            self.vxa[x,y] = self.vxa[idx, idy]
+                            self.vya[x,y] = self.vya[idx, idy]
+                            self.vza[x,y] = self.vza[idx, idy]
                             if all([self.vxa[x,y], self.vya[x,y], self.vza[x,y]]) == False:
-                                print('a')
+                                #print('Still Zeroes')
                                 continue  # if all surrounding voxels are 0, continue
                         
                         elif mask_tb[x,y] == 0:
-                            self.vxb[x,y] = self._NN(self.vxb, x, y)
-                            self.vyb[x,y] = self._NN(self.vyb, x, y)
-                            self.vzb[x,y] = self._NN(self.vzb, x, y)
+                            # find closest non-zero index
+                            idx, idy = self._nearest_nonzero_idx(mask_tb, x, y)
+                            self.vxb[x,y] = self.vxb[idx, idy]
+                            self.vyb[x,y] = self.vyb[idx, idy]
+                            self.vzb[x,y] = self.vzb[idx, idy]
                             if all([self.vxb[x,y], self.vyb[x,y], self.vzb[x,y]]) == False:
+                                #print('Still Zeroes')
                                 continue
                             
                         else:
                             pass
-                        '''
+                        
                         # SR tensor for point xy 
                         D_ = self._D_ij_3D(x, y, t)
                         
@@ -600,7 +601,7 @@ class ComboDataSR_3D:
                             #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
                             
                             ax.add_artist(ellipse)
-            
+                            
             # if any of these are zero, we have likely reached the end of the sector mask. 
             # end here, if so, to avoid division by zero.
             if np.all(e_count) == False:
@@ -898,7 +899,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D9-1_1d', n = 2)
+    run2 = ComboDataSR_3D('mi_D12-8_10d', n = 2)
     
     # get info/generate data 
     run2.overview()
@@ -907,7 +908,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 10, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

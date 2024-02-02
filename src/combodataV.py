@@ -106,8 +106,8 @@ for t in range_:
     X = np.arange(128); Y = np.arange(128)
     X, Y = np.meshgrid(X, Y)
     
-    plt.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n].T, vy[::n, ::n].T, 
-                  color = 'w', scale = 10, minshaft = 1, minlength=0, width = 0.004)
+    #plt.quiver(X[::n, ::n], Y[::n, ::n], vx[::n, ::n].T, vy[::n, ::n].T, 
+    #              color = 'w', scale = 10, minshaft = 1, minlength=0, width = 0.004)
     '''
     # just for troubleshooting
     for x in range(0, f, n):
