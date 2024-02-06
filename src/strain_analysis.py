@@ -38,10 +38,11 @@ tp = 60
 
 st = time.time()
 filenr = 0
+save = 1
 for file in os.listdir('R:\Lasse\combodata_shax'):
     file_ = os.path.splitext(file)
     run = ComboDataSR_2D(file_[0], n = 1)  # n = 1 should be used for proper analysis
-    run.strain_rate(save = 1, plot = 0, ellipse = 0)
+    run.strain_rate(save = save, plot = 0, ellipse = 0)
     
     # collect parameters
     T_es_list.append(run.__dict__['T_es'])
@@ -74,8 +75,6 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
            rs_sham.append(rs)
            cs_sham.append(cs)
     
-    print(np.shape(rs_sham))
-    
     # collect strain curve parameters
     r_strain_peak_mean = np.mean(run.__dict__['r_peakvals'])
     c_strain_peak_mean = np.mean(run.__dict__['c_peakvals'])
@@ -103,6 +102,8 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
                         r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
                             a2_mean_max, a2_mean_min, condition])
     filenr += 1
+    if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
+        os.makedirs(f'R:\Lasse\plots\MP4\{file}')
     
 et = time.time()
 print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st)/60)} minutes')  
@@ -152,7 +153,8 @@ ax1.legend(fontsize = 12)
 ax2.legend(fontsize = 12)
 
 plt.subplots_adjust(wspace=0.07)
-plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
+if save == 1:
+    plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
 plt.show()
 
 
@@ -307,15 +309,15 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-'''
+#'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', \
                                         'Rad SDI', 'Circ SDI', 'r_sr_max', \
                                             'r_sr_min', 'c_sr_max', 'c_sr_min', \
                                                 'a1_mean_max', 'a1_mean_min', \
                                                     'a2_mean_max', 'a2_mean_min', 'Condition']) 
-'''
+#'''
 # to analyze a generated csv file instead
-df = pandas.read_csv('combodata_analysis')
+#df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')

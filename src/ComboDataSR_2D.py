@@ -156,7 +156,7 @@ class ComboDataSR_2D:
             #certainty matrix
             C = frame1/np.max(frame1)
             
-            #wiener noise reduction filter (?)
+            #noise reduction
             vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #x components of velocity w mask
             vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #y components 
             
@@ -289,16 +289,16 @@ class ComboDataSR_2D:
             self.C = self.M[:, :, 0, t]/np.max(self.M[:, :, 0, t])
             
             # certainty matrix and gaussian filter should compensate for border artifacts
-            self.vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*self.C, self.sigma)*mask_t \
+            self.vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*self.C, self.sigma) \
                 / ndi.gaussian_filter(self.C, self.sigma)
-            self.vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*self.C, self.sigma)*mask_t \
+            self.vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*self.C, self.sigma) \
                 / ndi.gaussian_filter(self.C, self.sigma)
             
             #calculate eigenvalues and vectors
             for x in range(0, self.ax, self.n):
                 for y in range(0, self.ay, self.n): 
                     # search in eroded mask to avoid border artifacts
-                    if mask_e[x, y] == 1:
+                    if mask_t[x, y] == 1:
                         # SR tensor for point xy 
                         D_ = self._D_ij_2D(x, y, t) 
                         val, vec = np.linalg.eig(D_)
@@ -687,7 +687,7 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D9-1_3d', n = 2)
+    run1 = ComboDataSR_2D('mi_D4-6_1d', n = 1)
     #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 
@@ -699,7 +699,7 @@ if __name__ == "__main__":
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
-    run1.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 0)
+    run1.strain_rate(ellipse = 1, plot = 1, save = 1, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

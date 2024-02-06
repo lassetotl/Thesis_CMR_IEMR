@@ -416,20 +416,20 @@ class ComboDataSR_3D:
             # amount of ellipses in this timepoint in each sector 1-4 is stored here
             e_count = np.zeros(4)
             
-            self.vx = ndi.gaussian_filter(V[0, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
-            self.vy = ndi.gaussian_filter(V[1, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
-            self.vz = ndi.gaussian_filter(V[2, t, 0, :, :].T*C, self.sigma)*mask_t / ndi.gaussian_filter(C, self.sigma)
+            self.vx = ndi.gaussian_filter(V[0, t, 0, :, :].T*C, self.sigma) / ndi.gaussian_filter(C, self.sigma)
+            self.vy = ndi.gaussian_filter(V[1, t, 0, :, :].T*C, self.sigma) / ndi.gaussian_filter(C, self.sigma)
+            self.vz = ndi.gaussian_filter(V[2, t, 0, :, :].T*C, self.sigma) / ndi.gaussian_filter(C, self.sigma)
             
             # the same fields one slice above and below
             # should we do this for C as well?
-            self.vxa = ndi.gaussian_filter(Va[0, t, 0, :, :].T*Ca, self.sigma)*mask_t / ndi.gaussian_filter(Ca, self.sigma) 
-            self.vxb = ndi.gaussian_filter(Vb[0, t, 0, :, :].T*Cb, self.sigma)*mask_t / ndi.gaussian_filter(Cb, self.sigma)
+            self.vxa = ndi.gaussian_filter(Va[0, t, 0, :, :].T*Ca, self.sigma) / ndi.gaussian_filter(Ca, self.sigma) 
+            self.vxb = ndi.gaussian_filter(Vb[0, t, 0, :, :].T*Cb, self.sigma) / ndi.gaussian_filter(Cb, self.sigma)
             
-            self.vya = ndi.gaussian_filter(Va[1, t, 0, :, :].T*Ca, self.sigma)*mask_t / ndi.gaussian_filter(Ca, self.sigma) 
-            self.vyb = ndi.gaussian_filter(Vb[1, t, 0, :, :].T*Cb, self.sigma)*mask_t / ndi.gaussian_filter(Cb, self.sigma)
+            self.vya = ndi.gaussian_filter(Va[1, t, 0, :, :].T*Ca, self.sigma) / ndi.gaussian_filter(Ca, self.sigma) 
+            self.vyb = ndi.gaussian_filter(Vb[1, t, 0, :, :].T*Cb, self.sigma) / ndi.gaussian_filter(Cb, self.sigma)
             
-            self.vza = ndi.gaussian_filter(Va[2, t, 0, :, :].T*Ca, self.sigma)*mask_t / ndi.gaussian_filter(Ca, self.sigma)
-            self.vzb = ndi.gaussian_filter(Vb[2, t, 0, :, :].T*Cb, self.sigma)*mask_t / ndi.gaussian_filter(Cb, self.sigma)
+            self.vza = ndi.gaussian_filter(Va[2, t, 0, :, :].T*Ca, self.sigma) / ndi.gaussian_filter(Ca, self.sigma)
+            self.vzb = ndi.gaussian_filter(Vb[2, t, 0, :, :].T*Cb, self.sigma) / ndi.gaussian_filter(Cb, self.sigma)
             
             # calculate eigenvalues and vectors
             for x in range(0, self.ax, self.n):
@@ -908,7 +908,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 10, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

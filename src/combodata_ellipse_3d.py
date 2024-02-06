@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'mi_D12-8_21d'
+file = 'sham_D9-1_42d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -193,7 +193,7 @@ T_ed_min = np.min(np.array(T_ed))
 run = ComboDataSR_3D(file, n = 1)
 for slice_ in slice_selection:
     run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
-    print(f'[{slice_} / {slice_selection[-1]}]')
+    print(f'Slice [{slice_} / {slice_selection[-1]}]')
     
     # sector mask issues can be spotted like this:
     if all(np.array(run.__dict__['theta1'])[:T_ed_min]) == True:
