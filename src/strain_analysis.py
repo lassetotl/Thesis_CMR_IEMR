@@ -17,6 +17,7 @@ import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumtrapz
+from scipy import stats
 from util import running_average, drop_outliers_IQR
 import pandas 
 import seaborn as sns
@@ -310,9 +311,9 @@ auc_sham = np.array(auc_sham)
 
 # Create the pandas DataFrame 
 #'''
-df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'R-peak mean', 'C-peak mean', \
-                                        'Rad SDI', 'Circ SDI', 'r_sr_max', \
-                                            'r_sr_min', 'c_sr_max', 'c_sr_min', \
+df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
+                                        'Rad SDI', 'Circ SDI', 'GRSRs', \
+                                            'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'a1_mean_max', 'a1_mean_min', \
                                                     'a2_mean_max', 'a2_mean_min', 'Condition']) 
 #'''
@@ -343,14 +344,30 @@ plt.show()
 # only works with global values within this script
 def ax_corr(ax, column_name):
     # create temporary dataframes 
-    temp_sham = drop_outliers_IQR(df_sham, column_name, 100); temp_mi = drop_outliers_IQR(df_mi, column_name, 100)
-    valid_data = pandas.concat([temp_sham[1], temp_mi[1]]); outliers = pandas.concat([temp_sham[0], temp_mi[0]])
+    temp_sham = drop_outliers_IQR(df_sham, column_name, 100) 
+    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)
+    valid_data = pandas.concat([temp_sham[1], temp_mi[1]])
+    outliers = pandas.concat([temp_sham[0], temp_mi[0]])
+    
+    # find correlation and p value with days
+    corr_sham, r_sham = stats.pearsonr(temp_sham[1][column_name], temp_sham[1]['Day'])
+    corr_mi, r_mi = stats.pearsonr(temp_mi[1][column_name], temp_mi[1]['Day'])
+    
+    # t-test
+    r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
+    if r[1] < 0.001:
+        r_str = 'r < 0.001'
+    else:
+        r_str = f'r = {np.round(r[1], 3)}'
 
     valid_data.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, colorbar = 0)
     outliers.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, marker = 'x', colorbar = 0)
-    ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}')
-    ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}')
-
+    
+    
+    
+    ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}, p = {np.round(r_sham, 3)}')
+    ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}, p = {np.round(r_mi, 3)}, {r_str}')
+    
 #%%
 # peak strain values and dyssynchrony over time
 
@@ -368,14 +385,14 @@ fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 
 cmap = 'coolwarm'
 
-ax_corr(ax1, 'C-peak mean')
-ax1.set_ylabel('C-peak mean [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+ax_corr(ax1, 'GCS')
+ax1.set_ylabel('GCS [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
 
 ax_corr(ax2, 'Circ SDI')
 ax2.set_ylabel('Circumferential SDI [%]', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
 
-ax_corr(ax3, 'R-peak mean')
-ax3.set_ylabel('R-peak mean [%]', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
+ax_corr(ax3, 'GRS')
+ax3.set_ylabel('GRS [%]', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
 
 ax_corr(ax4, 'Rad SDI')
 ax4.set_ylabel('Radial SDI [%]', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
@@ -391,17 +408,17 @@ plt.rcParams.update({'font.size': 12})
 fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 #plt.title('Strain rate correlation analysis', fontsize = 15)
 
-ax_corr(ax1, 'r_sr_max')
-ax1.set_ylabel('r_sr_max [$s^{-1}$]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+ax_corr(ax1, 'GRSRs')
+ax1.set_ylabel('GRSRs [$s^{-1}$]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
 
-ax_corr(ax2, 'r_sr_min')
-ax2.set_ylabel('r_sr_min', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
+ax_corr(ax2, 'GRSRd')
+ax2.set_ylabel('GRSRd', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
 
-ax_corr(ax3, 'c_sr_max')
-ax3.set_ylabel('c_sr_max', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
+ax_corr(ax3, 'GCSRd')
+ax3.set_ylabel('GCSRd', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
 
-ax_corr(ax4, 'c_sr_min')
-ax4.set_ylabel('c_sr_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
+ax_corr(ax4, 'GCSRs')
+ax4.set_ylabel('GCSRs', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
 
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
