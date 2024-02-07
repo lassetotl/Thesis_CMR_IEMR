@@ -33,6 +33,7 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
 ## This segment will take some time to run, and will overwrite saved data if save = 1 !! ##
 
 ## 07.02.2024: Time elapsed for 41 files: 33 minutes
+## (41 minutes with non-eroded masks)
 
 # save characteristic time-points to calc average
 T_es_list = []
@@ -258,8 +259,8 @@ ax2.set_ylabel('GLS [%]', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
 ax_corr(ax3, 'GRS')
 ax3.set_ylabel('GRS [%]', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
 
-ax_corr(ax4, 'GLSRs')
-ax4.set_ylabel('GLSRs [$s^{-1}$]', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
+ax_corr(ax4, 'GLSRd')
+ax4.set_ylabel('GLSRd [$s^{-1}$]', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
 
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')

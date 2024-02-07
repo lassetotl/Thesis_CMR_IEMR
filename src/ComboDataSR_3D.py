@@ -436,7 +436,7 @@ class ComboDataSR_3D:
                 for y in range(0, self.ay, self.n): 
                     # search in eroded mask to avoid border artifacts
                     # get mask above and below, these are never exactly 0
-                    if mask_e[x, y] == 1:
+                    if mask_t[x, y] == 1:
                         ## check if Va[x, y] or Vb[x, y] = 0 here, find nearest non-zero if so
                         if mask_ta[x,y] == 0:
                             # find closest non-zero index
