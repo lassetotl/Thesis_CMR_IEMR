@@ -33,7 +33,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D9-1_42d'
+file = 'sham_D11-1_10d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -211,18 +211,43 @@ for slice_ in slice_selection:
     
 ID = run.__dict__['ID']
 
+#%%
+
 lsr = np.sum(np.array(total_lsr), axis = 0) / len(slice_selection)
 csr = np.sum(np.array(total_csr), axis = 0) / len(slice_selection)
 rsr = np.sum(np.array(total_rsr), axis = 0) / len(slice_selection)
 
+'''
 ls = np.sum(np.array(total_ls), axis = 0) / len(slice_selection) 
 cs = np.sum(np.array(total_cs), axis = 0) / len(slice_selection) 
 rs = np.sum(np.array(total_rs), axis = 0) / len(slice_selection) 
+'''
 
 theta1 = np.sum(np.array(theta_stretch), axis = 0) / len(slice_selection) 
 theta2 = np.sum(np.array(theta_comp), axis = 0) / len(slice_selection) 
 phi1 = np.sum(np.array(phi_stretch), axis = 0) / len(slice_selection) 
 phi2 = np.sum(np.array(phi_comp), axis = 0) / len(slice_selection) 
+
+TR = run.__dict__['TR']
+range_ = np.arange(0, T_ed_min)
+range_TR = range_*TR
+
+# input array of strain rate data
+# (used internally by later methods)
+def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
+    # weighting for integrals in positive/flipped time directions
+    # cyclic boundary conditions
+    w = np.tanh((T_ed - 1 - range_)/weight) 
+    w_f = np.tanh(range_/weight) 
+
+    strain = cumtrapz(strain_rate, range_TR/1000, initial=0)
+    strain_flipped = np.flip(cumtrapz(strain_rate[::-1]/1000, range_TR[::-1], initial=0))
+    return (w*strain + w_f*strain_flipped)/2
+
+# derive strain from the total sr curve, not sum of strain curves
+ls = strain(lsr, T_ed_min)*100000
+cs = strain(csr, T_ed_min)*100000
+rs = strain(rsr, T_ed_min)*100000
 
 #%%
 # total strain and strain rate

@@ -469,8 +469,8 @@ class ComboDataSR_3D:
                         val, vec = np.linalg.eig(D_)
                         
                         # skip this voxel if all eigenvalue signs are equal
-                        if np.sign(val[0]) == np.sign(val[1]) == np.sign(val[2]):
-                            continue
+                        #if np.sign(val[0]) == np.sign(val[1]) == np.sign(val[2]):
+                        #    continue
                         
                         self.d[t] += sum(val)
                         
@@ -899,7 +899,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('mi_D12-8_10d', n = 2)
+    run2 = ComboDataSR_3D('sham_D4-4_10d', n = 2)
     
     # get info/generate data 
     run2.overview()

@@ -159,7 +159,6 @@ if save == 1:
 plt.show()
 
 
-
 #%%
 # strain
 T = 77  # timepoints
