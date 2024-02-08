@@ -491,13 +491,16 @@ class ComboDataSR_3D:
                         
                         # projection angle in (r,z)-plane
                         a,b,c = vec[val_max_i]
-                        phi = theta_rad(z, [a*np.cos(theta), b*np.sin(theta), c])  # angle between highest eigenvector and z-axis
+                        #phi = theta_rad(z, [a*np.cos(theta), b*np.sin(theta), c])  # angle between highest eigenvector and z-axis
+                        phi = theta_rad(z, [a, b, c])  # angle between highest eigenvector and z-axis
                         
                         a,b,c = vec[val_min_i]
-                        phi_ = theta_rad(z, [a*np.cos(theta_), b*np.sin(theta_), c]) # angle between lowest eigenvector and z-axis
+                        #phi_ = theta_rad(z, [a*np.cos(theta_), b*np.sin(theta_), c]) # angle between lowest eigenvector and z-axis
+                        phi_ = theta_rad(z, [a, b, c])
                         
                         a,b,c = vec[val_last_i]
-                        phi__ = theta_rad(z, [a*np.cos(theta__), b*np.sin(theta__), c]) # angle between third eigenvector and z-axis
+                        #phi__ = theta_rad(z, [a*np.cos(theta__), b*np.sin(theta__), c]) # angle between third eigenvector and z-axis
+                        phi__ = theta_rad(z, [a, b, c])
                         
                         # local contribution
                         sect_xy = mask_segment_t[x, y]  # sector value in (x,y)

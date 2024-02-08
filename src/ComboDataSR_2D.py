@@ -304,8 +304,8 @@ class ComboDataSR_2D:
                         val, vec = np.linalg.eig(D_)
                         
                         # skip this voxel if eigenvalue signs are equal
-                        #if np.sign(val[0]) == np.sign(val[1]):
-                            #continue
+                        if np.sign(val[0]) == np.sign(val[1]):
+                            continue
                         
                         self.d[t] += sum(val)
                         
@@ -687,7 +687,7 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('mi_D4-6_1d', n = 1)
+    run1 = ComboDataSR_2D('sham_D11-1_1d', n = 1)
     #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 
@@ -699,7 +699,7 @@ if __name__ == "__main__":
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
-    run1.strain_rate(ellipse = 1, plot = 1, save = 1, segment = 1)
+    run1.strain_rate(ellipse = 1, plot = 1, save = 1, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
