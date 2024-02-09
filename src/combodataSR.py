@@ -93,7 +93,7 @@ plt.show()
 #%%
 #visualizing Strain Rate
 
-f = 80
+f = 128
 frame_ = np.zeros((f,f))
 I = np.zeros(T); I[:] = np.nan #Invariant
 
@@ -113,7 +113,7 @@ for t in range(T):
         for y in range(f):
             #SR tensor for specific point xy
             #D_ = np.array([[D[0,0][x,y], D[1,0][x,y]], [D[0,1][x,y], D[1,1][x,y]]])
-            D_ = D_ij_2D(x, y, V, M_norm, t)
+            D_ = D_ij_2D(x, y, V, M_norm, t, sigma = 2, mask = mask_t)
             val, vec = np.linalg.eig(D_)
                 
             #the highest eigenvalue is saved, no directional info!
@@ -129,8 +129,9 @@ for t in range(T):
     plt.subplot(1, 2, 1) #SR colormap
     ax = plt.gca()
     
-    plt.imshow(M[:f, :f, 0, t], origin = 'lower', cmap = 'gray', alpha = 1)
-    
+    #plt.imshow(M[:f, :f, 0, t], origin = 'lower', cmap = 'gray', alpha = 1)
+    plt.imshow(frame_*mask_t)
+    '''
     frame = frame_*mask_t
     frame[frame == 0] = -20
     cm = plt.imshow(frame/abs(np.max(frame)), origin = 'lower' , vmin = -1, vmax = 1, alpha=1, cmap = my_cmap)
@@ -138,7 +139,7 @@ for t in range(T):
     divider = make_axes_locatable(ax)
     cax = divider.append_axes("right", size="5%", pad=0.05)
     plt.colorbar(cm, cax=cax)
-    
+    '''
     ax.set_title(f'Strain Rate at t = {t}', fontsize = 15)
     #plt.scatter(I_[0], I_[1], color = 'w', marker = 'x', lw = 2, s = 100)
     

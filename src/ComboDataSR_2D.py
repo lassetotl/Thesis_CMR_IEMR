@@ -304,8 +304,8 @@ class ComboDataSR_2D:
                         val, vec = np.linalg.eig(D_)
                         
                         # skip this voxel if eigenvalue signs are equal
-                        if np.sign(val[0]) == np.sign(val[1]):
-                            continue
+                        #if np.sign(val[0]) == np.sign(val[1]):
+                        #    continue
                         
                         self.d[t] += sum(val)
                         

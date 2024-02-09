@@ -222,9 +222,10 @@ class ComboDataSR_3D:
         self.ax = len(mask[0,0,:,0])
         self.ay = len(mask[0,0,0,:])
 
-        # global rad and circ velocity
+        # global rad, circ and longitudinal velocity
         self.gr = np.zeros(self.T)
         self.gc = np.zeros(self.T)
+        self.gl = np.zeros(self.T)
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(mask[0, 0, :, :].T))
@@ -247,7 +248,7 @@ class ComboDataSR_3D:
                 ax = fig.add_subplot(111, projection='3d')
                 cbar = plt.colorbar(sm)
                 cbar.set_label('$v_z \ [cm/s]$', fontsize = 15)
-                ax.scatter(cx, cy, self.cx_0, marker = 'x', c = 'w', s = 210, linewidths = 3)
+                ax.scatter(cx, cy, self.cx_0, marker = 'x', c = 'k', s = 210, linewidths = 3)
             
             plt.title(f'Velocity plot at t = {t} ({self.ID}, Slice {slicenr})', fontsize = 15)
             
@@ -278,19 +279,22 @@ class ComboDataSR_3D:
                             ax.set_zlim(self.cx_0-w, self.cx_0+w)
                         
                         self.gr[t] += np.linalg.norm(v_)*np.cos(theta) 
-                        self.gc[t] += np.linalg.norm(v_)*np.sin(theta) 
+                        self.gc[t] += np.linalg.norm(v_)*np.sin(theta)
+                        self.gl[t] += vz[x, y]
             
             plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
             plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
             plt.show()
             
         plt.figure(figsize=(10, 8))
-        plt.title(f'Global radial velocity ({self.ID}, Slice {slicenr})', fontsize = 15)
+        plt.title(f'Global longitudinal velocity ({self.ID}, Slice {slicenr})', fontsize = 15)
         plt.axvline(self.T_es, c = 'k', ls = ':', lw = 2, label = 'End Systole')
         plt.axvline(self.T_ed[f'T_ed{slice_}'], c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
         plt.axhline(0, c = 'k', lw = 1)
 
+        plt.plot(self.range_, self.gl, lw = 2, label = 'Longitudinal')
         plt.plot(self.range_, self.gr, lw = 2, label = 'Radial')
+        #plt.plot(self.range_, self.gc, lw = 2, label = 'Circumferential')
         plt.legend()
         
         if save == 1:
@@ -445,7 +449,7 @@ class ComboDataSR_3D:
                             self.vya[x,y] = self.vya[idx, idy]
                             self.vza[x,y] = self.vza[idx, idy]
                             if all([self.vxa[x,y], self.vya[x,y], self.vza[x,y]]) == False:
-                                #print('Still Zeroes')
+                                print('Still Zeroes')
                                 continue  # if all surrounding voxels are 0, continue
                         
                         elif mask_tb[x,y] == 0:
@@ -455,7 +459,7 @@ class ComboDataSR_3D:
                             self.vyb[x,y] = self.vyb[idx, idy]
                             self.vzb[x,y] = self.vzb[idx, idy]
                             if all([self.vxb[x,y], self.vyb[x,y], self.vzb[x,y]]) == False:
-                                #print('Still Zeroes')
+                                print('Still Zeroes')
                                 continue
                             
                         else:
@@ -902,16 +906,16 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D4-4_10d', n = 2)
+    run2 = ComboDataSR_3D('sham_D11-1_3d', n = 1)
     
     # get info/generate data 
     run2.overview()
-    #grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
+    grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
+    #run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
