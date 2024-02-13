@@ -629,7 +629,6 @@ class ComboDataSR_3D:
             # ellipse plot
             if ellipse == 1: 
                 plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
-                #plt.scatter(mis[0], mis[1], marker = 'x', c = 'r')
              
                 plt.title(f'Strain Rate at t = {t} ({self.filename})', fontsize = 15)
                 
@@ -910,12 +909,12 @@ if __name__ == "__main__":
     
     # get info/generate data 
     run2.overview()
-    grv2 = run2.velocity(slice_ = 6, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
+    #grv2 = run2.velocity(slice_ = 9, dim = '3D', save = 0)  # mostly useful to see how velocity field behaves
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    #run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 3, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

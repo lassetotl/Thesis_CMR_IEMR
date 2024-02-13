@@ -17,7 +17,8 @@ from scipy.integrate import cumtrapz
 from scipy import stats
 from util import running_average, drop_outliers_IQR
 import pandas 
-import seaborn as sns
+import seaborn as sns; sns.set()
+import statsmodels.api as sm
 
 def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     # weighting for integrals in positive/flipped time directions
@@ -176,14 +177,14 @@ print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st
 # dataframe analysis
 
 # Create the pandas DataFrame 
-#'''
+'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', 'GLS', \
                                          'GRSRs', 'GRSRd', 'GCSRd', 'GCSRs', 'GLSRd', 'GLSRs', \
                                                 'ts_max', 'ts_min', 'tc_max', 'tc_min', 'ps_max', \
                                                      'ps_min', 'pc_max', 'pc_min', 'Condition']) 
-#'''
+'''
 # to analyze a generated csv file instead
-#df = pandas.read_csv('combodata_analysis_3d')
+df = pandas.read_csv('combodata_analysis_3d')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis_3d', sep=',', index=False, encoding='utf-8')
@@ -229,9 +230,27 @@ def ax_corr(ax, column_name):
     outliers.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, marker = 'x', colorbar = 0)
     
     
-    
     ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}, p = {np.round(r_sham, 3)}')
     ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}, p = {np.round(r_mi, 3)}, {r_str}')
+    
+
+# plot linear regression with 95% confidence interval
+def sns_plot(column_name, ylabel_):
+    s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
+                    palette='Set1', height=5, aspect=1.1, legend = 0) 
+    s.ax.set_ylabel(ylabel_, fontsize = 15)
+    s.ax.set_xlabel('Days', fontsize = 15)
+    
+    temp_sham = drop_outliers_IQR(df_sham, column_name, 100) 
+    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)
+    # t-test
+    r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
+    if r[1] < 0.001:
+        r_str = 'p < 0.001'
+    else:
+        r_str = f'p = {np.round(r[1], 3)}'
+    # return p value that represents linreg comparison
+    s.ax.text(35, np.min(df[column_name]), f'{r_str}', size=15, color='gray')
     
 #%%
 # peak strain values and dyssynchrony over time
@@ -245,14 +264,23 @@ df_sham = df[df['Condition'] == 0]
 df_mi = df[df['Condition'] == 1]
 
 plt.rcParams.update({'font.size': 12})
-fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
+#fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 #plt.title('Regional strain correlation analysis', fontsize = 15)
 
 cmap = 'coolwarm'
 
-ax_corr(ax1, 'GCS')
-ax1.set_ylabel('GCS [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
+sns_plot('GCS', ylabel_ = 'GCS [%]')
+sns_plot('GRS', ylabel_ = 'GRS [%]')
+sns_plot('GLS', ylabel_ = 'GLS [%]')
+sns_plot('GLSRs', ylabel_ = 'GLSRs [$s^{-1}$]')
+sns_plot('GLSRd', ylabel_ = 'GLSRd [$s^{-1}$]')
 
+sns_plot('GRSRs', ylabel_ = 'GRSRs [$s^{-1}$]')
+sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
+sns_plot('GCSRs', ylabel_ = 'GCSRs [$s^{-1}$]')
+sns_plot('GCSRd', ylabel_ = 'GCSRd [$s^{-1}$]')
+
+'''
 ax_corr(ax2, 'GLS')
 ax2.set_ylabel('GLS [%]', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
 
@@ -265,7 +293,7 @@ ax4.set_ylabel('GLSRs [$s^{-1}$]', fontsize=15); ax4.set_xlabel('Days', fontsize
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
 plt.show()
-
+'''
 #%%
 # strain rate peaks and direction over time
 

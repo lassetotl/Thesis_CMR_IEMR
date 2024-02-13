@@ -12,8 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
 import pandas
-#import seaborn as sns; sns.set()
-#import sklearn
+import statsmodels.api as sm
 
 import scipy.io as sio
 import scipy.ndimage as ndi
@@ -168,8 +167,13 @@ def drop_outliers_IQR(df, column_name, threshold = 1.5):
 
     outliers_dropped = df.drop(outliers.index)
     
-    # calculate linear fit for data withing treshhold
-    a, b = np.polyfit(outliers_dropped['Day'], outliers_dropped[column_name], 1)
+    # calculate linear fit for data within treshhold
+    x = outliers_dropped['Day']
+    y = outliers_dropped[column_name]
+    
+    model = sm.OLS(x, y).fit()
+    print(model.pvalues)
+    a, b = np.polyfit(x, y, 1)
 
     return outliers, outliers_dropped, a, b
 

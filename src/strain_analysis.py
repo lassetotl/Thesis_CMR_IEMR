@@ -310,14 +310,14 @@ auc_sham = np.array(auc_sham)
 
 # Create the pandas DataFrame 
 #'''
-df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
+#df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'a1_mean_max', 'a1_mean_min', \
                                                     'a2_mean_max', 'a2_mean_min', 'Condition']) 
 #'''
 # to analyze a generated csv file instead
-#df = pandas.read_csv('combodata_analysis')
+df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
@@ -359,6 +359,9 @@ def ax_corr(ax, column_name):
     else:
         r_str = f'r = {np.round(r[1], 3)}'
 
+
+    sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, palette='Set1')
+    '''
     valid_data.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, colorbar = 0)
     outliers.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, marker = 'x', colorbar = 0)
     
@@ -366,7 +369,7 @@ def ax_corr(ax, column_name):
     
     ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}, p = {np.round(r_sham, 3)}')
     ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}, p = {np.round(r_mi, 3)}, {r_str}')
-    
+    '''
 #%%
 # peak strain values and dyssynchrony over time
 
