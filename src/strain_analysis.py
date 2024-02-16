@@ -309,13 +309,13 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-#'''
-#df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
+'''
+df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'a1_mean_max', 'a1_mean_min', \
                                                     'a2_mean_max', 'a2_mean_min', 'Condition']) 
-#'''
+'''
 # to analyze a generated csv file instead
 df = pandas.read_csv('combodata_analysis')
     
@@ -370,6 +370,53 @@ def ax_corr(ax, column_name):
     ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}, p = {np.round(r_sham, 3)}')
     ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}, p = {np.round(r_mi, 3)}, {r_str}')
     '''
+    
+# plot linear regression with 95% confidence interval
+def sns_plot(column_name, ylabel_):
+    s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
+                    palette='Set1', height=5, aspect=1.1, legend = 0) 
+    s.ax.set_ylabel(ylabel_, fontsize = 15)
+    s.ax.set_xlabel('Days', fontsize = 15)
+    
+    temp_sham = drop_outliers_IQR(df_sham, column_name, 100)[1]
+    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)[1]
+    # t-test
+    #r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
+    
+    #t test at start and end
+    r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])
+    r40 = stats.ttest_ind(temp_sham[temp_sham['Day'] >= 40][column_name], temp_mi[temp_mi['Day'] >= 40][column_name])
+   
+    if r1[1] < 0.001:
+        r_str1 = r'$p_{1} < 0.001$'
+    else:
+        r_str1 = fr'$p_{1} = ${np.round(r1[1], 3)}'
+        
+    if r40[1] < 0.001:
+        r_str40 = r'$p_{40} < 0.001$'
+    else:
+        r_str40 = r'$p_{40} = $' + f'{np.round(r40[1], 3)}'
+    # return p value that represents linreg comparison
+    s.ax.text(22, np.min(df[column_name]), f'{r_str1}, {r_str40}', size=15, color='k')
+    
+#%%
+
+df_sham = df[df['Condition'] == 0]
+df_mi = df[df['Condition'] == 1]
+
+sns_plot('GCS', ylabel_ = 'GCS [%]')
+sns_plot('GRS', ylabel_ = 'GRS [%]')
+
+sns_plot('GRSRs', ylabel_ = 'GRSRs [$s^{-1}$]')
+sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
+sns_plot('GCSRs', ylabel_ = 'GCSRs [$s^{-1}$]')
+sns_plot('GCSRd', ylabel_ = 'GCSRd [$s^{-1}$]')
+
+sns_plot('a1_mean_max', ylabel_ = 'a1_mean_max [Degrees]')
+sns_plot('a1_mean_min', ylabel_ = 'a1_mean_min [Degrees]')
+sns_plot('a2_mean_max', ylabel_ = 'a2_mean_max [Degrees]')
+sns_plot('a2_mean_min', ylabel_ = 'a2_mean_min [Degrees]')
+
 #%%
 # peak strain values and dyssynchrony over time
 

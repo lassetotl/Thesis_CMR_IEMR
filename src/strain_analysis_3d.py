@@ -17,7 +17,7 @@ from scipy.integrate import cumtrapz
 from scipy import stats
 from util import running_average, drop_outliers_IQR
 import pandas 
-import seaborn as sns; sns.set()
+import seaborn as sns#; sns.set()
 import statsmodels.api as sm
 
 def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
@@ -241,16 +241,26 @@ def sns_plot(column_name, ylabel_):
     s.ax.set_ylabel(ylabel_, fontsize = 15)
     s.ax.set_xlabel('Days', fontsize = 15)
     
-    temp_sham = drop_outliers_IQR(df_sham, column_name, 100) 
-    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)
+    temp_sham = drop_outliers_IQR(df_sham, column_name, 100)[1]
+    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)[1]
     # t-test
-    r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
-    if r[1] < 0.001:
-        r_str = 'p < 0.001'
+    #r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
+    
+    #t test at start and end
+    r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])
+    r40 = stats.ttest_ind(temp_sham[temp_sham['Day'] >= 40][column_name], temp_mi[temp_mi['Day'] >= 40][column_name])
+   
+    if r1[1] < 0.001:
+        r_str1 = r'$p_{1} < 0.001$'
     else:
-        r_str = f'p = {np.round(r[1], 3)}'
+        r_str1 = fr'$p_{1} = ${np.round(r1[1], 3)}'
+        
+    if r40[1] < 0.001:
+        r_str40 = r'$p_{40} < 0.001$'
+    else:
+        r_str40 = r'$p_{40} = $' + f'{np.round(r40[1], 3)}'
     # return p value that represents linreg comparison
-    s.ax.text(35, np.min(df[column_name]), f'{r_str}', size=15, color='gray')
+    s.ax.text(22, np.min(df[column_name]), f'{r_str1}, {r_str40}', size=15, color='k')
     
 #%%
 # peak strain values and dyssynchrony over time
@@ -279,6 +289,16 @@ sns_plot('GRSRs', ylabel_ = 'GRSRs [$s^{-1}$]')
 sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
 sns_plot('GCSRs', ylabel_ = 'GCSRs [$s^{-1}$]')
 sns_plot('GCSRd', ylabel_ = 'GCSRd [$s^{-1}$]')
+
+sns_plot('ts_max', ylabel_ = 'ts_max [Degrees]')
+sns_plot('ts_min', ylabel_ = 'ts_min [Degrees]')
+sns_plot('tc_max', ylabel_ = 'tc_max [Degrees]')
+sns_plot('tc_min', ylabel_ = 'tc_min [Degrees]')
+
+sns_plot('ps_max', ylabel_ = 'ps_max [Degrees]')
+sns_plot('ps_min', ylabel_ = 'ps_min [Degrees]')
+sns_plot('pc_max', ylabel_ = 'pc_max [Degrees]')
+sns_plot('pc_min', ylabel_ = 'pc_min [Degrees]')
 
 '''
 ax_corr(ax2, 'GLS')

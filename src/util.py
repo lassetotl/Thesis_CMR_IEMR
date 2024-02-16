@@ -171,8 +171,8 @@ def drop_outliers_IQR(df, column_name, threshold = 1.5):
     x = outliers_dropped['Day']
     y = outliers_dropped[column_name]
     
-    model = sm.OLS(x, y).fit()
-    print(model.pvalues)
+    #model = sm.OLS(x, y).fit()
+    #print(model.pvalues)
     a, b = np.polyfit(x, y, 1)
 
     return outliers, outliers_dropped, a, b

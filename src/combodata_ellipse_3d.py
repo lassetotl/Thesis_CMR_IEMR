@@ -15,10 +15,12 @@ from numpy.linalg import norm
 from util import D_ij_2D, theta_rad, running_average, clockwise_angle
 from util import gaussian_2d, theta_extreme
 #import pandas as pd
-#import seaborn as sns
+import seaborn as sns; sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
+
 #import sklearn
 
 from ComboDataSR_3D import ComboDataSR_3D
+from math import ceil, floor
 
 import scipy.io as sio
 import scipy.ndimage as ndi 
@@ -33,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file = 'sham_D11-1_3d'
+file ='mi_D12-8_45d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -131,7 +133,7 @@ except OSError:
             print(f'Infarct Sector at {mis}')
         '''
         
-        plt.title(f'Slice {file}')
+        plt.title(f'{file}')
         plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
         plt.show()
         # dont need to transverse mask? this could lead to indexing confusion later
@@ -217,16 +219,35 @@ lsr = np.sum(np.array(total_lsr), axis = 0) / len(slice_selection)
 csr = np.sum(np.array(total_csr), axis = 0) / len(slice_selection)
 rsr = np.sum(np.array(total_rsr), axis = 0) / len(slice_selection)
 
-'''
-ls = np.sum(np.array(total_ls), axis = 0) / len(slice_selection) 
-cs = np.sum(np.array(total_cs), axis = 0) / len(slice_selection) 
-rs = np.sum(np.array(total_rs), axis = 0) / len(slice_selection) 
-'''
-
 theta1 = np.sum(np.array(theta_stretch), axis = 0) / len(slice_selection) 
 theta2 = np.sum(np.array(theta_comp), axis = 0) / len(slice_selection) 
 phi1 = np.sum(np.array(phi_stretch), axis = 0) / len(slice_selection) 
 phi2 = np.sum(np.array(phi_comp), axis = 0) / len(slice_selection) 
+
+# regional analysis
+# let apical/basal overlap with one level if odd nr of slices
+odd = int((len(slice_selection) % 2) == 0)  # odd = 0 if odd, 1 if even
+a_length = len(theta1[:ceil((len(slice_selection)/2))])
+b_start = len(theta1[:floor((len(slice_selection)/2))])
+
+basal_theta1 = np.sum(np.array(theta_stretch[b_start:]), axis = 0) / a_length
+apical_theta1 = np.sum(np.array(theta_stretch[:a_length]), axis = 0) / a_length
+basal_theta2 = np.sum(np.array(theta_comp[b_start:]), axis = 0) / a_length
+apical_theta2 = np.sum(np.array(theta_comp[:a_length]), axis = 0) / a_length
+
+basal_phi1 = np.sum(np.array(phi_stretch[b_start:]), axis = 0) / a_length
+apical_phi1 = np.sum(np.array(phi_stretch[:a_length]), axis = 0) / a_length
+basal_phi2 = np.sum(np.array(phi_comp[b_start:]), axis = 0) / a_length
+apical_phi2 = np.sum(np.array(phi_comp[:a_length]), axis = 0) / a_length
+
+basal_lsr = np.sum(np.array(total_lsr[b_start:]), axis = 0) / a_length
+apical_lsr = np.sum(np.array(total_lsr[:a_length]), axis = 0) / a_length
+
+basal_rsr = np.sum(np.array(total_rsr[b_start:]), axis = 0) / a_length
+apical_rsr = np.sum(np.array(total_rsr[:a_length]), axis = 0) / a_length
+
+basal_csr = np.sum(np.array(total_csr[b_start:]), axis = 0) / a_length
+apical_csr = np.sum(np.array(total_csr[:a_length]), axis = 0) / a_length
 
 TR = run.__dict__['TR']
 range_ = np.arange(0, T_ed_min)
@@ -245,9 +266,17 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     return (w*strain + w_f*strain_flipped)/2
 
 # derive strain from the total sr curve, not sum of strain curves
-ls = strain(lsr, T_ed_min)*100000
-cs = strain(csr, T_ed_min)*100000
-rs = strain(rsr, T_ed_min)*100000
+#ls = strain(lsr, T_ed_min)*100000
+bls = strain(basal_lsr, T_ed_min)*100000
+als = strain(apical_lsr, T_ed_min)*100000
+
+#cs = strain(csr, T_ed_min)*100000
+bcs = strain(basal_csr, T_ed_min)*100000
+acs = strain(apical_csr, T_ed_min)*100000
+
+#rs = strain(rsr, T_ed_min)*100000
+brs = strain(basal_rsr, T_ed_min)*100000
+ars = strain(apical_rsr, T_ed_min)*100000
 
 #%%
 # total strain and strain rate
@@ -255,14 +284,30 @@ rs = strain(rsr, T_ed_min)*100000
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
 ax2.axhline(0, c = 'k', lw = 1)
-ax2.plot(range(len(ls)), ls, 'darkgreen', label = 'Longitudinal strain')
-ax2.plot(range(len(cs)), cs, 'chocolate', label = 'Circumferential strain')
-ax2.plot(range(len(rs)), rs, 'darkblue', label = 'Radial strain')
+#ax2.plot(range(len(ls)), ls, 'darkgreen', label = 'Longitudinal strain')
+ax2.plot(range(len(bls)), bls, 'darkgreen', label = 'GLS')
+ax2.plot(range(len(als)), als, 'darkgreen', ls = '--')
+
+#ax2.plot(range(len(cs)), cs, 'chocolate', label = 'Circumferential strain')
+ax2.plot(range(len(bcs)), bcs, 'chocolate', label = 'GCS')
+ax2.plot(range(len(acs)), acs, 'chocolate', ls = '--')
+
+#ax2.plot(range(len(rs)), rs, 'darkblue', label = 'Radial strain')
+ax2.plot(range(len(brs)), brs, 'darkblue', label = 'GRS')
+ax2.plot(range(len(ars)), ars, 'darkblue', ls = '--')
 
 ax1.axhline(0, c = 'k', lw = 1)
-ax1.plot(range(len(lsr)), lsr, 'darkgreen', label = 'Longitudinal strain rate')
-ax1.plot(range(len(csr)), csr, 'chocolate', label = 'Circumferential strain rate')
-ax1.plot(range(len(rsr)), rsr, 'darkblue', label = 'Radial strain rate')
+#ax1.plot(range(len(lsr)), lsr, 'darkgreen', label = 'Longitudinal strain rate')
+ax1.plot(range(len(basal_lsr)), basal_lsr, 'darkgreen', label = 'GLSR')
+ax1.plot(range(len(apical_lsr)), apical_lsr, 'darkgreen', ls = '--')
+
+#ax1.plot(range(len(csr)), csr, 'chocolate', label = 'Circumferential strain rate')
+ax1.plot(range(len(basal_csr)), basal_csr, 'chocolate', label = 'GCSR')
+ax1.plot(range(len(apical_csr)), apical_csr, 'chocolate', ls = '--')
+
+#ax1.plot(range(len(rsr)), rsr, 'darkblue', label = 'Radial strain rate')
+ax1.plot(range(len(basal_rsr)), basal_rsr, 'darkblue', label = 'GRSR')
+ax1.plot(range(len(apical_rsr)), apical_rsr, 'darkblue', ls = '--')
 
 plt.suptitle(f'Whole heart strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 ax1.set_ylabel('$s^{-1}$', fontsize = 15)
@@ -283,7 +328,7 @@ c_cmap = plt.get_cmap(c)
 norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 
 yticks = [0, len(slice_selection)-1]
-yticks_new = [slice_selection[0], slice_selection[-1]]
+yticks_new = ['A', 'B']
 
 fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Whole heart strain [$\%$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
@@ -295,6 +340,7 @@ axs[2].set_xlabel('Timepoints', fontsize = 15)
 
 for i in range(3):
     axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
+    axs[i].grid(0)
 
 axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
 
@@ -320,6 +366,7 @@ axs[2].set_xlabel('Timepoints', fontsize = 15)
 
 for i in range(3):
     axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
+    axs[i].grid(0)
 
 axs[0].set_ylabel('Radial'); axs[2].set_ylabel('Longitudinal'); axs[1].set_ylabel('Circumferential')
 
@@ -341,16 +388,27 @@ fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Strain rate mean $\\theta$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(theta_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[0].text(T_ed_min-0.5, 0.2, '∎', color = 'r', fontsize = 20)
-im = axs[1].imshow(np.array(theta_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[1].text(T_ed_min-0.5, 0.2, '∎', color = 'g', fontsize = 20)
+axs[0].text(T_ed_min-0.5, 0.7, '∎', color = 'r', fontsize = 20)
+axs[0].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
-axs[2].plot(range(len(theta1)), theta1, 'r')
-axs[2].plot(range(len(theta2)), theta2, 'g')
+im = axs[1].imshow(np.array(theta_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
+axs[1].text(T_ed_min-0.5, 0.7, '∎', color = 'g', fontsize = 20)
+axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
+
+#axs[2].plot(range(len(theta1)), theta1, 'gray')
+axs[2].plot(range(len(theta1)), basal_theta1, 'r-')
+axs[2].plot(range(len(theta1)), apical_theta1, 'r--')
+
+#axs[2].plot(range(len(theta2)), theta2, 'g')
+axs[2].plot(range(len(theta2)), basal_theta2, 'g-')
+axs[2].plot(range(len(theta2)), apical_theta2, 'g--')
+
+
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
 for i in range(2):
     axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
+    axs[i].grid(0)
 
 axs[0].set_ylabel('Stretch'); axs[1].set_ylabel('Compression'); axs[2].set_ylabel('Mean')
 
@@ -369,16 +427,25 @@ fig, axs = plt.subplots(3, sharex=True)
 fig.suptitle(f'Strain rate mean $\\phi$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(phi_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[0].text(T_ed_min-0.5, 0.2, '∎', color = 'r', fontsize = 20)
+axs[0].text(T_ed_min-0.5, 0.7, '∎', color = 'r', fontsize = 20)
+axs[0].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 im = axs[1].imshow(np.array(phi_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
-axs[1].text(T_ed_min-0.5, 0.2, '∎', color = 'g', fontsize = 20)
+axs[1].text(T_ed_min-0.5, 0.7, '∎', color = 'g', fontsize = 20)
+axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
-axs[2].plot(range(len(phi1)), phi1, 'r')
-axs[2].plot(range(len(phi2)), phi2, 'g')
+#axs[2].plot(range(len(theta1)), phi1, 'gray')
+axs[2].plot(range(len(phi1)), basal_phi1, 'r-')
+axs[2].plot(range(len(phi1)), apical_phi1, 'r--')
+
+#axs[2].plot(range(len(theta2)), phi2, 'g')
+axs[2].plot(range(len(phi2)), basal_phi2, 'g-')
+axs[2].plot(range(len(phi2)), apical_phi2, 'g--')
+
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
 for i in range(2):
     axs[i].set_yticks(yticks); axs[i].set_yticklabels(yticks_new)
+    axs[i].grid(0)
 
 axs[0].set_ylabel('Stretch'); axs[1].set_ylabel('Compression'); axs[2].set_ylabel('Mean')
 
