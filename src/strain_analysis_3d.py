@@ -13,11 +13,13 @@ import numpy as np
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 from ComboDataSR_3D import ComboDataSR_3D
+
+from math import ceil, floor
 from scipy.integrate import cumtrapz
 from scipy import stats
 from util import running_average, drop_outliers_IQR
 import pandas 
-import seaborn as sns#; sns.set()
+import seaborn as sns; sns.set()
 import statsmodels.api as sm
 
 def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
@@ -82,7 +84,7 @@ for file in os.listdir('R:\Lasse\combodata_3d_shax'):
         
     # all slices with surrounding slices
     for slice_ in slice_selection:
-        run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
+        run.strain_rate(slice_, save = 0, plot = 0)
         print(f'Slice [{slice_} / {slice_selection[-1]}]')
         
         # if there is a sector mask issue, data will not be appended
@@ -162,10 +164,30 @@ for file in os.listdir('R:\Lasse\combodata_3d_shax'):
     pc_max = np.max(phi_c)
     pc_min = np.min(phi_c)
     
+    # let apical/basal overlap with one level if odd nr of slices
+    #odd = int((len(slice_selection) % 2) == 0)  # odd = 0 if odd, 1 if even
+    a_length = len(theta_s[:ceil((len(slice_selection)/2))])
+    b_start = len(theta_s[:floor((len(slice_selection)/2))])
+    
+    basal_theta1 = np.sum(np.array(theta_stretch[b_start:]), axis = 0) / a_length
+    apical_theta1 = np.sum(np.array(theta_stretch[:a_length]), axis = 0) / a_length
+    basal_theta2 = np.sum(np.array(theta_comp[b_start:]), axis = 0) / a_length
+    apical_theta2 = np.sum(np.array(theta_comp[:a_length]), axis = 0) / a_length
+
+    basal_phi1 = np.sum(np.array(phi_stretch[b_start:]), axis = 0) / a_length
+    apical_phi1 = np.sum(np.array(phi_stretch[:a_length]), axis = 0) / a_length
+    basal_phi2 = np.sum(np.array(phi_comp[b_start:]), axis = 0) / a_length
+    apical_phi2 = np.sum(np.array(phi_comp[:a_length]), axis = 0) / a_length
+    
+    tcs_ = abs(np.max(basal_theta2) - np.max(apical_theta2))
+    tss_ = abs(np.min(basal_theta1) - np.min(apical_theta1))
+    pcs_ = abs(np.max(basal_phi2) - np.max(apical_phi2))  # switch min/max
+    pss_ = abs(np.min(basal_phi1) - np.min(apical_phi1))
+    
     # dataframe row
     df_list.append([filename, days, r_strain_peak, c_strain_peak, l_strain_peak, r_sr_max, \
                         r_sr_min, c_sr_max, c_sr_min, l_sr_max, l_sr_min, ts_max, ts_min, \
-                            tc_max, tc_min, ps_max, ps_min, pc_max, pc_min, condition])
+                            tc_max, tc_min, ps_max, ps_min, pc_max, pc_min, tcs_, tss_, pcs_, pss_, condition])
     filenr += 1
     if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
         os.makedirs(f'R:\Lasse\plots\MP4\{file}')
@@ -181,7 +203,8 @@ print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', 'GLS', \
                                          'GRSRs', 'GRSRd', 'GCSRd', 'GCSRs', 'GLSRd', 'GLSRs', \
                                                 'ts_max', 'ts_min', 'tc_max', 'tc_min', 'ps_max', \
-                                                     'ps_min', 'pc_max', 'pc_min', 'Condition']) 
+                                                     'ps_min', 'pc_max', 'pc_min', 'tcs_diff', \
+                                                         'tss_diff', 'pcs_diff', 'pss_diff', 'Condition']) 
 '''
 # to analyze a generated csv file instead
 df = pandas.read_csv('combodata_analysis_3d')
@@ -299,6 +322,11 @@ sns_plot('ps_max', ylabel_ = 'ps_max [Degrees]')
 sns_plot('ps_min', ylabel_ = 'ps_min [Degrees]')
 sns_plot('pc_max', ylabel_ = 'pc_max [Degrees]')
 sns_plot('pc_min', ylabel_ = 'pc_min [Degrees]')
+
+sns_plot('tcs_diff', ylabel_ = 'tcs_diff [Degrees]')
+sns_plot('tss_diff', ylabel_ = 'tss_diff [Degrees]')
+sns_plot('pcs_diff', ylabel_ = 'pcs_diff [Degrees]')
+sns_plot('pss_diff', ylabel_ = 'pss_diff [Degrees]')
 
 '''
 ax_corr(ax2, 'GLS')

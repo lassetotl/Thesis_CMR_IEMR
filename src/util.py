@@ -99,8 +99,7 @@ def theta_rad(v, w):
     if theta_r > np.pi/2:
         theta_r = np.pi - theta_r
     return theta_r
-#https://stats.stackexchange.com/questions/9898/how-to-plot-an-ellipse-from-eigenvalues-and-eigenvectors-in-r
-
+#https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python
 
 # Note: forces angle to be 0 or 90 degrees relative to radial unit vector
 # !! not to be used for serious quantitative analysis !!

@@ -35,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file ='mi_D12-8_45d'
+file ='mi_D4-6_41d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -92,7 +92,7 @@ try:
         #print(desc)  # slice nr
         slicenr[f'slice {slice_+1}'] = snr
         
-        plt.title(f'Slice {desc}')
+        plt.title(f'{desc}')
         plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
         plt.show()
         # dont need to transverse mask? this could lead to indexing confusion later
@@ -194,7 +194,7 @@ T_ed_min = np.min(np.array(T_ed))
 
 run = ComboDataSR_3D(file, n = 1)
 for slice_ in slice_selection:
-    run.strain_rate(slice_, ellipse = 0, save = 0, plot = 0)
+    run.strain_rate(slice_, save = 0, plot = 0)
     print(f'Slice [{slice_} / {slice_selection[-1]}]')
     
     # sector mask issues can be spotted like this:

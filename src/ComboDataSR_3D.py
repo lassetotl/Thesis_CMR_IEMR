@@ -177,11 +177,11 @@ class ComboDataSR_3D:
     def _strain(self, strain_rate, T_ed, weight = 10):  # inherit from 2d class?
         # weighting for integrals in positive/flipped time directions
         # cyclic boundary conditions
-        w = np.tanh((T_ed - 1 - self.range_)/weight) 
-        w_f = np.tanh(self.range_/weight) 
+        w = np.tanh((T_ed - 1 - self.range_[:T_ed])/weight) 
+        w_f = np.tanh(self.range_[:T_ed]/weight) 
 
-        strain = cumtrapz(strain_rate, self.range_TR/1000, initial=0)
-        strain_flipped = np.flip(cumtrapz(strain_rate[::-1]/1000, self.range_TR[::-1], initial=0))
+        strain = cumtrapz(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial=0)
+        strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed]/1000, self.range_TR[::-1][:T_ed], initial=0))
         return (w*strain + w_f*strain_flipped)/2
     
     
@@ -312,7 +312,7 @@ class ComboDataSR_3D:
     # set save = 0 to avoid overwriting current .mp4 and .npy files
     # set segment = 1 to calculate/plot strain rate over 4 sectors
     # (method always calculates in sectors, but sums sectors if segment = 0 after saving synchrony parameters)
-    def strain_rate(self, slice_, ellipse = 1, plot = 1, save = 1, segment = 0):  
+    def strain_rate(self, slice_, plot = 1, save = 1, segment = 0):  
         # relevant matrices for this slice
         V = self.V[f'V{slice_}']
         M = self.M[f'M{slice_}']
@@ -382,6 +382,8 @@ class ComboDataSR_3D:
                 os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
         
         print(f'Calculating Global Strain rate for {self.filename}...')
+        
+        run = 1
         for t in self.range_:
 
             # combodata mask 
@@ -400,13 +402,6 @@ class ComboDataSR_3D:
             self.C = M[t, 0, :, :].T/np.max(M[t, 0, :, :].T); C = self.C
             self.Ca = Ma[t, 0, :, :].T/np.max(Ma[t, 0, :, :].T); Ca = self.Ca
             self.Cb = Mb[t, 0, :, :].T/np.max(Mb[t, 0, :, :].T); Cb = self.Cb
-            
-            if ellipse == 1:
-                plt.subplots(figsize=(10,10))
-                ax = plt.gca()
-                # plot magnitude M plot, normalize for certainty values
-                # transpose in imshow to allign with mask
-                plt.imshow(C.T, origin = 'lower', cmap = 'gray', alpha = 1)
             
             sector = 0  # reset sector number
             
@@ -496,15 +491,15 @@ class ComboDataSR_3D:
                         # projection angle in (r,z)-plane
                         a,b,c = vec[val_max_i]
                         #phi = theta_rad(z, [a*np.cos(theta), b*np.sin(theta), c])  # angle between highest eigenvector and z-axis
-                        phi = theta_rad(z, [a, b, c])  # angle between highest eigenvector and z-axis
+                        phi = theta_rad(z, np.array([a, b, c]))  # angle between highest eigenvector and z-axis
                         
                         a,b,c = vec[val_min_i]
                         #phi_ = theta_rad(z, [a*np.cos(theta_), b*np.sin(theta_), c]) # angle between lowest eigenvector and z-axis
-                        phi_ = theta_rad(z, [a, b, c])
+                        phi_ = theta_rad(z, np.array([a, b, c]))
                         
                         a,b,c = vec[val_last_i]
                         #phi__ = theta_rad(z, [a*np.cos(theta__), b*np.sin(theta__), c]) # angle between third eigenvector and z-axis
-                        phi__ = theta_rad(z, [a, b, c])
+                        phi__ = theta_rad(z, np.array([a, b, c]))
                         
                         # local contribution
                         sect_xy = mask_segment_t[x, y]  # sector value in (x,y)
@@ -585,34 +580,14 @@ class ComboDataSR_3D:
                         if val[val_last_i] < 0:
                             theta2_[sector].append(theta__)
                             phi2_[sector].append(phi__)
-                        
-                        if ellipse == 1:
-                            # hex code, inputs in range (0, 1) so theta is scaled
-                            if segment == 1:
-                                # color code after sector 1 to 4
-                                hx = mpl.colors.rgb2hex(list(c_cmap(sector)))
-                            else:
-                                hx = mpl.colors.rgb2hex(c_cmap(theta/(np.pi/2)))  # code with
-                                #hx = mpl.colors.rgb2hex(c_cmap(I))  # color code with invariant?
-                            
-                            # angle between eigenvector and x-axis, converted to degrees anti-clockwise
-                            # clockwise theta needed
-                            theta_c = clockwise_angle(r, vec[val_max_i])
-                            e_angle = -(clockwise_angle([1,0], r) + theta_c)*180/np.pi
-                            
-                            # draw ellipses that are spanned by eigenvectors
-                            # eigenvalues are transformed (1 + tanh(val)) to have a circular unit ellipse
-                            ellipse = patches.Ellipse((x, y), (1 + np.tanh(val[val_max_i])), (1 + np.tanh(val[val_min_i])), 
-                                                      angle = e_angle, color = hx)
-                            
-                            #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
-                            
-                            ax.add_artist(ellipse)
                             
             # if any of these are zero, we have likely reached the end of the sector mask. 
-            # end here, if so, to avoid division by zero.
+            # end at this timepoint, if so, to avoid division by zero.
             if np.all(e_count) == False:
-                print(f'Ellipse count at {t*self.TR*1000} ms: {e_count}. Skipping the last timepoints to avoid division by zero.')
+                if run == 1:
+                    T_ = t  # solves plotting issues from sector mask bug
+                    run = 0
+                    print(f'Ellipse count at {t*self.TR*1000} ms: {e_count}. Skipping the last timepoints to avoid division by zero.')
                 continue
         
             for sector in range(4):  # scaling for correct units 
@@ -625,49 +600,15 @@ class ComboDataSR_3D:
                 self.theta2[sector, t] = np.array(theta2_[sector])*180/np.pi
                 self.phi1[sector, t] = np.array(phi1_[sector])*180/np.pi
                 self.phi2[sector, t] = np.array(phi2_[sector])*180/np.pi
-            
-            # ellipse plot
-            if ellipse == 1: 
-                plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
-             
-                plt.title(f'Strain Rate at t = {t} ({self.filename})', fontsize = 15)
-                
-                w = 25  # +- window from center of mass at t = 0
-                plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
-                
-                # informatic text on plot
-                plt.text(self.cx_0 - w + 3, self.cy_0 - w + 3, f'Gaussian smoothing ($\sigma = {self.sigma}$)',
-                         color = 'w', fontsize = 15)
-                res_ = round(self.res*w*2, 4)
-                plt.text(self.cx_0 - w + 3, self.cy_0 - w + 9, f'{res_} x {res_} cm', 
-                         color = 'w', fontsize = 15)
-                
-                if segment == 0:
-                    plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, f'{int(sum(e_count))} Ellipses', 
-                             color = 'w', fontsize = 15)
-                    divider = make_axes_locatable(ax)
-                    cax = divider.append_axes("right", size="6%", pad=0.09)
-                    
-                    sm = plt.cm.ScalarMappable(cmap = c_cmap, norm = norm_)
-                    cbar = plt.colorbar(sm, cax = cax)
-                    cbar.set_label('$\Theta$ (degrees)', fontsize = 15)
-                    
-                else:
-                    plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, 'Ellipse count:', color = 'w', fontsize = 15)
-                    plt.text(self.cx_0 - w + 12, self.cy_0 - w + 6, f'{int(e_count[0])}', color = c_cmap(0), fontsize = 15)
-                    plt.text(self.cx_0 - w + 15, self.cy_0 - w + 6, f'{int(e_count[1])}', color = c_cmap(1), fontsize = 15)
-                    plt.text(self.cx_0 - w + 18, self.cy_0 - w + 6, f'{int(e_count[2])}', color = c_cmap(2), fontsize = 15)
-                    plt.text(self.cx_0 - w + 21, self.cy_0 - w + 6, f'{int(e_count[3])}', color = c_cmap(3), fontsize = 15)
-                
-                plt.tight_layout()
-                
-                plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
-                plt.show(); plt.close()
+        
+        # if no issues, T_ed will be used as endpoint in plots
+        if run == 1:
+            T_ = T_ed
         
         # add strain rate parameters to dictionary
-        r_sr_global = np.sum(self.r_matrix, axis = 0) / 4
-        c_sr_global = np.sum(self.c_matrix, axis = 0) / 4
-        l_sr_global = np.sum(self.l_matrix, axis = 0) / 4
+        r_sr_global = np.sum(self.r_matrix, axis = 0)[:T_] / 4
+        c_sr_global = np.sum(self.c_matrix, axis = 0)[:T_] / 4
+        l_sr_global = np.sum(self.l_matrix, axis = 0)[:T_] / 4
         
         self.c_sr_max = np.max(c_sr_global)
         self.r_sr_max = np.max(r_sr_global)
@@ -675,14 +616,14 @@ class ComboDataSR_3D:
         self.r_sr_min = np.min(r_sr_global)
         
         # global strain arrays
-        rs = 100*self._strain(r_sr_global, T_ed)
-        cs = 100*self._strain(c_sr_global, T_ed)
-        ls = 100*self._strain(l_sr_global, T_ed)
+        rs = 100*self._strain(r_sr_global, T_)
+        cs = 100*self._strain(c_sr_global, T_)
+        ls = 100*self._strain(l_sr_global, T_)
         
         # mean stretch/compression (theta1/theta2) angles
-        theta1_mean = np.zeros((4, T_ed)); theta2_mean = np.zeros((4, T_ed))
-        phi1_mean = np.zeros((4, T_ed)); phi2_mean = np.zeros((4, T_ed))
-        for t in self.range_:
+        theta1_mean = np.zeros((4, T_)); theta2_mean = np.zeros((4, T_))
+        phi1_mean = np.zeros((4, T_)); phi2_mean = np.zeros((4, T_))
+        for t in self.range_[:T_]:
             for sector in range(4):
                 theta1_mean[sector, t] = np.mean(self.theta1[sector, t])
                 theta2_mean[sector, t] = np.mean(self.theta2[sector, t])
@@ -711,8 +652,8 @@ class ComboDataSR_3D:
         self.c_peaktime = np.zeros(4); self.r_peaktime = np.zeros(4)
         
         for sector in range(4):
-            rs = 100*self._strain(self.r_matrix[sector, :], T_ed)
-            cs = 100*self._strain(self.c_matrix[sector, :], T_ed)
+            rs = 100*self._strain(self.r_matrix[sector, :], T_)
+            cs = 100*self._strain(self.c_matrix[sector, :], T_)
             
             # this regional data can be aquired for segment == 0 as well
             self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR*1000
@@ -727,7 +668,7 @@ class ComboDataSR_3D:
             plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axhline(0, c = 'k', lw = 1)
 
-            plt.xlim(0, T_ed*self.TR*1000)#; plt.ylim(0, 50)
+            plt.xlim(0, T_*self.TR*1000)#; plt.ylim(0, 50)
             plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('$s^{-1}$', fontsize = 20)
             
@@ -763,15 +704,6 @@ class ComboDataSR_3D:
                     os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
                     
                 plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GSR.PNG')
-                
-                filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in self.range_]  
-                  
-                with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.mp4', 
-                                        fps=7, macro_block_size = 1) as writer:    # inputs: filename, frame per second
-                    for filename in filenames:
-                        image = imageio.imread(filename)                         # load the image file
-                        writer.append_data(image)
-                
             plt.show()
                
         if plot == 1:
@@ -782,7 +714,7 @@ class ComboDataSR_3D:
             plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axhline(0, c = 'k', lw = 1)
 
-            plt.xlim(0, T_ed*self.TR*1000)#; plt.ylim(0, 50)
+            plt.xlim(0, T_*self.TR*1000)#; plt.ylim(0, 50)
             plt.xlabel('Time [s]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
                 
@@ -790,8 +722,8 @@ class ComboDataSR_3D:
                 plt.title(f'Regional Strain ({ID})', fontsize = 15)
                 
                 for sector in range(4):
-                    rs = 100*self._strain(self.r_matrix[sector, :], T_ed)
-                    cs = 100*self._strain(self.c_matrix[sector, :], T_ed)
+                    rs = 100*self._strain(self.r_matrix[sector, :], T_)
+                    cs = 100*self._strain(self.c_matrix[sector, :], T_)
                     
                     plt.plot(self.range_TR, rs, c = c_cmap(sector), lw=2)
                     plt.plot(self.range_TR, cs, c = c_cmap(sector), lw=2)
@@ -818,28 +750,28 @@ class ComboDataSR_3D:
             
             f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
             
-            plt.suptitle(f'Stretch direction ({ID})', fontsize = 15)
+            plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
             ax1.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            ax1.set_xlim(0, T_ed*self.TR*1000)
+            ax1.set_xlim(0, T_*self.TR*1000)
             ax1.set_xlabel('Time [s]', fontsize = 15)
             ax1.set_ylabel('$\\theta$', fontsize = 17)
 
             ax2.set_ylabel('$\\phi$', fontsize = 17)
             ax2.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            ax2.set_xlim(0, T_ed*self.TR*1000)
+            ax2.set_xlim(0, T_*self.TR*1000)
             ax2.set_xlabel('Time [s]', fontsize = 15)
             
             if segment == 1:  # mean angles segments
                 for sector in range(4):
                     # smoothed mean stretch / compression
-                    ax1.plot(self.range_TR, theta2_mean[sector, :], color = 'lightgray')
-                    ax2.plot(self.range_TR, phi2_mean[sector, :], color = 'lightgray')
-                    ax1.plot(self.range_TR, theta1_mean[sector, :], color = c_cmap(sector))
-                    ax2.plot(self.range_TR, phi1_mean[sector, :], color = c_cmap(sector))
+                    ax1.plot(self.range_TR[:T_], theta2_mean[sector, :][:T_], color = 'lightgray')
+                    ax2.plot(self.range_TR[:T_], phi2_mean[sector, :][:T_], color = 'lightgray')
+                    ax1.plot(self.range_TR[:T_], theta1_mean[sector, :][:T_], color = c_cmap(sector))
+                    ax2.plot(self.range_TR[:T_], phi1_mean[sector, :][:T_], color = c_cmap(sector))
                     ax2.legend(handles = legend_handles1, loc = 'lower right')
                       
             else:  # global angle distribution 
-                for i in self.range_:
+                for i in self.range_[:T_]:
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
                         ax1.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.006*self.n**2)
@@ -847,10 +779,10 @@ class ComboDataSR_3D:
                         ax2.scatter([self.range_TR[i]]*len(self.phi1[sector, i]), self.phi1[sector, i], color = 'r', alpha = 0.006*self.n**2)
                         ax2.scatter([self.range_TR[i]]*len(self.phi2[sector, i]), self.phi2[sector, i], color = 'g', alpha = 0.006*self.n**2)
             
-                ax1.plot(self.range_TR, theta1_mean_global, 'r', label = 'Positive eigenvectors (stretch)')
-                ax1.plot(self.range_TR, theta2_mean_global, 'g', label = 'Negative eigenvectors (compression)')
-                ax2.plot(self.range_TR, phi1_mean_global, 'r', label = 'Stretch')
-                ax2.plot(self.range_TR, phi2_mean_global, 'g', label = 'Compression')
+                ax1.plot(self.range_TR[:T_], theta1_mean_global[:T_], 'r', label = 'Positive eigenvectors (stretch)')
+                ax1.plot(self.range_TR[:T_], theta2_mean_global[:T_], 'g', label = 'Negative eigenvectors (compression)')
+                ax2.plot(self.range_TR[:T_], phi1_mean_global[:T_], 'r', label = 'Stretch')
+                ax2.plot(self.range_TR[:T_], phi2_mean_global[:T_], 'g', label = 'Compression')
                 ax2.legend(loc = 'lower right')
             
             plt.subplots_adjust(wspace=0.1)
@@ -905,7 +837,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('mi_D11-3_3d', n = 1)
+    run2 = ComboDataSR_3D('sham_D11-1_3d', n = 1)
     
     # get info/generate data 
     run2.overview()
@@ -914,7 +846,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, ellipse = 0, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, slice_ = 8, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
