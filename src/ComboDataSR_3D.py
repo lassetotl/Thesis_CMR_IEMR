@@ -26,7 +26,7 @@ from scipy.integrate import cumtrapz
 import imageio
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-import seaborn as sns
+import seaborn as sns; sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
 import h5py
 
 # create instance for each dataset (of type combodata)
@@ -381,7 +381,7 @@ class ComboDataSR_3D:
             if os.path.exists(f'R:\Lasse\plots\MP4\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
         
-        print(f'Calculating Global Strain rate for {self.filename}...')
+        print(f'Calculating Strain rate for {ID}...')
         
         run = 1
         for t in self.range_:
@@ -748,29 +748,51 @@ class ComboDataSR_3D:
                 
             plt.show()
             
-            f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
-            
-            plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
-            ax1.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            ax1.set_xlim(0, T_*self.TR*1000)
-            ax1.set_xlabel('Time [s]', fontsize = 15)
-            ax1.set_ylabel('$\\theta$', fontsize = 17)
 
-            ax2.set_ylabel('$\\phi$', fontsize = 17)
-            ax2.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            ax2.set_xlim(0, T_*self.TR*1000)
-            ax2.set_xlabel('Time [s]', fontsize = 15)
-            
             if segment == 1:  # mean angles segments
-                for sector in range(4):
-                    # smoothed mean stretch / compression
-                    ax1.plot(self.range_TR[:T_], theta2_mean[sector, :][:T_], color = 'lightgray')
-                    ax2.plot(self.range_TR[:T_], phi2_mean[sector, :][:T_], color = 'lightgray')
-                    ax1.plot(self.range_TR[:T_], theta1_mean[sector, :][:T_], color = c_cmap(sector))
-                    ax2.plot(self.range_TR[:T_], phi1_mean[sector, :][:T_], color = c_cmap(sector))
-                    ax2.legend(handles = legend_handles1, loc = 'lower right')
+                c = 'viridis'
+                c_cmap = plt.get_cmap(c)
+                cmax = np.max(theta1_mean)
+                cmin = np.min(theta1_mean)
+                norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
+            
+                f, (ax0, ax1, ax2) = plt.subplots(3, 1, figsize=(8, 4))
+                f.suptitle(f'Strain rate mean $\\theta$ [degrees] ({ID})')
+                
+                # smoothed mean stretch / compression
+                ax0.imshow(theta1_mean, cmap = c_cmap); ax0.grid(0)
+                ax0.text(T_-0.5, 0.7, '∎', color = 'r', fontsize = 20)
+                
+                im = ax1.imshow(theta2_mean, cmap = c_cmap); ax1.grid(0)
+                ax1.text(T_-0.5, 0.7, '∎', color = 'g', fontsize = 20)
+                
+                ax2.plot(self.range_TR[:T_], theta2_mean_global[:T_], c = 'g', lw = 1.5)
+                ax2.plot(self.range_TR[:T_], theta1_mean_global[:T_], c = 'r', lw = 1.5)
+                
+                #ax2.plot(self.range_TR[:T_], phi1_mean[sector, :][:T_], color = c_cmap(sector))
+                #ax2.plot(self.range_TR[:T_], phi2_mean[sector, :][:T_], color = 'lightgray')
+                
+                f.subplots_adjust(right=0.8)
+                cbar_ax = f.add_axes([0.85, 0.15, 0.05, 0.7])
+                f.colorbar(im, cax = cbar_ax, norm = norm_)
                       
             else:  # global angle distribution 
+                fig = plt.figure(figsize=(12, 6))
+                with sns.axes_style("white"):
+                    ax1 = fig.add_subplot(121)
+                    ax2 = fig.add_subplot(122)
+                
+                plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
+                ax1.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+                ax1.set_xlim(0, T_*self.TR*1000)
+                ax1.set_xlabel('Time [s]', fontsize = 15)
+                ax1.set_ylabel('$\\theta$', fontsize = 17)
+
+                ax2.set_ylabel('$\\phi$', fontsize = 17)
+                ax2.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+                ax2.set_xlim(0, T_*self.TR*1000)
+                ax2.set_xlabel('Time [s]', fontsize = 15)
+                
                 for i in self.range_[:T_]:
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
@@ -784,8 +806,9 @@ class ComboDataSR_3D:
                 ax2.plot(self.range_TR[:T_], phi1_mean_global[:T_], 'r', label = 'Stretch')
                 ax2.plot(self.range_TR[:T_], phi2_mean_global[:T_], 'g', label = 'Compression')
                 ax2.legend(loc = 'lower right')
+                ax1.grid(0); ax2.grid(0)
             
-            plt.subplots_adjust(wspace=0.1)
+            plt.subplots_adjust(wspace = 0.2)
             plt.show()
         
         if segment == 0:  # turn all return arrays global
@@ -837,7 +860,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D11-1_3d', n = 1)
+    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 1)
     
     # get info/generate data 
     run2.overview()
@@ -846,7 +869,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, slice_ = 8, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

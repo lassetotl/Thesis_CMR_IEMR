@@ -39,7 +39,6 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
 ## (41 minutes with non-eroded masks)
 
 # save characteristic time-points to calc average
-T_es_list = []
 T_ed_list = []
 
 df_list = []
@@ -74,6 +73,8 @@ for file in os.listdir('R:\Lasse\combodata_3d_shax'):
     T_ed = []
     for slice_ in range(1, slices):
         T_ed.append(run.__dict__['T_ed'][f'T_ed{slice_}'])
+        
+    T_es = run.__dict__['T_es']
         
     # curves for parameter analysis
     T_ed_min = np.min(np.array(T_ed))
@@ -179,10 +180,15 @@ for file in os.listdir('R:\Lasse\combodata_3d_shax'):
     basal_phi2 = np.sum(np.array(phi_comp[b_start:]), axis = 0) / a_length
     apical_phi2 = np.sum(np.array(phi_comp[:a_length]), axis = 0) / a_length
     
-    tcs_ = abs(np.max(basal_theta2) - np.max(apical_theta2))
-    tss_ = abs(np.min(basal_theta1) - np.min(apical_theta1))
+    #tcs_ = abs(np.max(basal_theta2) - np.max(apical_theta2))
+    #tss_ = abs(np.min(basal_theta1) - np.min(apical_theta1))
     pcs_ = abs(np.max(basal_phi2) - np.max(apical_phi2))  # switch min/max
     pss_ = abs(np.min(basal_phi1) - np.min(apical_phi1))
+    
+    # systolic theta unity, mean value of inner 80% of time interval
+    border = int(T_es*0.2)
+    tcs_ = abs(np.mean(basal_theta2[border : T_es-border]) - np.mean(apical_theta2[border : T_es-border]))
+    tss_ = abs(np.mean(basal_theta1[border : T_es-border]) - np.mean(apical_theta1[border : T_es-border]))
     
     # dataframe row
     df_list.append([filename, days, r_strain_peak, c_strain_peak, l_strain_peak, r_sr_max, \
@@ -199,15 +205,15 @@ print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st
 # dataframe analysis
 
 # Create the pandas DataFrame 
-'''
+#'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', 'GLS', \
                                          'GRSRs', 'GRSRd', 'GCSRd', 'GCSRs', 'GLSRd', 'GLSRs', \
                                                 'ts_max', 'ts_min', 'tc_max', 'tc_min', 'ps_max', \
                                                      'ps_min', 'pc_max', 'pc_min', 'tcs_diff', \
                                                          'tss_diff', 'pcs_diff', 'pss_diff', 'Condition']) 
-'''
+#'''
 # to analyze a generated csv file instead
-df = pandas.read_csv('combodata_analysis_3d')
+#df = pandas.read_csv('combodata_analysis_3d')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis_3d', sep=',', index=False, encoding='utf-8')

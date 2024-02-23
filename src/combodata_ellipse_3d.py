@@ -35,7 +35,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file ='mi_D4-6_41d'
+file ='mi_D4-6_10d'
 #file = 'mi_ten66-m2_'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
@@ -396,13 +396,16 @@ axs[1].text(T_ed_min-0.5, 0.7, '∎', color = 'g', fontsize = 20)
 axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
 #axs[2].plot(range(len(theta1)), theta1, 'gray')
+axs[2].axvline(T_es, color = 'k', lw = 0.6)
+axs[2].axvline(T_es - 0.2*T_es, color = 'gray', lw = 0.6)
+axs[2].axvline(0.2*T_es, color = 'gray', lw = 0.6)
+
 axs[2].plot(range(len(theta1)), basal_theta1, 'r-')
 axs[2].plot(range(len(theta1)), apical_theta1, 'r--')
 
 #axs[2].plot(range(len(theta2)), theta2, 'g')
 axs[2].plot(range(len(theta2)), basal_theta2, 'g-')
 axs[2].plot(range(len(theta2)), apical_theta2, 'g--')
-
 
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
@@ -434,6 +437,7 @@ axs[1].text(T_ed_min-0.5, 0.7, '∎', color = 'g', fontsize = 20)
 axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
 #axs[2].plot(range(len(theta1)), phi1, 'gray')
+axs[2].axvline(T_es, color = 'k', lw = 0.6)
 axs[2].plot(range(len(phi1)), basal_phi1, 'r-')
 axs[2].plot(range(len(phi1)), apical_phi1, 'r--')
 

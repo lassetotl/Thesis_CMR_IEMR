@@ -606,24 +606,41 @@ class ComboDataSR_2D:
             
             #angles over time
 
-            plt.figure(figsize = (10, 8))
-            plt.title(f'Regional radial concentration ({self.filename})', fontsize = 15)
-            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-            #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
-            plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
-            plt.xlabel('Time [s]', fontsize = 15)
-            plt.ylabel('Eigenvector angle $\\theta$', fontsize = 20)
-
             if segment == 1:  # mean angles segments
-                for sector in range(4):
-                    # which parameter is interesting to plot here?
-                    #plt.plot(range_TR, theta1_std, color = c_cmap(sector), label = 'Positive eigenvectors (stretch)')
-                    #plt.plot(range_TR, theta2_std, 'g', label = 'Negative eigenvectors (compression)')
-                    # difference
-                    plt.plot(self.range_TR, abs(theta1_mean[sector, :] - theta2_mean[sector, :]), color = c_cmap(sector))
-                    plt.legend(handles = legend_handles1, loc = 'lower right')
+                c = 'viridis'
+                c_cmap = plt.get_cmap(c)
+                cmax = np.max(theta1_mean)
+                cmin = np.min(theta1_mean)
+                norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
+            
+                f, (ax0, ax1, ax2) = plt.subplots(3, 1, figsize=(8, 4))
+                f.suptitle(f'Strain rate mean $\\theta$ [degrees] ({self.filename})')
+                
+                # smoothed mean stretch / compression
+                ax0.imshow(theta1_mean, cmap = c_cmap); ax0.grid(0)
+                ax0.text(self.T_ed-0.5, 0.7, '∎', color = 'r', fontsize = 20)
+                
+                im = ax1.imshow(theta2_mean, cmap = c_cmap); ax1.grid(0)
+                ax1.text(self.T_ed-0.5, 0.7, '∎', color = 'g', fontsize = 20)
+                
+                ax2.plot(self.range_TR[:self.T_ed], theta2_mean_global[:self.T_ed], c = 'g', lw = 1.5)
+                ax2.plot(self.range_TR[:self.T_ed], theta1_mean_global[:self.T_ed], c = 'r', lw = 1.5)
+                
+                #ax2.plot(self.range_TR[:T_], phi1_mean[sector, :][:T_], color = c_cmap(sector))
+                #ax2.plot(self.range_TR[:T_], phi2_mean[sector, :][:T_], color = 'lightgray')
+                
+                f.subplots_adjust(right=0.8)
+                cbar_ax = f.add_axes([0.85, 0.15, 0.05, 0.7])
+                f.colorbar(im, cax = cbar_ax, norm = norm_)
                       
             else:  # global angle distribution 
+                plt.figure(figsize = (10, 8))
+                plt.title(f'Regional radial concentration ({self.filename})', fontsize = 15)
+                plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+                #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
+                plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
+                plt.xlabel('Time [s]', fontsize = 15)
+                plt.ylabel('Eigenvector angle $\\theta$', fontsize = 20)
                 for i in self.range_:
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
@@ -687,7 +704,7 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D11-1_3d', n = 2)
+    run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 
@@ -699,7 +716,7 @@ if __name__ == "__main__":
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
-    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
