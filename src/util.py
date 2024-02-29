@@ -13,6 +13,7 @@ from matplotlib import patches
 from numpy.linalg import norm
 import pandas
 import statsmodels.api as sm
+from scipy import stats
 
 import scipy.io as sio
 import scipy.ndimage as ndi
@@ -170,11 +171,13 @@ def drop_outliers_IQR(df, column_name, threshold = 1.5):
     x = outliers_dropped['Day']
     y = outliers_dropped[column_name]
     
-    #model = sm.OLS(x, y).fit()
+    model = stats.linregress(x, y)
+    p_val = model.pvalue
     #print(model.pvalues)
     a, b = np.polyfit(x, y, 1)
+    
 
-    return outliers, outliers_dropped, a, b
+    return outliers, outliers_dropped, a, b, p_val
 
 def draw_ellipsoid(vec, val):
     # compute ellipsoid coordinates on standard basis

@@ -11,6 +11,7 @@ for correlation analysis.
 import os, time
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.lines import Line2D
 from ComboDataSR_3D import ComboDataSR_3D
 
@@ -205,15 +206,15 @@ print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st
 # dataframe analysis
 
 # Create the pandas DataFrame 
-#'''
+'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', 'GLS', \
                                          'GRSRs', 'GRSRd', 'GCSRd', 'GCSRs', 'GLSRd', 'GLSRs', \
                                                 'ts_max', 'ts_min', 'tc_max', 'tc_min', 'ps_max', \
                                                      'ps_min', 'pc_max', 'pc_min', 'tcs_diff', \
                                                          'tss_diff', 'pcs_diff', 'pss_diff', 'Condition']) 
-#'''
+'''
 # to analyze a generated csv file instead
-#df = pandas.read_csv('combodata_analysis_3d')
+df = pandas.read_csv('combodata_analysis_3d')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis_3d', sep=',', index=False, encoding='utf-8')
@@ -265,20 +266,51 @@ def ax_corr(ax, column_name):
 
 # plot linear regression with 95% confidence interval
 def sns_plot(column_name, ylabel_):
+    # linreg scatterplot
     s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
                     palette='Set1', height=5, aspect=1.1, legend = 0) 
     s.ax.set_ylabel(ylabel_, fontsize = 15)
     s.ax.set_xlabel('Days', fontsize = 15)
+    
+    
     
     temp_sham = drop_outliers_IQR(df_sham, column_name, 100)[1]
     temp_mi = drop_outliers_IQR(df_mi, column_name, 100)[1]
     # t-test
     #r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
     
+    # barplot p1 p40
+    temp_c1 =  drop_outliers_IQR(df[df['Day'] == 1], column_name, 100)[1]
+    temp_c40 =  drop_outliers_IQR(df[df['Day'] >= 40], column_name, 100)[1]
+    temp_c40['Day'].replace([41,42,43,44,45], 40, inplace = True)
+    
+    # grouped days 40+ together
+    temp_c = pandas.concat([temp_c1, temp_c40])
+    
+    # slope p-values
+    b_mi = drop_outliers_IQR(df_mi, column_name, 100)[4]
+    b_sham = drop_outliers_IQR(df_sham, column_name, 100)[4]
+    
+    print(b_mi)
+    print(b_sham)
+    
     #t test at start and end
     r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])
     r40 = stats.ttest_ind(temp_sham[temp_sham['Day'] >= 40][column_name], temp_mi[temp_mi['Day'] >= 40][column_name])
-   
+    
+    
+    # linreg slope pvalues (for scatter plot)
+    if b_mi < 0.001:
+        b_str1 = r'$p_{\beta_1} < 0.001$'
+    else:
+        b_str1 = r'$p_{\beta_1}$ = '+ f'{np.round(b_mi, 3)}'
+        
+    if b_sham < 0.001:
+        b_str2 = r'$p_{\beta_1} < 0.001$'
+    else:
+        b_str2 = r'$p_{\beta_1} = $' + f'{np.round(b_sham, 3)}'
+    
+    # ttest pvalues (for catplot)
     if r1[1] < 0.001:
         r_str1 = r'$p_{1} < 0.001$'
     else:
@@ -289,7 +321,25 @@ def sns_plot(column_name, ylabel_):
     else:
         r_str40 = r'$p_{40} = $' + f'{np.round(r40[1], 3)}'
     # return p value that represents linreg comparison
-    s.ax.text(22, np.min(df[column_name]), f'{r_str1}, {r_str40}', size=15, color='k')
+    #s.ax.text(22, np.min(df[column_name]), f'{b_str1}, {b_str2}', size=15, color='k')
+    s.ax.tick_params(axis='both', which='major', labelsize=13)
+    
+    c_cmap = mpl.colors.ListedColormap(sns.color_palette('Set1').as_hex())
+    legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = b_str1),
+              Line2D([0], [0], color = c_cmap(1), lw = 2, label = b_str2)]
+    
+    plt.legend(s, handles=legend_handles1, prop={'size': 12}); plt.show(s)
+    
+    
+    # catplot
+    c = sns.catplot(data = temp_c, x = 'Day', y = column_name, hue='Condition', hue_order=[1,0], \
+                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8)
+    c.ax.set_ylabel(ylabel_, fontsize = 15)
+    c.ax.set_xlabel('', fontsize = 15)
+    
+    c.ax.set_xticks([0,1], [r_str1, r_str40])
+    c.ax.tick_params(axis='both', which='major', labelsize=15)
+    
     
 #%%
 # peak strain values and dyssynchrony over time

@@ -669,7 +669,7 @@ class ComboDataSR_3D:
             plt.axhline(0, c = 'k', lw = 1)
 
             plt.xlim(0, T_*self.TR*1000)#; plt.ylim(0, 50)
-            plt.xlabel('Time [s]', fontsize = 15)
+            plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('$s^{-1}$', fontsize = 20)
             
             if segment == 1:
@@ -715,7 +715,7 @@ class ComboDataSR_3D:
             plt.axhline(0, c = 'k', lw = 1)
 
             plt.xlim(0, T_*self.TR*1000)#; plt.ylim(0, 50)
-            plt.xlabel('Time [s]', fontsize = 15)
+            plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
                 
             if segment == 1:
@@ -778,20 +778,20 @@ class ComboDataSR_3D:
                       
             else:  # global angle distribution 
                 fig = plt.figure(figsize=(12, 6))
-                with sns.axes_style("white"):
-                    ax1 = fig.add_subplot(121)
-                    ax2 = fig.add_subplot(122)
+                mpl.rc_file_defaults()  # remove sns style
+                ax1 = fig.add_subplot(121)
+                ax2 = fig.add_subplot(122)
                 
                 plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
                 ax1.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
                 ax1.set_xlim(0, T_*self.TR*1000)
-                ax1.set_xlabel('Time [s]', fontsize = 15)
+                ax1.set_xlabel('Time [ms]', fontsize = 15)
                 ax1.set_ylabel('$\\theta$', fontsize = 17)
 
                 ax2.set_ylabel('$\\phi$', fontsize = 17)
                 ax2.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
                 ax2.set_xlim(0, T_*self.TR*1000)
-                ax2.set_xlabel('Time [s]', fontsize = 15)
+                ax2.set_xlabel('Time [ms]', fontsize = 15)
                 
                 for i in self.range_[:T_]:
                     for sector in range(4):
@@ -860,7 +860,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 1)
+    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     run2.overview()
@@ -869,7 +869,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 1)
+    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
