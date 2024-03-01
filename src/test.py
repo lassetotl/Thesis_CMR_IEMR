@@ -137,6 +137,23 @@ print(theta_rad(vec[0], vec[1])*180/np.pi)
 print(theta_rad(vec[2], [0,0,1])*180/np.pi)
 print(theta_rad(vec[2], [1,0,0])*180/np.pi)
 print(theta_rad(vec[2], [0,1,0])*180/np.pi)
+
+
+#%%
+fig = plt.figure(figsize=plt.figaspect(1))
+ax = fig.add_subplot(111, projection='3d')
+plt.quiver(0, 0, 0, vec[0][0], vec[0][1], vec[0][2], color='r')
+plt.quiver(0, 0, 0, vec[0][0], vec[0][1], 0, color='r', linestyle='--')
+plt.quiver(0, 0, 0, vec[1][0], vec[1][1], vec[1][2], color='g')
+plt.quiver(0, 0, 0, vec[1][0], vec[1][1], 0, color='g', linestyle='--')
+plt.quiver(0, 0, 0, vec[2][0], vec[2][1], vec[2][2], color='b')
+plt.quiver(0, 0, 0, vec[2][0], vec[2][1], 0, color='b', linestyle='--')
+lim = 1
+ax.set_xlim([-lim, lim])
+ax.set_ylim([-lim, lim])
+ax.set_zlim([-lim, lim])
+plt.show()
+
 #%%
 u, v = np.mgrid[0:2*np.pi:40j, 0:np.pi:20j]
 x1 = a * np.cos(u) * np.sin(v)

@@ -36,7 +36,7 @@ import seaborn as sns
 
 # create instance for each dataset (of type combodata)
 class ComboDataSR_2D:
-    def __init__(  # performs when an instance is created
+    def __init__(  # initialize when an instance is created
             self,
             filename,  # combodata file in 
             n = 2,  # every n'th voxel in mask sampled (n = 1 to sample all)
@@ -49,26 +49,26 @@ class ComboDataSR_2D:
         
         # generalize: make filename be whole directory line?
         self.data = sio.loadmat(f'R:\Lasse\combodata_shax\{filename}')["ComboData_thisonly"]
-        self.V = self.data['V'][0,0] #velocity field
-        self.M = self.data['Magn'][0,0] #magnitudes
-        self.mask = self.data['Mask'][0,0] #mask for non-heart tissue
-        self.mask_segment = self.data['MaskS_medium'][0,0]
+        self.V = self.data['V'][0,0]  # velocity field matrix
+        self.M = self.data['Magn'][0,0]  # magnitude matrix
+        self.mask = self.data['Mask'][0,0]  # binary mask of myocardium
+        self.mask_segment = self.data['MaskS_medium'][0,0]  # sector mask matrix
         
-        self.T = len(self.V[0,0,0,:,0]) #Total amount of time steps
+        self.T = len(self.V[0,0,0,:,0])  #Total amount of time steps
         self.T_es = self.data['TimePointEndSystole'][0,0][0][0]
         self.T_ed = self.data['TimePointEndDiastole'][0,0][0][0]
-        self.res = self.data['Resolution'][0,0][0][0]  # temporal resolution, need this for correct SR units?
-        self.TR = self.data['TR'][0,0][0][0]     
+        self.res = self.data['Resolution'][0,0][0][0]  # temporal resolution
+        self.TR = self.data['TR'][0,0][0][0]  # repetition time
         
-        # infarct sector, arbitrary if no infarct sector in metadata
-        self.infarct = 0
-        self.mis = [4, 13]  # arbitrary choice
+        # infarct sector, arbitrary choice if no infarct sector in metadata
+        self.infarct = 0  # MI true = 1 or false = 0
+        self.mis = [4, 13]  # similar sectors to MI hearts, with roughly equal distribution of voxels for 4 groups
         l = self.filename.split('_')
         if l[0] == 'mi' and (any(np.isnan(self.data['InfarctSector'][0,0][0])) == False):
-            self.mis = self.data['InfarctSector'][0,0][0]
+            self.mis = self.data['InfarctSector'][0,0][0]  # infarc sector range tuple
             self.infarct = 1  
         
-        # segment slices alloted to non-infarct sectors, rounded down to int
+        # segment slices alloted to non-infarct sectors, rounded down
         if self.mis[0] < self.mis[1]:
             infarct_length = self.mis[1] - self.mis[0]  # length in nr of sectors
         else:
@@ -76,9 +76,10 @@ class ComboDataSR_2D:
         
         # amount of segments in each remaining slice
         self.sl = int(np.floor((36 - abs(infarct_length))/6))
-        
-    # calculate strain rate tensor for given point (x, y) and time t, 
-    # and a mask for this timepoint t using Selskog method
+    
+    ### internal functions (prefixed by '_') are called by the main methods ###
+    
+    # calculate strain rate tensor for given point (x, y) and time t
     def _D_ij_2D(self, x, y, t): 
         L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
         
@@ -95,8 +96,7 @@ class ComboDataSR_2D:
         D_ij = 0.5*(L + L.T) #Strain rate tensor from Jacobian       
         return D_ij
     
-    # input array of strain rate data
-    # (used internally by later methods)
+    # input array of measured strain rate data
     def _strain(self, strain_rate, weight = 10):
         # weighting for integrals in positive/flipped time directions
         # cyclic boundary conditions
@@ -107,7 +107,9 @@ class ComboDataSR_2D:
         strain_flipped = np.flip(cumtrapz(strain_rate[::-1], self.range_TR[::-1], initial=0))
         return (w*strain + w_f*strain_flipped)/2
     
+    ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 
     
+    # print out a short data overview
     def overview(self):
         print(f'{self.filename} overview:')
         print(f'Velocity field shape: {np.shape(self.V)}')
@@ -118,8 +120,8 @@ class ComboDataSR_2D:
         if self.infarct == 1:
             print(f'Infarct sector at {self.mis}')
         else:
-            print(f'No infarct sector found in this slice, sector 1 set as {self.mis}')
-            
+            print(f'No infarct sector found in this slice, sector 1 set as {self.mis}')      
+    
     # plots vector field over time, saves video, returns global radial velocity
     def velocity(self):
         # range of time-points
@@ -138,27 +140,24 @@ class ComboDataSR_2D:
         
         for t in self.range_:
             
-            frame1 = self.M[:, :, 0, t] #photon density at time t
+            frame1 = self.M[:, :, 0, t]  # proton density at time t
             mask_t = self.mask[:, :, 0, t]
             
             plt.subplots(figsize=(10,10))
-            #ax = plt.gca()
-            
-            
             plt.imshow(frame1.T/np.max(frame1), origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
             
-            #find center of mass of filled mask (middle of the heart)
+            # find center of mass of filled mask (middle of the heart)
             cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
             
             plt.title(f'Velocity plot over proton density at timepoint t = {t} ({self.filename})', fontsize = 15)
             
             
-            #certainty matrix
+            # certainty matrix
             C = frame1/np.max(frame1)
             
-            #noise reduction
-            vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*C, sigma = 2)*mask_t #x components of velocity w mask
-            vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*C, sigma = 2)*mask_t #y components 
+            # noise reduction
+            vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*C, sigma = 2)*mask_t  # x components of velocity w mask
+            vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*C, sigma = 2)*mask_t  # y components 
             
             # vector decomposition
             for x in range(0, self.ax, self.n):
@@ -176,7 +175,7 @@ class ComboDataSR_2D:
             
             plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
           
-            w = 25 # +- window from center of mass at t = 0
+            w = 25  # +- window from center of mass at t = 0
             plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
             plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
             plt.show()
@@ -192,10 +191,11 @@ class ComboDataSR_2D:
         
         # save video in folder named after filename
         filenames = [f'R:\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
-
-        with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Velocity.gif', fps=5) as writer:    # inputs: filename, frame per second
+        
+        # create .mp4 or .gif files from Vdump folder
+        with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Velocity.gif', fps=5) as writer:
             for filename in filenames:
-                image = imageio.imread(filename)                         # load the image file
+                image = imageio.imread(filename)  # load the image file
                 writer.append_data(image)
         
         return self.gr
@@ -203,7 +203,7 @@ class ComboDataSR_2D:
     # set plot = 0 to ignore plotting and just calculate global strain rate
     # set save = 0 to avoid overwriting current .mp4 and .npy files
     # set segment = 1 to calculate/plot strain rate over 4 sectors
-    # (method always calculates in sectors, but sums sectors if segment = 0 after saving synchrony parameters)
+    # (method always calculates in sectors, but sums sectors if segment = 0 after saving dyssynchrony parameters)
     def strain_rate(self, ellipse = 1, plot = 1, save = 1, segment = 0):  
         # range of time-points
         self.range_ = np.array(range(self.T_ed))
@@ -218,8 +218,8 @@ class ComboDataSR_2D:
         self.c_matrix = np.zeros((4, self.T_ed)); self.c_matrix[:, :] = np.nan
 
         # for each segment, we store angles corresponding to positive/negative eigenvalues 
-        self.theta1 = np.zeros((4, self.T_ed), dtype = 'object') # 'positive' angles (stretch direction)
-        self.theta2 = np.zeros((4, self.T_ed), dtype = 'object') # 'negative' angles (compression direction)
+        self.theta1 = np.zeros((4, self.T_ed), dtype = 'object')  # 'positive' angles (stretch direction)
+        self.theta2 = np.zeros((4, self.T_ed), dtype = 'object')  # 'negative' angles (compression direction)
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
@@ -258,8 +258,8 @@ class ComboDataSR_2D:
         for t in self.range_:
 
             # combodata mask 
-            mask_t = self.mask[:, :, 0, t] #mask at this timepoint
-            mask_segment_t = self.mask_segment[:, :, 0, t] #mask at this timepoint
+            mask_t = self.mask[:, :, 0, t]  #mask at this timepoint
+            mask_segment_t = self.mask_segment[:, :, 0, t]  #mask at this timepoint
             
             #find center of mass of filled mask (middle of the heart)
             cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
@@ -314,6 +314,8 @@ class ComboDataSR_2D:
                         
                         # vector between center of mass and point (x, y) 
                         r = np.array([x - cx, y - cy])
+                        
+                        # plot r-vector, only for troubleshooting
                         #plt.quiver(cx, cy, r[0], r[1], scale = 50, width = 0.001)
                         
                         # index of eigenvalues
@@ -321,13 +323,13 @@ class ComboDataSR_2D:
                         val_min_i = np.argmin(val)  # most negative
                         
                         theta = theta_rad(r, vec[val_max_i])  # angle between highest eigenvector and r
-                        theta_ = theta_rad(r, vec[val_min_i]) # angle between lowest eigenvector and r
+                        theta_ = theta_rad(r, vec[val_min_i])  # angle between lowest eigenvector and r
                         
                         # local contribution
                         sect_xy = mask_segment_t[x, y]  # sector value in (x,y)
                         
                         # need two ranges for every segment to counter invalid ranges (f.ex. range(33, 17))
-                        # all values that add/subtract risk becoming negative or >36, thus % application
+                        # all values that add/subtract risk becoming negative or >36, solved by %
                         mis = self.mis; sl = self.sl
                         range0 = range(mis[0], mis[1]); range0_ = range(mis[1], mis[0])
                         range1 = range((mis[0]-sl)%36, mis[0]); range1_ = range(mis[0], (mis[0]-sl)%36)

@@ -19,6 +19,7 @@ from matplotlib.lines import Line2D
 from numpy.linalg import norm
 from util import theta_rad, running_average, clockwise_angle
 
+
 import scipy.io as sio
 import scipy.ndimage as ndi 
 import scipy.interpolate as scint
@@ -66,11 +67,11 @@ class ComboDataSR_3D:
         # dictionary keys for all slices
         for slice_ in range(self.slices):
             self.V[f'V{slice_ + 1}'] = np.array(self.data[self.data['V'][idx[slice_], 0]])  # velocity field for one slice
-            self.M[f'M{slice_ + 1}'] = np.array(self.data[self.data['Magn'][idx[slice_], 0]]) #magnitudes
-            self.mask[f'mask{slice_ + 1}'] = np.array(self.data[self.data['Mask'][idx[slice_], 0]]) #mask for non-heart tissue 
+            self.M[f'M{slice_ + 1}'] = np.array(self.data[self.data['Magn'][idx[slice_], 0]])  #magnitudes
+            self.mask[f'mask{slice_ + 1}'] = np.array(self.data[self.data['Mask'][idx[slice_], 0]])  #mask for non-heart tissue 
             self.mask_segment[f'mask_segment{slice_ + 1}'] = np.array(self.data[self.data['MaskS_medium'][idx[slice_], 0]])
             self.T_ed[f'T_ed{slice_ + 1}'] = int(np.array(self.data[self.data['TimePointEndDiastole'][idx[slice_], 0]]))
-            self.mis[f'mis{slice_ + 1}'] = np.array(self.data[self.data['InfarctSector'][idx[slice_], 0]]) #mask for non-heart tissue 
+            self.mis[f'mis{slice_ + 1}'] = np.array(self.data[self.data['InfarctSector'][idx[slice_], 0]])  #mask for non-heart tissue 
         
             a = []  # construct ShortDescription
             for i in range(len(self.data[self.ShortDesc[0,0]])):
@@ -86,12 +87,12 @@ class ComboDataSR_3D:
         
         a = ''.join(a).split(' ')[1:3]
         self.ID = a[0] + ' ' + a[1]
-        self.T = len(self.V['V1'][0,:,0,0,0]) #Total amount of time steps     
+        self.T = len(self.V['V1'][0,:,0,0,0])  #Total amount of time steps     
         
         # infarct sector, arbitrary if no infarct sector in metadata
         self.infarct = 0  # true/false
         self.mis = [4, 13]  # arbitrary choice
-        l = self.filename.split('_')
+        #l = self.filename.split('_')
         #if l[0] == 'mi' and (any(np.isnan(self.data['InfarctSector'][0,0][0])) == False):
         #    self.mis = self.data['InfarctSector'][0,0][0]
         #    self.infarct = 1  
@@ -104,7 +105,9 @@ class ComboDataSR_3D:
         
         # amount of segments in each remaining slice
         self.sl = int(np.floor((36 - abs(infarct_length))/6))
-        
+    
+    ### internal functions (prefixed by '_') are called by the main methods ###    
+    
     # calculate strain rate tensor for given point (x, y) and time t, 
     # and a mask for this timepoint t using Selskog method
     def _D_ij_3D(self, x, y, t): 
@@ -184,6 +187,7 @@ class ComboDataSR_3D:
         strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed]/1000, self.range_TR[::-1][:T_ed], initial=0))
         return (w*strain + w_f*strain_flipped)/2
     
+    ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 
     
     def overview(self):
         print(f'{self.filename} global overview:')
@@ -211,7 +215,7 @@ class ComboDataSR_3D:
         # range of time-points
         self.range_ = range(self.T)
         slicenr = self.slicenr[f"slice {slice_}"]
-        w = 25 # +- window from center of mass at t = 0
+        w = 25  # +- window from center of mass at t = 0
         if dim == '3D':
             c_cmap = plt.get_cmap('plasma')
             norm_ = mpl.colors.Normalize(vmin = -1.2, vmax = 1.2)
@@ -232,7 +236,7 @@ class ComboDataSR_3D:
         
         for t in self.range_:
             
-            frame1 = M[t, 0, :, :].T #photon density at time t
+            frame1 = M[t, 0, :, :].T  #proton density at time t
             mask_t = mask[t, 0, :, :].T
             
             #find center of mass of filled mask (middle of the heart)
@@ -347,8 +351,8 @@ class ComboDataSR_3D:
         self.l_matrix = np.zeros((4, T_ed)); self.l_matrix[:, :] = np.nan
 
         # for each segment, we store angles distributions corresponding to positive/negative eigenvalues 
-        self.theta1 = np.zeros((4, T_ed), dtype = 'object') # 'positive' angles (stretch direction)
-        self.theta2 = np.zeros((4, T_ed), dtype = 'object') # 'negative' angles (compression direction)
+        self.theta1 = np.zeros((4, T_ed), dtype = 'object')  # 'positive' angles (stretch direction)
+        self.theta2 = np.zeros((4, T_ed), dtype = 'object')  # 'negative' angles (compression direction)
         self.phi1 = np.zeros((4, T_ed), dtype = 'object') 
         self.phi2 = np.zeros((4, T_ed), dtype = 'object')
         
@@ -383,14 +387,14 @@ class ComboDataSR_3D:
         
         print(f'Calculating Strain rate for {ID}...')
         
-        run = 1
+        run = 1  #
         for t in self.range_:
 
             # combodata mask 
-            mask_t = mask[t, 0, :, :].T #mask at this timepoint
-            mask_ta = mask_a[t, 0, :, :].T #mask above
-            mask_tb = mask_b[t, 0, :, :].T #mask below
-            mask_segment_t = mask_segment[t, 0, :, :].T #mask at this timepoint
+            mask_t = mask[t, 0, :, :].T  #mask at this timepoint
+            mask_ta = mask_a[t, 0, :, :].T  #mask above
+            mask_tb = mask_b[t, 0, :, :].T  #mask below
+            mask_segment_t = mask_segment[t, 0, :, :].T  #mask at this timepoint
             
             #find center of mass of filled mask (middle of the heart)
             cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
@@ -485,8 +489,8 @@ class ComboDataSR_3D:
                         
                         # find angle between xy-projections and r
                         theta = theta_rad(r, vec[val_max_i][:-1])  # highest eigenvector 
-                        theta_ = theta_rad(r, vec[val_min_i][:-1]) # lowest eigenvector
-                        theta__ = theta_rad(r, vec[val_last_i][:-1]) # third eigenvector 
+                        theta_ = theta_rad(r, vec[val_min_i][:-1])  # lowest eigenvector
+                        theta__ = theta_rad(r, vec[val_last_i][:-1])  # third eigenvector 
                         
                         # projection angle in (r,z)-plane
                         a,b,c = vec[val_max_i]
@@ -551,13 +555,22 @@ class ComboDataSR_3D:
                         else:  # avoid plotting ellipses in invalid ranges
                             continue
                         
+                        # longitudinal eigenvalue projection
+                        val_l = (val[val_max_i])*abs(np.cos(phi))
+                        val_l_ = (val[val_min_i])*abs(np.cos(phi_))
+                        val_l__ = (val[val_last_i])*abs(np.cos(phi__))
+                        
+                        # in-plane projection of eigenvalue vector length
+                        val_transverse = np.sqrt(val[val_max_i]**2 - val_l**2) * np.sign(val[val_max_i])
+                        val_transverse_ = np.sqrt(val[val_min_i]**2 - val_l_**2) * np.sign(val[val_min_i])
+                        val_transverse__ = np.sqrt(val[val_last_i]**2 - val_l__**2) * np.sign(val[val_last_i])
+                        
                         # vector decomposition along radial (r) and circumferential (c) axes
-                        self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
-                            + (val[val_min_i])*abs(np.cos(theta_)) + (val[val_last_i])*abs(np.cos(theta__))
-                        self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
-                            + (val[val_min_i])*abs(np.sin(theta_)) + (val[val_last_i])*abs(np.sin(theta__))
-                        self.l_matrix[sector, t] += (val[val_max_i])*abs(np.cos(phi)) \
-                            + (val[val_min_i])*abs(np.cos(phi_)) + (val[val_last_i])*abs(np.cos(phi__))
+                        self.r_matrix[sector, t] += val_transverse*abs(np.cos(theta)) \
+                            + val_transverse_*abs(np.cos(theta_)) + val_transverse__*abs(np.cos(theta__))
+                        self.c_matrix[sector, t] += val_transverse*abs(np.sin(theta)) \
+                            + val_transverse_*abs(np.sin(theta_)) + val_transverse__*abs(np.sin(theta__))
+                        self.l_matrix[sector, t] += val_l + val_l_ + val_l__
                         
                         # angle sum collected, scaled to get average angle each t
                         # does not assume that each 2d tensor has a positive and negative eigenvector
@@ -869,7 +882,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, slice_ = 8, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
