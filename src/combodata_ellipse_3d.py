@@ -262,8 +262,8 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     w_f = np.tanh(range_/weight) 
 
     strain = cumtrapz(strain_rate, range_TR/1000, initial=0)
-    strain_flipped = np.flip(cumtrapz(strain_rate[::-1]/1000, range_TR[::-1], initial=0))
-    return (w*strain + w_f*strain_flipped)/2
+    strain_flipped = np.flip(cumtrapz(strain_rate[::-1], range_TR[::-1]/1000, initial=0))
+    return (w*strain + 0*w_f*strain_flipped)/1
 
 # derive strain from the total sr curve, not sum of strain curves
 #ls = strain(lsr, T_ed_min)*100000

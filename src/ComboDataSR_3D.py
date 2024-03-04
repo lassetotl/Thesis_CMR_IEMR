@@ -23,7 +23,7 @@ from util import theta_rad, running_average, clockwise_angle
 import scipy.io as sio
 import scipy.ndimage as ndi 
 import scipy.interpolate as scint
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumtrapz, simpson
 import imageio
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
@@ -183,8 +183,8 @@ class ComboDataSR_3D:
         w = np.tanh((T_ed - 1 - self.range_[:T_ed])/weight) 
         w_f = np.tanh(self.range_[:T_ed]/weight) 
 
-        strain = cumtrapz(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial=0)
-        strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed]/1000, self.range_TR[::-1][:T_ed], initial=0))
+        strain = cumtrapz(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial = 0)
+        strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed], self.range_TR[::-1][:T_ed]/1000, initial = 0))
         return (w*strain + w_f*strain_flipped)/2
     
     ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 
@@ -882,7 +882,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, slice_ = 8, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

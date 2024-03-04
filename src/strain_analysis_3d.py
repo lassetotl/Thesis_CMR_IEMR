@@ -30,8 +30,8 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     w_f = np.tanh(range_/weight) 
 
     strain = cumtrapz(strain_rate, range_TR/1000, initial=0)
-    strain_flipped = np.flip(cumtrapz(strain_rate[::-1]/1000, range_TR[::-1], initial=0))
-    return (w*strain + w_f*strain_flipped)/2
+    strain_flipped = np.flip(cumtrapz(strain_rate[::-1], range_TR[::-1]/1000, initial=0))
+    return (w*strain + 0*w_f*strain_flipped)/1
 
 #%%
 ## This segment will take some time to run, and will overwrite saved data if save = 1 !! ##
@@ -206,15 +206,15 @@ print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st
 # dataframe analysis
 
 # Create the pandas DataFrame 
-'''
+#'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', 'GLS', \
                                          'GRSRs', 'GRSRd', 'GCSRd', 'GCSRs', 'GLSRd', 'GLSRs', \
                                                 'ts_max', 'ts_min', 'tc_max', 'tc_min', 'ps_max', \
                                                      'ps_min', 'pc_max', 'pc_min', 'tcs_diff', \
                                                          'tss_diff', 'pcs_diff', 'pss_diff', 'Condition']) 
-'''
+#'''
 # to analyze a generated csv file instead
-df = pandas.read_csv('combodata_analysis_3d')
+#df = pandas.read_csv('combodata_analysis_3d')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis_3d', sep=',', index=False, encoding='utf-8')
