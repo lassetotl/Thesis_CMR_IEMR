@@ -27,7 +27,7 @@ from scipy.integrate import cumtrapz, simpson
 import imageio
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
-import seaborn as sns; sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
+import seaborn as sns
 import h5py
 
 # create instance for each dataset (of type combodata)
@@ -181,8 +181,8 @@ class ComboDataSR_3D:
         # weighting for integrals in positive/flipped time directions
         # cyclic boundary conditions
         w = np.tanh((T_ed - 1 - self.range_[:T_ed])/weight) 
-        w_f = np.tanh(self.range_[:T_ed]/weight) 
-
+        w_f = np.tanh(self.range_[:T_ed]/weight)
+        
         strain = cumtrapz(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial = 0)
         strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed], self.range_TR[::-1][:T_ed]/1000, initial = 0))
         return (w*strain + w_f*strain_flipped)/2
@@ -384,6 +384,8 @@ class ComboDataSR_3D:
         if save == 1:
             if os.path.exists(f'R:\Lasse\plots\MP4\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
+        
+        sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
         
         print(f'Calculating Strain rate for {ID}...')
         
@@ -704,9 +706,13 @@ class ComboDataSR_3D:
             if segment == 0:
                 plt.title(f'Global Strain Rate ({ID})', fontsize = 15)
                 
-                plt.plot(self.range_TR[:len(r_sr_global)], running_average(r_sr_global, 4), c = 'darkblue', lw=2, label = 'Radial strain')
-                plt.plot(self.range_TR[:len(c_sr_global)], running_average(c_sr_global, 4), c = 'chocolate', lw=2, label = 'Circumferential strain')
-                plt.plot(self.range_TR[:len(l_sr_global)], running_average(l_sr_global, 4), c = 'darkgreen', ls='--', lw=2, label = 'Longitudinal strain')
+                rsr = running_average(r_sr_global, 4)
+                csr = running_average(c_sr_global, 4)
+                lsr = running_average(l_sr_global, 4)
+                
+                plt.plot(self.range_TR[:len(r_sr_global)], rsr, c = 'darkblue', lw=2, label = 'Radial strain')
+                plt.plot(self.range_TR[:len(c_sr_global)], csr, c = 'chocolate', lw=2, label = 'Circumferential strain')
+                plt.plot(self.range_TR[:len(l_sr_global)], lsr, c = 'darkgreen', ls='--', lw=2, label = 'Longitudinal strain')
                 
                 plt.legend()
 
@@ -749,9 +755,19 @@ class ComboDataSR_3D:
             if segment == 0:
                 plt.title(f'Global Strain ({ID})', fontsize = 15)
                 
-                plt.plot(self.range_TR[:len(rs)], rs, c = 'darkblue', lw=2, label = 'Radial strain')
-                plt.plot(self.range_TR[:len(cs)], cs, c = 'chocolate', lw=2, label = 'Circumferential strain')
-                plt.plot(self.range_TR[:len(ls)], ls, c = 'darkgreen', lw=2, ls='--', label = 'Longitudinal strain')
+                rs = 100*self._strain(r_sr_global, T_)
+                cs = 100*self._strain(c_sr_global, T_)
+                ls = 100*self._strain(l_sr_global, T_)
+                
+                plt.plot(self.range_TR[:len(rsr)], rs, c = 'darkblue', lw=2, label = 'Radial strain')
+                plt.plot(self.range_TR[:len(csr)], cs, c = 'chocolate', lw=2, label = 'Circumferential strain')
+                plt.plot(self.range_TR[:len(lsr)], ls, c = 'darkgreen', lw=2, ls='--', label = 'Longitudinal strain')
+                
+                #plt.plot(self.range_TR[:len(cs)], np.gradient(cs), label = 'derived from cs', color = 'r')
+                #plt.plot(self.range_TR[:len(rs)], np.gradient(rs), label = 'derived from rs', color = 'b')
+                #plt.plot(self.range_TR[:len(ls)], np.gradient(ls), label = 'derived from ls', color = 'g')
+                
+                #plt.plot(self.range_TR[:len(cs)], r_sr_global[:len(cs)])
                 
                 plt.legend()
             
@@ -873,7 +889,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 2)
+    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 1)
     
     # get info/generate data 
     run2.overview()
@@ -882,7 +898,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, slice_ = 8, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

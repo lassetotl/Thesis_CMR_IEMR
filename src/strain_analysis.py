@@ -14,13 +14,14 @@ for correlation analysis
 import os, time
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib as mpl
 from matplotlib.lines import Line2D
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumtrapz
 from scipy import stats
 from util import running_average, drop_outliers_IQR
 import pandas 
-import seaborn as sns
+import seaborn as sns; sns.set()
 
 #%%
 ## This segment will take some time to run, and will overwrite saved data if save = 1 !! ##
@@ -80,6 +81,9 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     r_strain_peak_mean = np.mean(run.__dict__['r_peakvals'])
     c_strain_peak_mean = np.mean(run.__dict__['c_peakvals'])
     
+    r_strain_peak_std = np.std(run.__dict__['r_peakvals'])
+    c_strain_peak_std = np.std(run.__dict__['c_peakvals'])
+    
     # expressed as percentage of cardiac cycle duration
     TR = run.__dict__['TR']
     r_strain_peaktime_std = 100*np.std(run.__dict__['r_peaktime'])/(TR*T_ed_list[-1])
@@ -101,7 +105,7 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     df_list.append([filename, days, r_strain_peak_mean, c_strain_peak_mean, \
                     r_strain_peaktime_std, c_strain_peaktime_std, r_sr_max, \
                         r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
-                            a2_mean_max, a2_mean_min, condition])
+                            a2_mean_max, a2_mean_min, r_strain_peak_std, c_strain_peak_std, condition])
     filenr += 1
     if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
         os.makedirs(f'R:\Lasse\plots\MP4\{file}')
@@ -309,15 +313,15 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-'''
+#'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'a1_mean_max', 'a1_mean_min', \
-                                                    'a2_mean_max', 'a2_mean_min', 'Condition']) 
-'''
+                                                    'a2_mean_max', 'a2_mean_min', 'r_std', 'c_std', 'Condition']) 
+#'''
 # to analyze a generated csv file instead
-df = pandas.read_csv('combodata_analysis')
+#df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
@@ -372,7 +376,7 @@ def ax_corr(ax, column_name):
     '''
     
 # plot linear regression with 95% confidence interval
-def sns_plot(column_name, ylabel_):
+def sns_plot_(column_name, ylabel_):
     s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
                     palette='Set1', height=5, aspect=1.1, legend = 0) 
     s.ax.set_ylabel(ylabel_, fontsize = 15)
@@ -399,6 +403,82 @@ def sns_plot(column_name, ylabel_):
     # return p value that represents linreg comparison
     s.ax.text(22, np.min(df[column_name]), f'{r_str1}, {r_str40}', size=15, color='k')
     
+# plot linear regression with 95% confidence interval
+def sns_plot(column_name, ylabel_):
+    # linreg scatterplot
+    s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
+                    palette='Set1', height=5, aspect=1.1, legend = 0) 
+    s.ax.set_ylabel(ylabel_, fontsize = 15)
+    s.ax.set_xlabel('Days', fontsize = 15)
+    
+    
+    
+    temp_sham = drop_outliers_IQR(df_sham, column_name, 100)[1]
+    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)[1]
+    # t-test
+    #r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
+    
+    # barplot p1 p40
+    temp_c1 =  drop_outliers_IQR(df[df['Day'] == 1], column_name, 100)[1]
+    temp_c40 =  drop_outliers_IQR(df[df['Day'] >= 40], column_name, 100)[1]
+    temp_c40['Day'].replace([41,42,43,44,45], 40, inplace = True)
+    
+    # grouped days 40+ together
+    temp_c = pandas.concat([temp_c1, temp_c40])
+    
+    # slope p-values
+    b_mi = drop_outliers_IQR(df_mi, column_name, 100)[4]
+    b_sham = drop_outliers_IQR(df_sham, column_name, 100)[4]
+    
+    print(b_mi)
+    print(b_sham)
+    
+    #t test at start and end
+    r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])
+    r40 = stats.ttest_ind(temp_sham[temp_sham['Day'] >= 40][column_name], temp_mi[temp_mi['Day'] >= 40][column_name])
+    
+    
+    # linreg slope pvalues (for scatter plot)
+    if b_mi < 0.001:
+        b_str1 = r'$p_{\beta_1} < 0.001$'
+    else:
+        b_str1 = r'$p_{\beta_1}$ = '+ f'{np.round(b_mi, 3)}'
+        
+    if b_sham < 0.001:
+        b_str2 = r'$p_{\beta_1} < 0.001$'
+    else:
+        b_str2 = r'$p_{\beta_1} = $' + f'{np.round(b_sham, 3)}'
+    
+    # ttest pvalues (for catplot)
+    if r1[1] < 0.001:
+        r_str1 = r'$p_{1} < 0.001$'
+    else:
+        r_str1 = fr'$p_{1} = ${np.round(r1[1], 3)}'
+        
+    if r40[1] < 0.001:
+        r_str40 = r'$p_{40} < 0.001$'
+    else:
+        r_str40 = r'$p_{40} = $' + f'{np.round(r40[1], 3)}'
+    # return p value that represents linreg comparison
+    #s.ax.text(22, np.min(df[column_name]), f'{b_str1}, {b_str2}', size=15, color='k')
+    s.ax.tick_params(axis='both', which='major', labelsize=13)
+    
+    c_cmap = mpl.colors.ListedColormap(sns.color_palette('Set1').as_hex())
+    legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = b_str1),
+              Line2D([0], [0], color = c_cmap(1), lw = 2, label = b_str2)]
+    
+    plt.legend(s, handles=legend_handles1, prop={'size': 12}); plt.show(s)
+    
+    
+    # catplot
+    c = sns.catplot(data = temp_c, x = 'Day', y = column_name, hue='Condition', hue_order=[1,0], \
+                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8)
+    c.ax.set_ylabel(ylabel_, fontsize = 15)
+    c.ax.set_xlabel('', fontsize = 15)
+    
+    c.ax.set_xticks([0,1], [r_str1, r_str40])
+    c.ax.tick_params(axis='both', which='major', labelsize=15)
+    
 #%%
 
 df_sham = df[df['Condition'] == 0]
@@ -406,6 +486,11 @@ df_mi = df[df['Condition'] == 1]
 
 sns_plot('GCS', ylabel_ = 'GCS [%]')
 sns_plot('GRS', ylabel_ = 'GRS [%]')
+sns_plot('Circ SDI', ylabel_ = 'CSDI [%]')
+sns_plot('Rad SDI', ylabel_ = 'RSDI [%]')
+
+sns_plot('r_std', ylabel_ = 'rstd [%]')
+sns_plot('c_std', ylabel_ = 'cstd [%]')
 
 sns_plot('GRSRs', ylabel_ = 'GRSRs [$s^{-1}$]')
 sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
@@ -418,6 +503,13 @@ sns_plot('a2_mean_max', ylabel_ = 'a2_mean_max [Degrees]')
 sns_plot('a2_mean_min', ylabel_ = 'a2_mean_min [Degrees]')
 
 #%%
+# table of (mean +- std) for each parameter in df, grouped by condition
+
+df_ = df.groupby(['Condition'], as_index = False).agg({'Rad SDI':[np.mean, np.std]})
+print(df_.round(3))
+
+#%%
+'''
 # peak strain values and dyssynchrony over time
 
 #convert from numeric to categorical for correct label
@@ -495,3 +587,4 @@ ax4.set_ylabel('a2_mean_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15);
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
 plt.show()
+'''

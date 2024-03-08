@@ -100,11 +100,11 @@ class ComboDataSR_2D:
     def _strain(self, strain_rate, weight = 10):
         # weighting for integrals in positive/flipped time directions
         # cyclic boundary conditions
-        w = np.tanh((self.T_ed-self.range_)/weight) 
+        w = np.tanh((self.T_ed - 1 - self.range_)/weight) 
         w_f = np.tanh(self.range_/weight) 
 
-        strain = cumtrapz(strain_rate, self.range_TR , initial=0)
-        strain_flipped = np.flip(cumtrapz(strain_rate[::-1], self.range_TR[::-1], initial=0))
+        strain = cumtrapz(strain_rate, self.range_TR/1000 , initial=0)
+        strain_flipped = np.flip(cumtrapz(strain_rate[::-1], self.range_TR[::-1]/1000, initial=0))
         return (w*strain + w_f*strain_flipped)/2
     
     ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 
@@ -207,7 +207,7 @@ class ComboDataSR_2D:
     def strain_rate(self, ellipse = 1, plot = 1, save = 1, segment = 0):  
         # range of time-points
         self.range_ = np.array(range(self.T_ed))
-        self.range_TR = self.range_*self.TR
+        self.range_TR = self.range_*self.TR*1000  # convert to ms
         
         # get data axis dimensions
         self.ax = len(self.mask[:,0,0,0])
@@ -253,6 +253,8 @@ class ComboDataSR_2D:
         if save == 1:
             if os.path.exists(f'R:\Lasse\plots\MP4\{self.filename}') == False:
                 os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
+                
+        sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
         
         print(f'Calculating Global Strain rate for {self.filename}...')
         for t in self.range_:
@@ -504,12 +506,12 @@ class ComboDataSR_2D:
             # plot strain rate
 
             plt.figure(figsize=(8, 6))
-            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axhline(0, c = 'k', lw = 1)
 
-            plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
-            plt.xlabel('Time [s]', fontsize = 15)
-            plt.ylabel('$s^{-1}$', fontsize = 20)
+            plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
+            plt.xlabel('Time [ms]', fontsize = 15)
+            plt.ylabel('$s^{-1}$', fontsize = 17)
             
             if segment == 1:
                 plt.title(f'Regional Strain rate ({self.filename})', fontsize = 15)
@@ -528,11 +530,17 @@ class ComboDataSR_2D:
                     
             if segment == 0:
                 plt.title(f'Global Strain rate ({self.filename})', fontsize = 15)
-                rsr = np.sum(self.r_matrix, axis = 0) / 4
-                csr = np.sum(self.c_matrix, axis = 0) / 4
+                rsr = running_average(np.sum(self.r_matrix, axis = 0) / 4, 4)
+                csr = running_average(np.sum(self.c_matrix, axis = 0) / 4, 4)
                 
-                plt.plot(self.range_TR, running_average(rsr, 4), c = 'darkblue', lw=2, label = 'Radial')
-                plt.plot(self.range_TR, running_average(csr, 4), c = 'chocolate', lw=2, label = 'Circumferential')
+                plt.plot(self.range_TR, rsr, c = 'darkblue', lw=2, label = 'Radial')
+                plt.plot(self.range_TR, csr, c = 'chocolate', lw=2, label = 'Circumferential')
+                
+                # plot peak values
+                plt.scatter(np.argmax(rsr)*self.TR*1000, np.max(rsr), color = 'darkblue', marker = 'x', s = 130)
+                plt.scatter(np.argmin(rsr)*self.TR*1000, np.min(rsr), color = 'darkblue', marker = 'x', s = 130)
+                plt.scatter(np.argmax(csr)*self.TR*1000, np.max(csr), color = 'chocolate', marker = 'x', s = 130)
+                plt.scatter(np.argmin(csr)*self.TR*1000, np.min(csr), color = 'chocolate', marker = 'x', s = 130)
                 
                 plt.legend()
 
@@ -563,10 +571,10 @@ class ComboDataSR_2D:
             #plt.axvline(self.T_ed*self.TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
             plt.axhline(0, c = 'k', lw = 1)
 
-            plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
-            plt.xlabel('Time [s]', fontsize = 15)
+            plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
+            plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
-            plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
                 
             if segment == 1:
                 plt.title(f'Regional Strain ({self.filename})', fontsize = 15)
@@ -581,7 +589,6 @@ class ComboDataSR_2D:
                     plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                     plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                 
-                
                 # control
                 #r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
                 #c_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
@@ -593,11 +600,14 @@ class ComboDataSR_2D:
             if segment == 0:
                 plt.title(f'Global Strain ({self.filename})', fontsize = 15)
                 
-                rs = 100*self._strain(np.sum(self.r_matrix, axis = 0) / 4)
-                cs = 100*self._strain(np.sum(self.c_matrix, axis = 0) / 4)
+                rs = 100*self._strain(r_sr_global)
+                cs = 100*self._strain(c_sr_global)
                 
                 plt.plot(self.range_TR, rs, c = 'darkblue', lw=2, label = 'Radial')
                 plt.plot(self.range_TR, cs, c = 'chocolate', lw=2, label = 'Circumferential')
+                
+                plt.scatter(np.argmax(rs)*self.TR*1000, np.max(rs), color = 'darkblue', marker = 'x', s = 130)
+                plt.scatter(np.argmin(cs)*self.TR*1000, np.min(cs), color = 'chocolate', marker = 'x', s = 130)
                 
                 plt.legend()
             
@@ -636,13 +646,14 @@ class ComboDataSR_2D:
                 f.colorbar(im, cax = cbar_ax, norm = norm_)
                       
             else:  # global angle distribution 
-                plt.figure(figsize = (10, 8))
-                plt.title(f'Regional radial concentration ({self.filename})', fontsize = 15)
-                plt.axvline(self.T_es*self.TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+                plt.figure(figsize = (8, 7))
+                mpl.rc_file_defaults()  # remove sns style
+                plt.title(f'Strain rate direction ({self.filename})', fontsize = 15)
+                plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2) #, label = 'End Systole')
                 #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
-                plt.xlim(0, self.T_ed*self.TR)#; plt.ylim(0, 50)
-                plt.xlabel('Time [s]', fontsize = 15)
-                plt.ylabel('Eigenvector angle $\\theta$', fontsize = 20)
+                plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
+                plt.xlabel('Time [ms]', fontsize = 15)
+                plt.ylabel('Eigenvector angle $\\theta$', fontsize = 15)
                 for i in self.range_:
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
@@ -652,6 +663,12 @@ class ComboDataSR_2D:
                 
                 plt.plot(self.range_TR, theta1_mean_global, 'r', lw=2, label = 'Positive eigenvectors (stretch)')
                 plt.plot(self.range_TR, theta2_mean_global, 'g', lw=2, label = 'Negative eigenvectors (compression)')
+                
+                plt.scatter(np.argmax(theta1_mean_global)*self.TR*1000, np.max(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
+                plt.scatter(np.argmin(theta1_mean_global)*self.TR*1000, np.min(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
+                plt.scatter(np.argmax(theta2_mean_global)*self.TR*1000, np.max(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
+                plt.scatter(np.argmin(theta2_mean_global)*self.TR*1000, np.min(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
+                
                 plt.legend(loc = 'upper right')
 
             plt.show()
@@ -663,8 +680,8 @@ class ComboDataSR_2D:
             #r_strain = 100*self._strain(self.r_matrix)
             #c_strain = 100*self._strain(self.c_matrix)
             
-            self.r_strain = rs
-            self.c_strain = cs
+            self.r_strain = r_sr_global
+            self.c_strain = c_sr_global
             
             self.theta1 = theta1_mean_global
             self.theta2 = theta2_mean_global
@@ -706,8 +723,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
-    #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
     
     # get info/generate data 
     run1.overview()
@@ -718,7 +735,8 @@ if __name__ == "__main__":
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
-    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
+    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

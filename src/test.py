@@ -13,6 +13,7 @@ import matplotlib.pyplot as plt
 import scipy.ndimage as ndi 
 import plotly.graph_objects as go
 from plotly.offline import plot
+from scipy.integrate import cumulative_trapezoid
 
 #%%
 
@@ -255,3 +256,13 @@ a = [[0,0,0,0,0],
      [0,0,3,0,0]]
 
 c,d = nearest_nonzero_idx(a, 1, 1)
+
+#%%
+
+x = np.linspace(0, 10, 60)
+y = np.sin(x)
+
+plt.plot(y, label = 'sin(x)')
+plt.plot(cumulative_trapezoid(y, x, initial = 0)/10, label = 'integrated')
+plt.plot(np.gradient(y), label = 'derived')
+plt.legend(); plt.show()
