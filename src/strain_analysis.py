@@ -317,8 +317,8 @@ auc_sham = np.array(auc_sham)
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
-                                                'a1_mean_max', 'a1_mean_min', \
-                                                    'a2_mean_max', 'a2_mean_min', 'r_std', 'c_std', 'Condition']) 
+                                                'TSd', 'TSs', \
+                                                    'TCs', 'TCd', 'r_std', 'c_std', 'Condition']) 
 #'''
 # to analyze a generated csv file instead
 #df = pandas.read_csv('combodata_analysis')
@@ -497,15 +497,15 @@ sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
 sns_plot('GCSRs', ylabel_ = 'GCSRs [$s^{-1}$]')
 sns_plot('GCSRd', ylabel_ = 'GCSRd [$s^{-1}$]')
 
-sns_plot('a1_mean_max', ylabel_ = 'a1_mean_max [Degrees]')
-sns_plot('a1_mean_min', ylabel_ = 'a1_mean_min [Degrees]')
-sns_plot('a2_mean_max', ylabel_ = 'a2_mean_max [Degrees]')
-sns_plot('a2_mean_min', ylabel_ = 'a2_mean_min [Degrees]')
+sns_plot('TSd', ylabel_ = 'TSd [Degrees]')
+sns_plot('TSs', ylabel_ = 'TSs [Degrees]')
+sns_plot('TCs', ylabel_ = 'TCs [Degrees]')
+sns_plot('TCd', ylabel_ = 'TCd [Degrees]')
 
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-df_ = df.groupby(['Condition'], as_index = False).agg({'Rad SDI':[np.mean, np.std]})
+df_ = df.groupby(['Condition'], as_index = False).agg({'TCd':[np.mean, np.std]})
 print(df_.round(3))
 
 #%%
