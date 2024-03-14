@@ -93,7 +93,8 @@ try:
         slicenr[f'slice {slice_+1}'] = snr
         
         plt.title(f'{desc}')
-        plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
+        #plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
+        plt.imshow(M[f'M{slice_ + 1}'][25,0,:,:], origin = 'lower')
         plt.show()
         # dont need to transverse mask? this could lead to indexing confusion later
         # has the structure organization changed from the original combodata?
@@ -134,7 +135,8 @@ except OSError:
         '''
         
         plt.title(f'{file}')
-        plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
+        #plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
+        plt.imshow(M[f'M{slice_ + 1}'][25,0,:,:], origin = 'lower')
         plt.show()
         # dont need to transverse mask? this could lead to indexing confusion later
         # has the structure organization changed from the original combodata?

@@ -171,8 +171,13 @@ def drop_outliers_IQR(df, column_name, threshold = 1.5):
     x = outliers_dropped['Day']
     y = outliers_dropped[column_name]
     
-    model = stats.linregress(x, y)
-    p_val = model.pvalue
+    #model_ = sm.OLS(x, y)
+    #fit_ = model_.fit()
+    #print('conf' + f'{fit_.conf_int(0.05)}')
+    
+    # std_err is std error of slope
+    slope, intercept, r_value, p_val, std_err = stats.linregress(x, y)
+    #p_val = model.pvalue
     #print(model.pvalues)
     a, b = np.polyfit(x, y, 1)
     

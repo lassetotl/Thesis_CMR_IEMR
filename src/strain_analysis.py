@@ -313,15 +313,15 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-#'''
+'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'TSd', 'TSs', \
                                                     'TCs', 'TCd', 'r_std', 'c_std', 'Condition']) 
-#'''
+'''
 # to analyze a generated csv file instead
-#df = pandas.read_csv('combodata_analysis')
+df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
@@ -489,8 +489,8 @@ sns_plot('GRS', ylabel_ = 'GRS [%]')
 sns_plot('Circ SDI', ylabel_ = 'CSDI [%]')
 sns_plot('Rad SDI', ylabel_ = 'RSDI [%]')
 
-sns_plot('r_std', ylabel_ = 'rstd [%]')
-sns_plot('c_std', ylabel_ = 'cstd [%]')
+#sns_plot('r_std', ylabel_ = 'rstd [%]')
+#sns_plot('c_std', ylabel_ = 'cstd [%]')
 
 sns_plot('GRSRs', ylabel_ = 'GRSRs [$s^{-1}$]')
 sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
@@ -505,8 +505,12 @@ sns_plot('TCd', ylabel_ = 'TCd [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-df_ = df.groupby(['Condition'], as_index = False).agg({'TCd':[np.mean, np.std]})
-print(df_.round(3))
+column = 'TCd'
+df_ = df[df['Day'] <= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
+df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
+
+print(df__.round(2))
+print(df_.round(2))
 
 #%%
 '''

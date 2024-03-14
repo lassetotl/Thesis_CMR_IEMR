@@ -586,8 +586,8 @@ class ComboDataSR_2D:
                     plt.plot(self.range_TR, rs, c = c_cmap(sector), lw=2)
                     plt.plot(self.range_TR, cs, c = c_cmap(sector), lw=2, ls = '--')
                     
-                    plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
-                    plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                    plt.scatter(self.r_peaktime[sector]*1000, self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                    plt.scatter(self.c_peaktime[sector]*1000, self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                 
                 # control
                 #r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
@@ -723,11 +723,11 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
-    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
+    #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    run2 = ComboDataSR_2D('mi_D12-8_3d', n = 2)
     
     # get info/generate data 
-    run1.overview()
+    #run1.overview()
     #grv1 = run1.velocity()
     
     ### strain rate analysis ###
@@ -735,8 +735,8 @@ if __name__ == "__main__":
     # plot = 1: show strain, strain rate, angle distribution
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
-    run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
@@ -744,4 +744,4 @@ if __name__ == "__main__":
     print(f'Time elapsed: {et-st:.3f} s')
 
 #%%
-    d1 = run1.__dict__['d']  # divergence over time
+    #d1 = run1.__dict__['d']  # divergence over time

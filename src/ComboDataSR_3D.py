@@ -185,7 +185,7 @@ class ComboDataSR_3D:
         
         strain = cumtrapz(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial = 0)
         strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed], self.range_TR[::-1][:T_ed]/1000, initial = 0))
-        return (w*strain + w_f*strain_flipped)/2
+        return (w*strain*0 + strain_flipped)/1
     
     ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 
     
