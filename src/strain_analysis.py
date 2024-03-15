@@ -426,12 +426,25 @@ def sns_plot(column_name, ylabel_):
     # grouped days 40+ together
     temp_c = pandas.concat([temp_c1, temp_c40])
     
+    # slope
+    b1_mi = drop_outliers_IQR(df_mi, column_name, 100)[6]
+    b1_sham = drop_outliers_IQR(df_sham, column_name, 100)[6]
+    
     # slope p-values
     b_mi = drop_outliers_IQR(df_mi, column_name, 100)[4]
     b_sham = drop_outliers_IQR(df_sham, column_name, 100)[4]
     
-    print(b_mi)
-    print(b_sham)
+    # slope ci
+    ci_mi = drop_outliers_IQR(df_mi, column_name, 100)[5]*1.96
+    ci_sham = drop_outliers_IQR(df_sham, column_name, 100)[5]*1.96
+    
+    print(f'beta1 mi pval: {np.round(b_mi, 3)}')
+    print(f'beta1 sham pval: {np.round(b_sham, 3)}')
+    
+    # https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
+    # https://www.econometrics-with-r.org/5.2-cifrc.html
+    print(f'(b1 +- 95ci) mi: {np.round(b1_mi, 2)} {np.round(ci_mi, 2)}')
+    print(f'(b1 +- 95ci) sham: {np.round(b1_sham, 2)} {np.round(ci_sham, 2)}')
     
     #t test at start and end
     r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])

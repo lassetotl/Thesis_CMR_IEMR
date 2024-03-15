@@ -182,7 +182,7 @@ def drop_outliers_IQR(df, column_name, threshold = 1.5):
     a, b = np.polyfit(x, y, 1)
     
 
-    return outliers, outliers_dropped, a, b, p_val
+    return outliers, outliers_dropped, a, b, p_val, std_err, slope
 
 def draw_ellipsoid(vec, val):
     # compute ellipsoid coordinates on standard basis
