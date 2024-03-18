@@ -83,11 +83,25 @@ my_cmap = copy.copy(plt.cm.get_cmap('gray')) # get a copy of the gray color map
 my_cmap.set_under(alpha=0) # set how the colormap handles 'bad' values
 
 #plt.imshow(M[:f, :f, 0, 30]/np.max(M[:f, :f, 0, 30]), cmap = 'gray')
+M_ = M[:f, :f, 0, 0]
 plt.figure(figsize=(8,8))
-plt.imshow(M[:f, :f, 0, 17], cmap = 'gray')
+plt.imshow(M_, cmap = 'gray')
 
 #dm = plt.imshow(test, origin = 'lower', cmap = my_cmap, vmin = 0.01)
 #plt.colorbar()
+
+plt.show()
+
+#%%
+# k-space visualization
+plt.subplot(1, 2, 2) 
+FT = np.fft.fft2(M_)
+FT = np.fft.fftshift(FT)
+plt.imshow(np.log(abs(FT)), interpolation = None, cmap = 'gray')
+plt.axis('off')
+
+plt.subplot(1, 2, 1) #SR colormap
+plt.imshow(M_, cmap = 'gray')
 plt.axis('off')
 plt.show()
 #%%
