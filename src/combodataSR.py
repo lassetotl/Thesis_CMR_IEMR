@@ -83,7 +83,8 @@ my_cmap = copy.copy(plt.cm.get_cmap('gray')) # get a copy of the gray color map
 my_cmap.set_under(alpha=0) # set how the colormap handles 'bad' values
 
 #plt.imshow(M[:f, :f, 0, 30]/np.max(M[:f, :f, 0, 30]), cmap = 'gray')
-M_ = M[:f, :f, 0, 0]
+f = 85
+M_ = M[20:f, 20:f, 0, 0]
 plt.figure(figsize=(8,8))
 plt.imshow(M_, cmap = 'gray')
 

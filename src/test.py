@@ -15,6 +15,9 @@ import plotly.graph_objects as go
 from plotly.offline import plot
 from scipy.integrate import cumulative_trapezoid
 
+import seaborn as sns
+#sns.set()
+
 #%%
 
 X = np.random.randn(100, 2)
@@ -266,3 +269,31 @@ plt.plot(y, label = 'sin(x)')
 plt.plot(cumulative_trapezoid(y, x, initial = 0)/10, label = 'integrated')
 plt.plot(np.gradient(y), label = 'derived')
 plt.legend(); plt.show()
+
+#%%
+
+plt.figure(figsize = (7,5))
+T = 60
+t = np.linspace(0, T, T)
+w1 = np.sqrt((T - t)*T); w1 = w1/np.max(w1)
+w2 = np.flip(w1); w2 = w2/np.max(w2)
+
+plt.title('Integrated noise', fontsize = 15)
+plt.plot(t, w2, 'k', lw = 1.5, label = 'Forward')
+plt.plot(t, w1, 'k--', lw = 1.5, label = 'Backward')
+plt.plot(t, w1*w2, 'k', lw=2.5, label = 'Combination')
+plt.xlabel('Time points', fontsize = 12)
+plt.legend()
+plt.show()
+
+plt.figure(figsize = (7,5))
+plt.title('Weights', fontsize = 15)
+w1_ = t/T
+w2_ = np.flip(w1_)
+plt.plot(t, w1_ + w2_, 'b--', lw=1.5, label = 'Sum')
+plt.plot(t, w2_, 'k', lw = 1.5, label = 'Forward')
+plt.plot(t, w1_, 'k--', lw = 1.5, label = 'Backward')
+plt.plot(t, w1_*w2_, 'k', lw=2.5, label = 'Combination')
+plt.xlabel('Time points', fontsize = 12)
+plt.legend()
+plt.show()
