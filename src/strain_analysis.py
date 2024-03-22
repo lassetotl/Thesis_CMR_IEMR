@@ -313,15 +313,15 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-#'''
+'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'TSd', 'TSs', \
                                                     'TCs', 'TCd', 'r_std', 'c_std', 'Condition']) 
-#'''
+'''
 # to analyze a generated csv file instead
-#df = pandas.read_csv('combodata_analysis')
+df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
@@ -518,7 +518,7 @@ sns_plot('TCd', ylabel_ = 'TCd [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'GRS'
+column = 'Circ SDI'
 df_ = df[df['Day'] <= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 

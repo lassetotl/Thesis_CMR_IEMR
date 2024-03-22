@@ -729,7 +729,7 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
-    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
+    run2 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
     
     # get info/generate data 
     #run1.overview()
@@ -741,7 +741,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
