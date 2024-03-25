@@ -210,6 +210,8 @@ print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st
 #%%
 # dataframe analysis
 
+# TSs = TSmin, TCs = Tcmax, TSd = Tsmax, TCd = Tcmin
+
 # Create the pandas DataFrame 
 '''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', 'GLS', \
@@ -446,7 +448,7 @@ T_ = df['Day'].max(); t = np.arange(0, T_)  # x lim
 df_sham = df[df['Condition'] == 0]
 df_mi = df[df['Condition'] == 1]
 
-plt.rcParams.update({'font.size': 12})
+#plt.rcParams.update({'font.size': 12})
 #fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 #plt.title('Regional strain correlation analysis', fontsize = 15)
 
@@ -481,8 +483,12 @@ sns_plot('pss_diff', ylabel_ = 'pss_diff [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-df_ = df.groupby(['Condition'], as_index = False).agg({'GRS':[np.mean, np.std]})
-print(df_.head())
+column = 'GRS'
+df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
+df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
+
+print(f'Day 1: {df__.round(2)}')
+print(f'Day 40+: {df_.round(2)}')
 
 #%%
 '''

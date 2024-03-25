@@ -23,6 +23,9 @@ from util import running_average, drop_outliers_IQR
 import pandas 
 import seaborn as sns; sns.set()
 
+#import warnings
+#warnings.simplefilter("ignore", DeprecationWarning)
+
 #%%
 ## This segment will take some time to run, and will overwrite saved data if save = 1 !! ##
 
@@ -443,8 +446,8 @@ def sns_plot(column_name, ylabel_):
     
     # https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
     # https://www.econometrics-with-r.org/5.2-cifrc.html
-    print(f'(b1 +- 95ci) mi: {np.round(b1_mi, 2)} {np.round(ci_mi, 2)}')
-    print(f'(b1 +- 95ci) sham: {np.round(b1_sham, 2)} {np.round(ci_sham, 2)}')
+    print(f'(b1 +- 95ci) mi: {np.round(b1_mi, 3)} {np.round(ci_mi, 3)}')
+    print(f'(b1 +- 95ci) sham: {np.round(b1_sham, 3)} {np.round(ci_sham, 3)}')
     
     #t test at start and end
     r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])
@@ -518,12 +521,12 @@ sns_plot('TCd', ylabel_ = 'TCd [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'Circ SDI'
-df_ = df[df['Day'] <= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
+column = 'TCd'
+df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 
-print(df__.round(2))
-print(df_.round(2))
+print(f'Day 1: {df__.round(2)}')
+print(f'Day 40+: {df_.round(2)}')
 
 #%%
 '''
