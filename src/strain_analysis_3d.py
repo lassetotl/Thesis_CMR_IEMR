@@ -26,12 +26,17 @@ import statsmodels.api as sm
 def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     # weighting for integrals in positive/flipped time directions
     # cyclic boundary conditions
-    w = np.tanh((T_ed - 1 - range_)/weight) 
-    w_f = np.tanh(range_/weight) 
+    # (old weights)
+    #w = np.tanh((self.T_ed - 1 - self.range_)/weight) 
+    #w_f = np.tanh(self.range_/weight) 
+    
+    # linear weights
+    w1 = range_[:T_ed]*T_ed; w1 = w1/np.max(w1)
+    w2 = np.flip(w1); w2 = w2/np.max(w2)
 
-    strain = cumtrapz(strain_rate, range_TR/1000, initial=0)
-    strain_flipped = np.flip(cumtrapz(strain_rate[::-1], range_TR[::-1]/1000, initial=0))
-    return (w*strain + w_f*strain_flipped)/2
+    strain = cumtrapz(strain_rate, range_TR/1000, initial=0)[:T_ed]
+    strain_flipped = np.flip(cumtrapz(strain_rate[::-1], range_TR[::-1]/1000, initial=0))[:T_ed]
+    return w2*strain + w1*strain_flipped
 
 #%%
 ## This segment will take some time to run, and will overwrite saved data if save = 1 !! ##
@@ -265,7 +270,7 @@ def ax_corr(ax, column_name):
     
 
 # plot linear regression with 95% confidence interval
-def sns_plot(column_name, ylabel_):
+def sns_plot_(column_name, ylabel_):
     # linreg scatterplot
     s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
                     palette='Set1', height=5, aspect=1.1, legend = 0) 
@@ -340,7 +345,96 @@ def sns_plot(column_name, ylabel_):
     c.ax.set_xticks([0,1], [r_str1, r_str40])
     c.ax.tick_params(axis='both', which='major', labelsize=15)
     
+
+# plot linear regression with 95% confidence interval
+def sns_plot(column_name, ylabel_):
+    # linreg scatterplot
+    s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
+                    palette='Set1', height=5, aspect=1.1, legend = 0) 
+    s.ax.set_ylabel(ylabel_, fontsize = 15)
+    s.ax.set_xlabel('Days', fontsize = 15)
     
+    
+    
+    temp_sham = drop_outliers_IQR(df_sham, column_name, 100)[1]
+    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)[1]
+    # t-test
+    #r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
+    
+    # barplot p1 p40
+    temp_c1 =  drop_outliers_IQR(df[df['Day'] == 1], column_name, 100)[1]
+    temp_c40 =  drop_outliers_IQR(df[df['Day'] >= 40], column_name, 100)[1]
+    temp_c40['Day'].replace([41,42,43,44,45], 40, inplace = True)
+    
+    # grouped days 40+ together
+    temp_c = pandas.concat([temp_c1, temp_c40])
+    
+    # slope
+    b1_mi = drop_outliers_IQR(df_mi, column_name, 100)[6]
+    b1_sham = drop_outliers_IQR(df_sham, column_name, 100)[6]
+    
+    # slope p-values
+    b_mi = drop_outliers_IQR(df_mi, column_name, 100)[4]
+    b_sham = drop_outliers_IQR(df_sham, column_name, 100)[4]
+    
+    # slope ci
+    ci_mi = drop_outliers_IQR(df_mi, column_name, 100)[5]*1.96
+    ci_sham = drop_outliers_IQR(df_sham, column_name, 100)[5]*1.96
+    
+    print(f'beta1 mi pval: {np.round(b_mi, 3)}')
+    print(f'beta1 sham pval: {np.round(b_sham, 3)}')
+    
+    # https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
+    # https://www.econometrics-with-r.org/5.2-cifrc.html
+    print(f'(b1 +- 95ci) mi: {np.round(b1_mi, 3)} {np.round(ci_mi, 3)}')
+    print(f'(b1 +- 95ci) sham: {np.round(b1_sham, 3)} {np.round(ci_sham, 3)}')
+    
+    #t test at start and end
+    r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])
+    r40 = stats.ttest_ind(temp_sham[temp_sham['Day'] >= 40][column_name], temp_mi[temp_mi['Day'] >= 40][column_name])
+    
+    
+    # linreg slope pvalues (for scatter plot)
+    if b_mi < 0.001:
+        b_str1 = r'$p_{\beta_1} < 0.001$'
+    else:
+        b_str1 = r'$p_{\beta_1}$ = '+ f'{np.round(b_mi, 3)}'
+        
+    if b_sham < 0.001:
+        b_str2 = r'$p_{\beta_1} < 0.001$'
+    else:
+        b_str2 = r'$p_{\beta_1} = $' + f'{np.round(b_sham, 3)}'
+    
+    # ttest pvalues (for catplot)
+    if r1[1] < 0.001:
+        r_str1 = r'$p_{1} < 0.001$'
+    else:
+        r_str1 = fr'$p_{1} = ${np.round(r1[1], 3)}'
+        
+    if r40[1] < 0.001:
+        r_str40 = r'$p_{40} < 0.001$'
+    else:
+        r_str40 = r'$p_{40} = $' + f'{np.round(r40[1], 3)}'
+    # return p value that represents linreg comparison
+    #s.ax.text(22, np.min(df[column_name]), f'{b_str1}, {b_str2}', size=15, color='k')
+    s.ax.tick_params(axis='both', which='major', labelsize=13)
+    
+    c_cmap = mpl.colors.ListedColormap(sns.color_palette('Set1').as_hex())
+    legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = b_str1),
+              Line2D([0], [0], color = c_cmap(1), lw = 2, label = b_str2)]
+    
+    plt.legend(s, handles=legend_handles1, prop={'size': 12}); plt.show(s)
+    
+    
+    # catplot
+    c = sns.catplot(data = temp_c, x = 'Day', y = column_name, hue='Condition', hue_order=[1,0], \
+                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8)
+    c.ax.set_ylabel(ylabel_, fontsize = 15)
+    c.ax.set_xlabel('', fontsize = 15)
+    
+    c.ax.set_xticks([0,1], [r_str1, r_str40])
+    c.ax.tick_params(axis='both', which='major', labelsize=15)
+
 #%%
 # peak strain values and dyssynchrony over time
 

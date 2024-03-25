@@ -180,12 +180,17 @@ class ComboDataSR_3D:
     def _strain(self, strain_rate, T_ed, weight = 10):  # inherit from 2d class?
         # weighting for integrals in positive/flipped time directions
         # cyclic boundary conditions
-        w = np.tanh((T_ed - 1 - self.range_[:T_ed])/weight) 
-        w_f = np.tanh(self.range_[:T_ed]/weight)
+        # (old weights)
+        #w = np.tanh((self.T_ed - 1 - self.range_)/weight) 
+        #w_f = np.tanh(self.range_/weight) 
+        
+        # linear weights
+        w1 = self.range_[:T_ed]*T_ed; w1 = w1/np.max(w1)
+        w2 = np.flip(w1); w2 = w2/np.max(w2)
         
         strain = cumtrapz(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial = 0)
         strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed], self.range_TR[::-1][:T_ed]/1000, initial = 0))
-        return (w*strain*0 + strain_flipped)/1
+        return w2*strain + w1*strain_flipped
     
     ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 
     
@@ -898,7 +903,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, slice_ = 8, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

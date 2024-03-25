@@ -260,12 +260,17 @@ range_TR = range_*TR
 def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     # weighting for integrals in positive/flipped time directions
     # cyclic boundary conditions
-    w = np.tanh((T_ed - 1 - range_)/weight) 
-    w_f = np.tanh(range_/weight) 
+    # (old weights)
+    #w = np.tanh((self.T_ed - 1 - self.range_)/weight) 
+    #w_f = np.tanh(self.range_/weight) 
+    
+    # linear weights
+    w1 = range_*T_ed; w1 = w1/np.max(w1)
+    w2 = np.flip(w1); w2 = w2/np.max(w2)
 
     strain = cumtrapz(strain_rate, range_TR/1000, initial=0)
     strain_flipped = np.flip(cumtrapz(strain_rate[::-1], range_TR[::-1]/1000, initial=0))
-    return (w*strain + 0*w_f*strain_flipped)/1
+    return w2*strain + w1*strain_flipped
 
 # derive strain from the total sr curve, not sum of strain curves
 #ls = strain(lsr, T_ed_min)*100000
