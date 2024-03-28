@@ -461,7 +461,7 @@ def sns_plot(column_name, ylabel_):
     
     # catplot
     c = sns.catplot(data = temp_c, x = 'Day', y = column_name, hue='Condition', hue_order=[1,0], \
-                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8)
+                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8, legend = 0)
     c.ax.set_ylabel(ylabel_, fontsize = 15)
     c.ax.set_xlabel('', fontsize = 15)
     
