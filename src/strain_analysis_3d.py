@@ -483,7 +483,7 @@ sns_plot('pss_diff', ylabel_ = 'pss_diff [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'GRS'
+column = 'GCS'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 
