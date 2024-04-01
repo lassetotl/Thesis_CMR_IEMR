@@ -87,6 +87,12 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     r_strain_peak_std = np.std(run.__dict__['r_peakvals'])
     c_strain_peak_std = np.std(run.__dict__['c_peakvals'])
     
+    # collect regional strain peaks
+    
+    # index order - infarct, adjacent, medial, remote
+    r_strain_reg = run.__dict__['r_peakvals']
+    c_strain_reg = run.__dict__['c_peakvals']
+    
     # expressed as percentage of cardiac cycle duration
     TR = run.__dict__['TR']
     r_strain_peaktime_std = 100*np.std(run.__dict__['r_peaktime'])/(TR*T_ed_list[-1])
@@ -108,7 +114,8 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     df_list.append([filename, days, r_strain_peak_mean, c_strain_peak_mean, \
                     r_strain_peaktime_std, c_strain_peaktime_std, r_sr_max, \
                         r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
-                            a2_mean_max, a2_mean_min, r_strain_peak_std, c_strain_peak_std, condition])
+                            a2_mean_max, a2_mean_min, r_strain_peak_std, c_strain_peak_std, \
+                                r_strain_reg, c_strain_reg, condition])
     filenr += 1
     if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
         os.makedirs(f'R:\Lasse\plots\MP4\{file}')
@@ -316,15 +323,16 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-'''
+#'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
-                                                'TSd', 'TSs', \
-                                                    'TCs', 'TCd', 'r_std', 'c_std', 'Condition']) 
-'''
+                                                'TSd', 'TSs', 'TCs', 'TCd', \
+                                                    'r_std', 'c_std', 'r_reg', 'c_reg', \
+                                                        'Condition']) 
+#'''
 # to analyze a generated csv file instead
-df = pandas.read_csv('combodata_analysis')
+#df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
@@ -500,6 +508,18 @@ df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[
 
 print(f'Day 1: {df__.round(2)}')
 print(f'Day 40+: {df_.round(2)}')
+
+#%%
+# violin plot MI hearts
+
+df_mi_1 = df_mi[df_mi['Day'] == 1]
+df_mi_40 = df_mi[df_mi['Day'] >= 40]
+
+
+#sns.boxplot(data = df_mi_40, x="Day", y="c_reg",
+#            hue="smoker", palette=["m", "g"],
+#            data=tips)
+
 
 #%%
 '''
