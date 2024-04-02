@@ -1,6 +1,6 @@
 ### Python Source Code for master's thesis
 
-Requisite modules: numpy, matplotlib, pandas, seaborn, scipy
+Requisite modules: numpy, matplotlib, pandas, seaborn, scipy, h5py
 ## Note: only works with access to IEMR OUS R-disk; access to TPM combodata. 
 
 ### CombodataSR_2D.py
