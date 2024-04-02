@@ -1,4 +1,4 @@
-## Master Thesis repository
+## Master Thesis 2023-2024 repository
 ### Lasse Totland
 ### __________________________________
 
