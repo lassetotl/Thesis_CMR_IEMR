@@ -1,5 +1,7 @@
 ### Python Source Code for master's thesis
 
+`Python 3.8.10` was used when developing code and producing results.
+
 Requisite modules: `numpy`, `matplotlib`, `pandas`, `seaborn`, `scipy`, `h5py`
 ## Note: only works with access to IEMR OUS R-disk; access to TPM combodata. 
 
