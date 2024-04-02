@@ -8,4 +8,4 @@ Source code; contains python scripts with documentation.
 Files related to the written thesis.
 
 ### animations
-.gif files that show the data and tensor fields in motion
+`.gif` files that show the data and tensor fields in motion
