@@ -1,6 +1,6 @@
 ## Master Thesis repository
 ### Lasse Totland
-### #############################################
+### __________________________________
 
 ### src
 Contains python scripts with documentation.
