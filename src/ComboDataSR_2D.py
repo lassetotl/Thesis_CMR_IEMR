@@ -729,7 +729,7 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
-    run2 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    run2 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     #run1.overview()

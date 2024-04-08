@@ -160,10 +160,10 @@ for file in os.listdir('R:\Lasse\combodata_3d_shax'):
     l_sr_max = np.max(lsr); l_sr_min = np.min(lsr)
     
     # theta dist
-    ts_max = np.max(theta_s)
-    ts_min = np.min(theta_s)
-    tc_max = np.max(theta_c)
-    tc_min = np.min(theta_c)
+    TSd = np.max(theta_s)
+    TSs = np.min(theta_s)
+    TCs = np.max(theta_c)
+    TCd = np.min(theta_c)
     
     # phi dist
     ps_max = np.max(phi_s)
@@ -198,8 +198,8 @@ for file in os.listdir('R:\Lasse\combodata_3d_shax'):
     
     # dataframe row
     df_list.append([filename, days, r_strain_peak, c_strain_peak, l_strain_peak, r_sr_max, \
-                        r_sr_min, c_sr_max, c_sr_min, l_sr_max, l_sr_min, ts_max, ts_min, \
-                            tc_max, tc_min, ps_max, ps_min, pc_max, pc_min, tcs_, tss_, pcs_, pss_, condition])
+                        r_sr_min, c_sr_max, c_sr_min, l_sr_max, l_sr_min, TSd, TSs, \
+                            TCs, TCd, ps_max, ps_min, pc_max, pc_min, tcs_, tss_, pcs_, pss_, condition])
     filenr += 1
     if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
         os.makedirs(f'R:\Lasse\plots\MP4\{file}')
@@ -216,7 +216,7 @@ print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st
 '''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', 'GLS', \
                                          'GRSRs', 'GRSRd', 'GCSRd', 'GCSRs', 'GLSRd', 'GLSRs', \
-                                                'ts_max', 'ts_min', 'tc_max', 'tc_min', 'ps_max', \
+                                                'TSd', 'TSs', 'TCs', 'TCd', 'ps_max', \
                                                      'ps_min', 'pc_max', 'pc_min', 'tcs_diff', \
                                                          'tss_diff', 'pcs_diff', 'pss_diff', 'Condition']) 
 '''
@@ -398,25 +398,25 @@ def sns_plot(column_name, ylabel_):
     
     # linreg slope pvalues (for scatter plot)
     if b_mi < 0.001:
-        b_str1 = r'$p_{\beta_1} < 0.001$'
+        b_str1 = r'$\beta_1 = $' + f'{np.round(b1_mi, 3)},  $p < 0.001$'
     else:
-        b_str1 = r'$p_{\beta_1}$ = '+ f'{np.round(b_mi, 3)}'
+        b_str1 = r'$\beta_1 = $' + f'{np.round(b1_mi, 3)},  p = {np.round(b_mi, 3)}'
         
     if b_sham < 0.001:
-        b_str2 = r'$p_{\beta_1} < 0.001$'
+        b_str2 = r'$\beta_1 = $' + f'{np.round(b1_sham, 3)},  $p < 0.001$'
     else:
-        b_str2 = r'$p_{\beta_1} = $' + f'{np.round(b_sham, 3)}'
+        b_str2 = r'$\beta_1 = $' + f'{np.round(b1_sham, 3)},  p = {np.round(b_sham, 3)}'
     
     # ttest pvalues (for catplot)
     if r1[1] < 0.001:
-        r_str1 = r'$p_{1} < 0.001$'
+        r_str1 = 'Day 1 \n ($p < 0.001$)'
     else:
-        r_str1 = fr'$p_{1} = ${np.round(r1[1], 3)}'
+        r_str1 = f'Day 1 \n ($p = ${np.round(r1[1], 3)})'
         
     if r40[1] < 0.001:
-        r_str40 = r'$p_{40} < 0.001$'
+        r_str40 = 'Day 40+ \n ($p < 0.001$)'
     else:
-        r_str40 = r'$p_{40} = $' + f'{np.round(r40[1], 3)}'
+        r_str40 = f'Day 40+ \n ($p = ${np.round(r40[1], 3)})'
     # return p value that represents linreg comparison
     #s.ax.text(22, np.min(df[column_name]), f'{b_str1}, {b_str2}', size=15, color='k')
     s.ax.tick_params(axis='both', which='major', labelsize=13)
@@ -430,7 +430,7 @@ def sns_plot(column_name, ylabel_):
     
     # catplot
     c = sns.catplot(data = temp_c, x = 'Day', y = column_name, hue='Condition', hue_order=[1,0], \
-                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8)
+                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8, legend = 0)
     c.ax.set_ylabel(ylabel_, fontsize = 15)
     c.ax.set_xlabel('', fontsize = 15)
     
@@ -465,10 +465,10 @@ sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
 sns_plot('GCSRs', ylabel_ = 'GCSRs [$s^{-1}$]')
 sns_plot('GCSRd', ylabel_ = 'GCSRd [$s^{-1}$]')
 
-sns_plot('ts_max', ylabel_ = 'ts_max [Degrees]')
-sns_plot('ts_min', ylabel_ = 'ts_min [Degrees]')
-sns_plot('tc_max', ylabel_ = 'tc_max [Degrees]')
-sns_plot('tc_min', ylabel_ = 'tc_min [Degrees]')
+sns_plot('TSd', ylabel_ = 'TSd [Degrees]')
+sns_plot('TSs', ylabel_ = 'TSs [Degrees]')
+sns_plot('TCs', ylabel_ = 'TCs [Degrees]')
+sns_plot('TCd', ylabel_ = 'TCd [Degrees]')
 
 sns_plot('ps_max', ylabel_ = 'ps_max [Degrees]')
 sns_plot('ps_min', ylabel_ = 'ps_min [Degrees]')
@@ -483,7 +483,7 @@ sns_plot('pss_diff', ylabel_ = 'pss_diff [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'GCS'
+column = 'tcs_diff'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 
@@ -535,17 +535,17 @@ plt.rcParams.update({'font.size': 12})
 fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
 #plt.title('Strain rate direction correlation analysis', fontsize = 15)
 
-ax_corr(ax1, 'ts_max')
-ax1.set_ylabel('ts_max [Degrees]', fontsize=15); ax1.set_xlabel(''); ax1.legend()
+ax_corr(ax1, 'TSd')
+ax1.set_ylabel('TSd [Degrees]', fontsize=15); ax1.set_xlabel(''); ax1.legend()
 
-ax_corr(ax2, 'ts_min')
-ax2.set_ylabel('ts_min', fontsize=15); ax2.set_xlabel(''); ax2.legend()
+ax_corr(ax2, 'TSs')
+ax2.set_ylabel('TSs', fontsize=15); ax2.set_xlabel(''); ax2.legend()
 
-ax_corr(ax3, 'tc_max')
-ax3.set_ylabel('tc_max', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend()
+ax_corr(ax3, 'TCs')
+ax3.set_ylabel('TCs', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend()
 
-ax_corr(ax4, 'tc_min')
-ax4.set_ylabel('tc_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend()
+ax_corr(ax4, 'TCd')
+ax4.set_ylabel('TCd', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend()
 
 
 plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')

@@ -894,7 +894,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 1)
+    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     run2.overview()

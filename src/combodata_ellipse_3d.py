@@ -35,8 +35,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file ='sham_D4-4_41d'
-#file = 'mi_ten66-m2_'
+#file ='sham_D4-4_41d'
+file = 'mi_D11-3_40d'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
@@ -95,6 +95,7 @@ try:
         plt.title(f'{desc}')
         #plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
         plt.imshow(M[f'M{slice_ + 1}'][25,0,:,:], origin = 'lower')
+        plt.grid(0)
         plt.show()
         # dont need to transverse mask? this could lead to indexing confusion later
         # has the structure organization changed from the original combodata?
@@ -137,6 +138,7 @@ except OSError:
         plt.title(f'{file}')
         #plt.imshow(mask[f'mask{slice_ + 1}'][25,0,:,:], origin = 'lower')
         plt.imshow(M[f'M{slice_ + 1}'][25,0,:,:], origin = 'lower')
+        plt.grid(0)
         plt.show()
         # dont need to transverse mask? this could lead to indexing confusion later
         # has the structure organization changed from the original combodata?
@@ -182,7 +184,7 @@ with imageio.get_writer('R:\Lasse\plots\MP4\\3D heart.gif', fps=7) as writer:   
         '''
 
 #%%
-# using 3d class to calculate strain in whole heart
+# using 3d class to calculate strain in Whole LV
 
 #slice_selection 
 total_lsr = []; total_csr = []; total_rsr = []
@@ -316,7 +318,7 @@ ax1.plot(range(len(apical_csr)), apical_csr, 'chocolate', ls = '--')
 ax1.plot(range(len(basal_rsr)), basal_rsr, 'darkblue', label = 'GRSR')
 ax1.plot(range(len(apical_rsr)), apical_rsr, 'darkblue', ls = '--')
 
-plt.suptitle(f'Whole heart strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
+plt.suptitle(f'Whole LV strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 ax1.set_ylabel('$s^{-1}$', fontsize = 15)
 
 ax2.set_ylabel('%', fontsize = 17)
@@ -338,7 +340,7 @@ yticks = [0, len(slice_selection)-1]
 yticks_new = ['A', 'B']
 
 fig, axs = plt.subplots(3, sharex=True)
-fig.suptitle(f'Whole heart strain [$\%$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
+fig.suptitle(f'Whole LV strain [$\%$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(total_rs), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[1].imshow(np.array(total_cs), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
@@ -364,7 +366,7 @@ c_cmap = plt.get_cmap(c)
 norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 
 fig, axs = plt.subplots(3, sharex=True)
-fig.suptitle(fr'Whole heart strain rate [$1/s$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
+fig.suptitle(fr'Whole LV strain rate [$1/s$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(total_rsr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[1].imshow(np.array(total_csr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
