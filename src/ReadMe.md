@@ -22,3 +22,7 @@ Script that uses `CombodataSR_3D.py` to collect data from all combodata stacks, 
 
 ### `combodata_ellipse_3d.py`
 Input a combodata stack covering a LV to quality check the segmentation and order of the slices, and produce plots that visualize regional variation between slices.
+
+
+#### Misc
+Scripts not named above were not used to produce results for the thesis, but useful during the development of the source code.
