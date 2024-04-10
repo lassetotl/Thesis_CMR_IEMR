@@ -494,10 +494,10 @@ sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
 sns_plot('GCSRs', ylabel_ = 'GCSRs [$s^{-1}$]')
 sns_plot('GCSRd', ylabel_ = 'GCSRd [$s^{-1}$]')
 
-sns_plot('TSd', ylabel_ = 'TSd [Degrees]')
-sns_plot('TSs', ylabel_ = 'TSs [Degrees]')
-sns_plot('TCs', ylabel_ = 'TCs [Degrees]')
-sns_plot('TCd', ylabel_ = 'TCd [Degrees]')
+sns_plot('TSd', ylabel_ = r'$\theta_{sd}$ [Degrees]')
+sns_plot('TSs', ylabel_ = r'$\theta_{ss}$ [Degrees]')
+sns_plot('TCs', ylabel_ = r'$\theta_{cs}$ [Degrees]')
+sns_plot('TCd', ylabel_ = r'$\theta_{cd}$ [Degrees]')
 
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
@@ -510,94 +510,62 @@ print(f'Day 1: {df__.round(2)}')
 print(f'Day 40+: {df_.round(2)}')
 
 #%%
-# violin plot MI hearts
+# violin plot MI hearts regional variation
 
 df_mi_1 = df_mi[df_mi['Day'] == 1]
-df_mi_40 = df_mi[df_mi['Day'] >= 40]
+df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 
+infarct = []
+adjacent = []
+medial = []
+remote = []
 
-#sns.boxplot(data = df_mi_40, x="Day", y="c_reg",
-#            hue="smoker", palette=["m", "g"],
-#            data=tips)
+# c_reg or r_reg
+column = 'r_reg'
+for key, value in df_mi_40[column].iteritems():
+    infarct.append(value[0])  
+    adjacent.append(value[1])  
+    medial.append(value[2])  
+    remote.append(value[3])  
 
+# regional colormap
+c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
+norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
-#%%
+# p values compared with infarct
+
+pa = stats.ttest_ind(infarct, adjacent)[1]
+pm = stats.ttest_ind(infarct, medial)[1]
+pr = stats.ttest_ind(infarct, remote)[1]
+
+# scatter/violin plot MI regional variation
 '''
-# peak strain values and dyssynchrony over time
+plt.figure(figsize=(6, 5))
+plt.title('GCS Regional variation MI')
 
-#convert from numeric to categorical for correct label
-df['Condition'] = pandas.Categorical(df['Condition'])
-T_ = df['Day'].max(); t = np.arange(0, T_)  # x lim
+plt.scatter([0]*len(df_mi_40[column]), infarct, color = c_cmap(0))
+plt.scatter([1]*len(df_mi_40[column]), adjacent, color = c_cmap(1))
+plt.scatter([2]*len(df_mi_40[column]), medial, color = c_cmap(2))
+plt.scatter([3]*len(df_mi_40[column]), remote, color = c_cmap(3))
 
+plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
+plt.ylabel('%', fontsize = 17)
 
-df_sham = df[df['Condition'] == 0]
-df_mi = df[df['Condition'] == 1]
-
-plt.rcParams.update({'font.size': 12})
-fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
-#plt.title('Regional strain correlation analysis', fontsize = 15)
-
-cmap = 'coolwarm'
-
-ax_corr(ax1, 'GCS')
-ax1.set_ylabel('GCS [%]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
-
-ax_corr(ax2, 'Circ SDI')
-ax2.set_ylabel('Circumferential SDI [%]', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
-
-ax_corr(ax3, 'GRS')
-ax3.set_ylabel('GRS [%]', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
-
-ax_corr(ax4, 'Rad SDI')
-ax4.set_ylabel('Radial SDI [%]', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
-
-
-plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
 plt.show()
 
-#%%
-# strain rate peaks and direction over time
-
-plt.rcParams.update({'font.size': 12})
-fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
-#plt.title('Strain rate correlation analysis', fontsize = 15)
-
-ax_corr(ax1, 'GRSRs')
-ax1.set_ylabel('GRSRs [$s^{-1}$]', fontsize=15); ax1.set_xlabel(''); ax1.legend(loc = 4)
-
-ax_corr(ax2, 'GRSRd')
-ax2.set_ylabel('GRSRd', fontsize=15); ax2.set_xlabel(''); ax2.legend(loc = 1)
-
-ax_corr(ax3, 'GCSRd')
-ax3.set_ylabel('GCSRd', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend(loc = 1)
-
-ax_corr(ax4, 'GCSRs')
-ax4.set_ylabel('GCSRs', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend(loc = 1)
-
-
-plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
-plt.show()
-
-#%%
-# strain rate peaks and direction over time
-
-plt.rcParams.update({'font.size': 12})
-fig, ((ax1,ax2), (ax3,ax4)) = plt.subplots(nrows=2, ncols=2, figsize=(13,11))
-#plt.title('Strain rate direction correlation analysis', fontsize = 15)
-
-ax_corr(ax1, 'a1_mean_max')
-ax1.set_ylabel('a1_mean_max [Degrees]', fontsize=15); ax1.set_xlabel(''); ax1.legend()
-
-ax_corr(ax2, 'a1_mean_min')
-ax2.set_ylabel('a1_mean_min', fontsize=15); ax2.set_xlabel(''); ax2.legend()
-
-ax_corr(ax3, 'a2_mean_max')
-ax3.set_ylabel('a2_mean_max', fontsize=15); ax3.set_xlabel('Days', fontsize=15); ax3.legend()
-
-ax_corr(ax4, 'a2_mean_min')
-ax4.set_ylabel('a2_mean_min', fontsize=15); ax4.set_xlabel('Days', fontsize=15); ax4.legend()
-
-
-plt.subplots_adjust(wspace=0.25, hspace=0.15)#; plt.savefig('Heart_Scatter')
-plt.show()
 '''
+
+plt.figure(figsize=(7, 6), dpi=300)
+plt.title('GRS Regional variation MI')
+sns.boxplot(data = [infarct, adjacent, medial, remote], \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
+
+plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
+                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
+plt.scatter([0]*len(df_mi_40[column]), infarct, color = 'gray')
+plt.scatter([1]*len(df_mi_40[column]), adjacent, color = 'gray')
+plt.scatter([2]*len(df_mi_40[column]), medial, color = 'gray')
+plt.scatter([3]*len(df_mi_40[column]), remote, color = 'gray')
+plt.ylabel('%', fontsize = 17)
+
+plt.show()
