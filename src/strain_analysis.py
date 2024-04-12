@@ -323,16 +323,16 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-#'''
+'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'TSd', 'TSs', 'TCs', 'TCd', \
                                                     'r_std', 'c_std', 'r_reg', 'c_reg', \
                                                         'Condition']) 
-#'''
+'''
 # to analyze a generated csv file instead
-#df = pandas.read_csv('combodata_analysis')
+df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
@@ -514,6 +514,7 @@ print(f'Day 40+: {df_.round(2)}')
 
 df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
+df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
 
 infarct = []
 adjacent = []
@@ -566,6 +567,47 @@ plt.scatter([0]*len(df_mi_40[column]), infarct, color = 'gray')
 plt.scatter([1]*len(df_mi_40[column]), adjacent, color = 'gray')
 plt.scatter([2]*len(df_mi_40[column]), medial, color = 'gray')
 plt.scatter([3]*len(df_mi_40[column]), remote, color = 'gray')
+plt.ylabel('%', fontsize = 17)
+
+plt.show()
+
+#%%
+
+g1 = []
+g2 = []
+g3 = []
+g4 = []
+
+# c_reg or r_reg
+column = 'r_reg'
+for key, value in df_sham_40[column].iteritems():
+    g1.append(value[0])  
+    g2.append(value[1])  
+    g3.append(value[2])  
+    g4.append(value[3])  
+
+# regional colormap
+c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
+norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
+
+# p values compared with infarct
+
+pa = stats.ttest_ind(g1, g2)[1]
+pm = stats.ttest_ind(g1, g3)[1]
+pr = stats.ttest_ind(g1, g4)[1]
+
+# scatter/violin plot MI regional variation
+plt.figure(figsize=(7, 6), dpi=300)
+plt.title('GRS Regional variation Sham')
+sns.boxplot(data = [g1, g2, g3, g4], \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
+
+plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
+                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
+plt.scatter([0]*len(df_sham_40[column]), g1, color = 'gray')
+plt.scatter([1]*len(df_sham_40[column]), g2, color = 'gray')
+plt.scatter([2]*len(df_sham_40[column]), g3, color = 'gray')
+plt.scatter([3]*len(df_sham_40[column]), g4, color = 'gray')
 plt.ylabel('%', fontsize = 17)
 
 plt.show()
