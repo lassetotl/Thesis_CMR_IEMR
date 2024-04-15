@@ -323,16 +323,16 @@ auc_sham = np.array(auc_sham)
 # dataframe analysis
 
 # Create the pandas DataFrame 
-'''
+#'''
 df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                         'Rad SDI', 'Circ SDI', 'GRSRs', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'TSd', 'TSs', 'TCs', 'TCd', \
                                                     'r_std', 'c_std', 'r_reg', 'c_reg', \
                                                         'Condition']) 
-'''
+#'''
 # to analyze a generated csv file instead
-df = pandas.read_csv('combodata_analysis')
+#df = pandas.read_csv('combodata_analysis')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
@@ -510,11 +510,15 @@ print(f'Day 1: {df__.round(2)}')
 print(f'Day 40+: {df_.round(2)}')
 
 #%%
-# violin plot MI hearts regional variation
+# box plot MI hearts regional variation
+# bug: c_reg and r_reg keys turn from list into strings when loading df?
+
 
 df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
+
+# MI
 
 infarct = []
 adjacent = []
@@ -522,7 +526,7 @@ medial = []
 remote = []
 
 # c_reg or r_reg
-column = 'r_reg'
+column = 'c_reg'
 for key, value in df_mi_40[column].iteritems():
     infarct.append(value[0])  
     adjacent.append(value[1])  
@@ -557,21 +561,33 @@ plt.show()
 '''
 
 plt.figure(figsize=(7, 6), dpi=300)
-plt.title('GRS Regional variation MI')
+#plt.title('GRS Regional variation MI')
 sns.boxplot(data = [infarct, adjacent, medial, remote], \
             palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
 
-plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
-                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
+# uncomment to include p values relative to infarct
+#plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
+#                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
+    
+plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
 plt.scatter([0]*len(df_mi_40[column]), infarct, color = 'gray')
 plt.scatter([1]*len(df_mi_40[column]), adjacent, color = 'gray')
 plt.scatter([2]*len(df_mi_40[column]), medial, color = 'gray')
 plt.scatter([3]*len(df_mi_40[column]), remote, color = 'gray')
-plt.ylabel('%', fontsize = 17)
+
+if column == 'c_reg':
+    plt.ylabel('GCS [%]', fontsize = 17)
+else:
+    plt.ylabel('GRS [%]', fontsize = 17)
+    
+
+ymin = plt.axis()[2]
+ymax = plt.axis()[3]
 
 plt.show()
 
-#%%
+
+# Sham
 
 g1 = []
 g2 = []
@@ -579,7 +595,6 @@ g3 = []
 g4 = []
 
 # c_reg or r_reg
-column = 'r_reg'
 for key, value in df_sham_40[column].iteritems():
     g1.append(value[0])  
     g2.append(value[1])  
@@ -598,16 +613,25 @@ pr = stats.ttest_ind(g1, g4)[1]
 
 # scatter/violin plot MI regional variation
 plt.figure(figsize=(7, 6), dpi=300)
-plt.title('GRS Regional variation Sham')
+#plt.title('GRS Regional variation Sham')
 sns.boxplot(data = [g1, g2, g3, g4], \
             palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
 
-plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
-                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
+#plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
+#                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
+    
+plt.xticks([0, 1, 2, 3], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'])
+                          
 plt.scatter([0]*len(df_sham_40[column]), g1, color = 'gray')
 plt.scatter([1]*len(df_sham_40[column]), g2, color = 'gray')
 plt.scatter([2]*len(df_sham_40[column]), g3, color = 'gray')
 plt.scatter([3]*len(df_sham_40[column]), g4, color = 'gray')
-plt.ylabel('%', fontsize = 17)
+
+if column == 'c_reg':
+    plt.ylabel('GCS [%]', fontsize = 17)
+else:
+    plt.ylabel('GRS [%]', fontsize = 17)
+
+plt.ylim(ymin, ymax)
 
 plt.show()

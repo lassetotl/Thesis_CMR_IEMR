@@ -275,15 +275,15 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     return w2*strain + w1*strain_flipped
 
 # derive strain from the total sr curve, not sum of strain curves
-#ls = strain(lsr, T_ed_min)*100000
+ls = strain(lsr, T_ed_min)*100000
 bls = strain(basal_lsr, T_ed_min)*100000
 als = strain(apical_lsr, T_ed_min)*100000
 
-#cs = strain(csr, T_ed_min)*100000
+cs = strain(csr, T_ed_min)*100000
 bcs = strain(basal_csr, T_ed_min)*100000
 acs = strain(apical_csr, T_ed_min)*100000
 
-#rs = strain(rsr, T_ed_min)*100000
+rs = strain(rsr, T_ed_min)*100000
 brs = strain(basal_rsr, T_ed_min)*100000
 ars = strain(apical_rsr, T_ed_min)*100000
 
@@ -292,37 +292,41 @@ ars = strain(apical_rsr, T_ed_min)*100000
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
 
+# convert to ms timeline
+range_TR_ms = range_TR*1000
+
 ax2.axhline(0, c = 'k', lw = 1)
-#ax2.plot(range(len(ls)), ls, 'darkgreen', label = 'Longitudinal strain')
-ax2.plot(range(len(bls)), bls, 'darkgreen', label = 'GLS')
-ax2.plot(range(len(als)), als, 'darkgreen', ls = '--')
+ax2.plot(range_TR_ms, ls, 'darkgreen', label = 'Longitudinal strain')
+#ax2.plot(range(len(bls)), bls, 'darkgreen', label = 'GLS')
+#ax2.plot(range(len(als)), als, 'darkgreen', ls = '--')
 
-#ax2.plot(range(len(cs)), cs, 'chocolate', label = 'Circumferential strain')
-ax2.plot(range(len(bcs)), bcs, 'chocolate', label = 'GCS')
-ax2.plot(range(len(acs)), acs, 'chocolate', ls = '--')
+ax2.plot(range_TR_ms, cs, 'chocolate', label = 'Circumferential strain')
+#ax2.plot(range(len(bcs)), bcs, 'chocolate', label = 'GCS')
+#ax2.plot(range(len(acs)), acs, 'chocolate', ls = '--')
 
-#ax2.plot(range(len(rs)), rs, 'darkblue', label = 'Radial strain')
-ax2.plot(range(len(brs)), brs, 'darkblue', label = 'GRS')
-ax2.plot(range(len(ars)), ars, 'darkblue', ls = '--')
+ax2.plot(range_TR_ms, rs, 'darkblue', label = 'Radial strain')
+#ax2.plot(range(len(brs)), brs, 'darkblue', label = 'GRS')
+#ax2.plot(range(len(ars)), ars, 'darkblue', ls = '--')
 
 ax1.axhline(0, c = 'k', lw = 1)
-#ax1.plot(range(len(lsr)), lsr, 'darkgreen', label = 'Longitudinal strain rate')
-ax1.plot(range(len(basal_lsr)), basal_lsr, 'darkgreen', label = 'GLSR')
-ax1.plot(range(len(apical_lsr)), apical_lsr, 'darkgreen', ls = '--')
+ax1.plot(range_TR_ms, lsr, 'darkgreen', label = 'Longitudinal strain rate')
+#ax1.plot(range(len(basal_lsr)), basal_lsr, 'darkgreen', label = 'GLSR')
+#ax1.plot(range(len(apical_lsr)), apical_lsr, 'darkgreen', ls = '--')
 
-#ax1.plot(range(len(csr)), csr, 'chocolate', label = 'Circumferential strain rate')
-ax1.plot(range(len(basal_csr)), basal_csr, 'chocolate', label = 'GCSR')
-ax1.plot(range(len(apical_csr)), apical_csr, 'chocolate', ls = '--')
+ax1.plot(range_TR_ms, csr, 'chocolate', label = 'Circumferential strain rate')
+#ax1.plot(range(len(basal_csr)), basal_csr, 'chocolate', label = 'GCSR')
+#ax1.plot(range(len(apical_csr)), apical_csr, 'chocolate', ls = '--')
 
-#ax1.plot(range(len(rsr)), rsr, 'darkblue', label = 'Radial strain rate')
-ax1.plot(range(len(basal_rsr)), basal_rsr, 'darkblue', label = 'GRSR')
-ax1.plot(range(len(apical_rsr)), apical_rsr, 'darkblue', ls = '--')
+ax1.plot(range_TR_ms, rsr, 'darkblue', label = 'Radial strain rate')
+#ax1.plot(range(len(basal_rsr)), basal_rsr, 'darkblue', label = 'GRSR')
+#ax1.plot(range(len(apical_rsr)), apical_rsr, 'darkblue', ls = '--')
 
-plt.suptitle(f'Whole LV strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
+plt.suptitle(f'Whole LV strain rate and strain ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 ax1.set_ylabel('$s^{-1}$', fontsize = 15)
 
 ax2.set_ylabel('%', fontsize = 17)
-#ax2.set_xlabel('Time [s]', fontsize = 15)
+ax2.set_xlabel('Time [ms]', fontsize = 15)
+ax1.set_xlabel('Time [ms]', fontsize = 15)
 
 
 plt.subplots_adjust(wspace=0.3)
