@@ -35,8 +35,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-file ='sham_D4-4_41d'
-#file = 'mi_D11-3_40d'
+#file ='sham_D4-4_41d'
+file = 'mi_D11-3_40d'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
@@ -290,12 +290,17 @@ ars = strain(apical_rsr, T_ed_min)*100000
 #%%
 # total strain and strain rate
 
-f, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 6))
+f, (ax1, ax2) = plt.subplots(1, 2, figsize=(14, 6))
 
 # convert to ms timeline
 range_TR_ms = range_TR*1000
 
 ax2.axhline(0, c = 'k', lw = 1)
+ax1.axhline(0, c = 'k', lw = 1)
+
+ax1.axvline(T_es*TR*1000, c = 'k', ls = ':', lw = 2, alpha = 0.7)
+ax2.axvline(T_es*TR*1000, c = 'k', ls = ':', lw = 2, alpha = 0.7)
+
 ax2.plot(range_TR_ms, ls, 'darkgreen', label = 'Longitudinal strain')
 #ax2.plot(range(len(bls)), bls, 'darkgreen', label = 'GLS')
 #ax2.plot(range(len(als)), als, 'darkgreen', ls = '--')
@@ -329,7 +334,7 @@ ax2.set_xlabel('Time [ms]', fontsize = 15)
 ax1.set_xlabel('Time [ms]', fontsize = 15)
 
 
-plt.subplots_adjust(wspace=0.3)
+plt.subplots_adjust(wspace=0.2)
 ax1.legend(); ax2.legend(); plt.show()
 
 #%%
@@ -343,7 +348,7 @@ norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 yticks = [0, len(slice_selection)-1]
 yticks_new = ['A', 'B']
 
-fig, axs = plt.subplots(3, sharex=True)
+fig, axs = plt.subplots(3, sharex=True, dpi = 300)
 fig.suptitle(f'Whole LV strain [$\%$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(total_rs), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
@@ -361,6 +366,9 @@ fig.subplots_adjust(right=0.8)
 cbar_ax = fig.add_axes([0.85, 0.15, 0.05, 0.7])
 fig.colorbar(im, cax = cbar_ax, norm = norm_)
 
+#axs[2].set_xticklabels(range_TR_ms)
+#axs[2].xaxis.set_major_locator(mpl.ticker.MultipleLocator(base=20))
+
 plt.show()
 
 # strain rate plots with separated slices
@@ -369,7 +377,7 @@ cmin = np.min(total_csr)
 c_cmap = plt.get_cmap(c)
 norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 
-fig, axs = plt.subplots(3, sharex=True)
+fig, axs = plt.subplots(3, sharex=True, dpi = 300)
 fig.suptitle(fr'Whole LV strain rate [$1/s$] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(total_rsr), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
@@ -397,28 +405,28 @@ c = 'viridis'
 c_cmap = plt.get_cmap(c)
 norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 
-fig, axs = plt.subplots(3, sharex=True)
+fig, axs = plt.subplots(3, sharex=True, dpi = 300)
 fig.suptitle(f'Strain rate mean $\\theta$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(theta_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[0].text(T_ed_min-0.5, 0.7, '∎', color = 'r', fontsize = 20)
-#axs[0].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
+axs[0].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
 im = axs[1].imshow(np.array(theta_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[1].text(T_ed_min-0.5, 0.7, '∎', color = 'g', fontsize = 20)
-#axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
+axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
-axs[2].plot(range(len(theta1)), theta1, 'r')
-axs[2].axvline(T_es, color = 'k', lw = 0.6)
+#axs[2].plot(range(len(theta1)), theta1, 'r')
+axs[2].axvline(T_es, c = 'k', ls = ':', lw = 2, alpha = 0.7)
 #axs[2].axvline(T_es - 0.2*T_es, color = 'gray', lw = 0.6)
 #axs[2].axvline(0.2*T_es, color = 'gray', lw = 0.6)
 
-#axs[2].plot(range(len(theta1)), basal_theta1, 'r-')
-#axs[2].plot(range(len(theta1)), apical_theta1, 'r--')
+axs[2].plot(range(len(theta1)), basal_theta1, 'r-')
+axs[2].plot(range(len(theta1)), apical_theta1, 'r--')
 
-axs[2].plot(range(len(theta2)), theta2, 'g')
-#axs[2].plot(range(len(theta2)), basal_theta2, 'g-')
-#axs[2].plot(range(len(theta2)), apical_theta2, 'g--')
+#axs[2].plot(range(len(theta2)), theta2, 'g')
+axs[2].plot(range(len(theta2)), basal_theta2, 'g-')
+axs[2].plot(range(len(theta2)), apical_theta2, 'g--')
 
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
@@ -439,24 +447,24 @@ cmin = np.min(phi2-5)
 c_cmap = plt.get_cmap(c)
 norm_ = mpl.colors.Normalize(vmin = cmin, vmax = cmax)
 
-fig, axs = plt.subplots(3, sharex=True)
+fig, axs = plt.subplots(3, sharex=True, dpi = 300)
 fig.suptitle(f'Strain rate mean $\\phi$ [degrees] ({ID}: {len(slice_selection)} slices)', fontsize = 15)
 
 axs[0].imshow(np.array(phi_stretch), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[0].text(T_ed_min-0.5, 0.7, '∎', color = 'r', fontsize = 20)
-axs[0].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
+#axs[0].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 im = axs[1].imshow(np.array(phi_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[1].text(T_ed_min-0.5, 0.7, '∎', color = 'g', fontsize = 20)
-axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
+#axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
-#axs[2].plot(range(len(theta1)), phi1, 'gray')
-axs[2].axvline(T_es, color = 'k', lw = 0.6)
-axs[2].plot(range(len(phi1)), basal_phi1, 'r-')
-axs[2].plot(range(len(phi1)), apical_phi1, 'r--')
+axs[2].plot(range(len(theta1)), phi1, 'r')
+axs[2].axvline(T_es, c = 'k', ls = ':', lw = 2, alpha = 0.7)
+#axs[2].plot(range(len(phi1)), basal_phi1, 'r-')
+#axs[2].plot(range(len(phi1)), apical_phi1, 'r--')
 
-#axs[2].plot(range(len(theta2)), phi2, 'g')
-axs[2].plot(range(len(phi2)), basal_phi2, 'g-')
-axs[2].plot(range(len(phi2)), apical_phi2, 'g--')
+axs[2].plot(range(len(theta2)), phi2, 'g')
+#axs[2].plot(range(len(phi2)), basal_phi2, 'g-')
+#axs[2].plot(range(len(phi2)), apical_phi2, 'g--')
 
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
