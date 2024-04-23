@@ -666,8 +666,8 @@ class ComboDataSR_2D:
                         plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.011*self.n**2)
 
                 
-                plt.plot(self.range_TR, theta1_mean_global, 'r', lw=2, label = 'Positive eigenvectors (stretch)')
-                plt.plot(self.range_TR, theta2_mean_global, 'g', lw=2, label = 'Negative eigenvectors (compression)')
+                plt.plot(self.range_TR, theta1_mean_global, 'r', lw=2, label = 'Mean stretch angle')
+                plt.plot(self.range_TR, theta2_mean_global, 'g', lw=2, label = 'Mean compression angle')
                 
                 plt.scatter(np.argmax(theta1_mean_global)*self.TR*1000, np.max(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
                 plt.scatter(np.argmin(theta1_mean_global)*self.TR*1000, np.min(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
@@ -728,8 +728,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run1 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
-    run2 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
+    #run1 = ComboDataSR_2D('mi_D9-3_40d', n = 2)
+    run2 = ComboDataSR_2D('sham_D7-1_40d', n = 2)
     
     # get info/generate data 
     #run1.overview()

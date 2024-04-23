@@ -406,12 +406,17 @@ sns_plot('pss_diff', ylabel_ = 'pss_diff [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'ps_max'
+column = 'pc_max'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 
 print(f'Day 1: {df__.round(2)}')
 print(f'Day 40+: {df_.round(2)}')
+
+#%%
+
+df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
+df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
 
 #%%
 '''

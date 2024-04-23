@@ -562,7 +562,7 @@ plt.show()
 
 plt.figure(figsize=(7, 6), dpi=300)
 #plt.title('GRS Regional variation MI')
-sns.catplot(data = [np.array(infarct), np.array(adjacent), np.array(medial), np.array(remote)], \
+sns.boxplot(data = [np.array(infarct), np.array(adjacent), np.array(medial), np.array(remote)], \
             palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
 
 # uncomment to include p values relative to infarct
@@ -614,7 +614,7 @@ pr = stats.ttest_ind(g1, g4)[1]
 # scatter/violin plot MI regional variation
 plt.figure(figsize=(7, 6), dpi=300)
 #plt.title('GRS Regional variation Sham')
-sns.catplot(data = [g1, g2, g3, g4], \
+sns.boxplot(data = [g1, g2, g3, g4], \
             palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
 
 #plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \

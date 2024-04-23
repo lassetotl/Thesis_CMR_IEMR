@@ -35,8 +35,8 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 # Converting .mat files to numpy array, dictionary
 
 #converts to dictionary (dict) format
-#file ='sham_D4-4_41d'
-file = 'mi_D11-3_40d'
+file ='sham_D4-4_41d'
+#file = 'mi_D11-3_40d'
 
 #data = sio.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')['ComboData']['pss0']
 #data = mat73.loadmat(f'R:\Lasse\combodata_3d_shax\{file}.mat')
@@ -414,19 +414,25 @@ axs[0].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
 im = axs[1].imshow(np.array(theta_comp), vmin = cmin, vmax = cmax, cmap = c_cmap, aspect = 'auto')
 axs[1].text(T_ed_min-0.5, 0.7, '∎', color = 'g', fontsize = 20)
-axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
+#axs[1].axhline(int(len(slice_selection)/2) - odd*0.5, ls = '--', color = 'k')
 
-#axs[2].plot(range(len(theta1)), theta1, 'r')
+axs[2].plot(range(len(theta1)), theta1, 'r')
 axs[2].axvline(T_es, c = 'k', ls = ':', lw = 2, alpha = 0.7)
 #axs[2].axvline(T_es - 0.2*T_es, color = 'gray', lw = 0.6)
 #axs[2].axvline(0.2*T_es, color = 'gray', lw = 0.6)
 
-axs[2].plot(range(len(theta1)), basal_theta1, 'r-')
-axs[2].plot(range(len(theta1)), apical_theta1, 'r--')
+#axs[2].plot(range(len(theta1)), basal_theta1, 'r-')
+#axs[2].plot(range(len(theta1)), apical_theta1, 'r--')
 
-#axs[2].plot(range(len(theta2)), theta2, 'g')
-axs[2].plot(range(len(theta2)), basal_theta2, 'g-')
-axs[2].plot(range(len(theta2)), apical_theta2, 'g--')
+axs[2].plot(range(len(theta2)), theta2, 'g')
+#axs[2].plot(range(len(theta2)), basal_theta2, 'g-')
+#axs[2].plot(range(len(theta2)), apical_theta2, 'g--')
+
+axs[2].scatter(x=np.argmax(theta1), y=np.max(theta1), c='r',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
+axs[2].scatter(x=np.argmin(theta1), y=np.min(theta1), c='r',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
+
+axs[2].scatter(x=np.argmax(theta2), y=np.max(theta2), c='g',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
+axs[2].scatter(x=np.argmin(theta2), y=np.min(theta2), c='g',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
 
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
@@ -465,6 +471,13 @@ axs[2].axvline(T_es, c = 'k', ls = ':', lw = 2, alpha = 0.7)
 axs[2].plot(range(len(theta2)), phi2, 'g')
 #axs[2].plot(range(len(phi2)), basal_phi2, 'g-')
 #axs[2].plot(range(len(phi2)), apical_phi2, 'g--')
+
+axs[2].scatter(x=np.argmax(phi1), y=np.max(phi1), c='r',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
+axs[2].scatter(x=np.argmin(phi1), y=np.min(phi1), c='r',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
+
+axs[2].scatter(x=np.argmax(phi2), y=np.max(phi2), c='g',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
+axs[2].scatter(x=np.argmin(phi2), y=np.min(phi2), c='g',  marker = 'x', s = 100, clip_on = 0, zorder = 3)
+
 
 axs[2].set_xlabel('Timepoints', fontsize = 15)
 
