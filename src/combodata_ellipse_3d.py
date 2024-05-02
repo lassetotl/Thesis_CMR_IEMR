@@ -192,6 +192,8 @@ total_ls = []; total_cs = []; total_rs = []
 theta_stretch = []; theta_comp = []
 phi_stretch = []; phi_comp = []
 
+# curvature data
+
 slice_selection = np.arange(2, slices) 
 #slice_selection = [2,3,4,5,6,7,8,9]
 T_ed_min = np.min(np.array(T_ed))

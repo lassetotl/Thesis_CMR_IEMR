@@ -502,7 +502,7 @@ sns_plot('TCd', ylabel_ = r'$\theta_{cd}$ [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'Pss'
+column = 'TSs'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:[np.mean, np.std]})
 
@@ -518,74 +518,8 @@ df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
 
-# MI
-
-infarct = []
-adjacent = []
-medial = []
-remote = []
-
 # c_reg or r_reg
-column = 'c_reg'
-for key, value in df_mi_40[column].iteritems():
-    infarct.append(value[0])  
-    adjacent.append(value[1])  
-    medial.append(value[2])  
-    remote.append(value[3])  
-
-# regional colormap
-c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
-norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
-
-# p values compared with infarct
-
-pa = stats.ttest_ind(infarct, adjacent)[1]
-pm = stats.ttest_ind(infarct, medial)[1]
-pr = stats.ttest_ind(infarct, remote)[1]
-
-# scatter/violin plot MI regional variation
-'''
-plt.figure(figsize=(6, 5))
-plt.title('GCS Regional variation MI')
-
-plt.scatter([0]*len(df_mi_40[column]), infarct, color = c_cmap(0))
-plt.scatter([1]*len(df_mi_40[column]), adjacent, color = c_cmap(1))
-plt.scatter([2]*len(df_mi_40[column]), medial, color = c_cmap(2))
-plt.scatter([3]*len(df_mi_40[column]), remote, color = c_cmap(3))
-
-plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
-plt.ylabel('%', fontsize = 17)
-
-plt.show()
-
-'''
-
-plt.figure(figsize=(7, 6), dpi=300)
-#plt.title('GRS Regional variation MI')
-sns.boxplot(data = [np.array(infarct), np.array(adjacent), np.array(medial), np.array(remote)], \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
-
-# uncomment to include p values relative to infarct
-#plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
-#                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
-    
-plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
-plt.scatter([0]*len(df_mi_40[column]), infarct, color = 'gray')
-plt.scatter([1]*len(df_mi_40[column]), adjacent, color = 'gray')
-plt.scatter([2]*len(df_mi_40[column]), medial, color = 'gray')
-plt.scatter([3]*len(df_mi_40[column]), remote, color = 'gray')
-
-if column == 'c_reg':
-    plt.ylabel('GCS [%]', fontsize = 17)
-else:
-    plt.ylabel('GRS [%]', fontsize = 17)
-    
-
-ymin = plt.axis()[2]
-ymax = plt.axis()[3]
-
-plt.show()
-
+column = 'r_reg'
 
 # Sham
 
@@ -610,22 +544,24 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 pa = stats.ttest_ind(g1, g2)[1]
 pm = stats.ttest_ind(g1, g3)[1]
 pr = stats.ttest_ind(g1, g4)[1]
+print(pa,pm,pr)
+
 
 # scatter/violin plot MI regional variation
 plt.figure(figsize=(7, 6), dpi=300)
 #plt.title('GRS Regional variation Sham')
-sns.boxplot(data = [g1, g2, g3, g4], \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
+sns.barplot(data = [g1, g2, g3, g4], ci='sd', capsize=.4, \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], errwidth = 1.4)
 
 #plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
 #                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
     
 plt.xticks([0, 1, 2, 3], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'])
                           
-plt.scatter([0]*len(df_sham_40[column]), g1, color = 'gray')
-plt.scatter([1]*len(df_sham_40[column]), g2, color = 'gray')
-plt.scatter([2]*len(df_sham_40[column]), g3, color = 'gray')
-plt.scatter([3]*len(df_sham_40[column]), g4, color = 'gray')
+plt.scatter([0]*len(df_sham_40[column]), g1, color = 'darkred', s = 40)
+plt.scatter([1]*len(df_sham_40[column]), g2, color = 'darkgreen', s = 40)
+plt.scatter([2]*len(df_sham_40[column]), g3, color = 'darkblue', s = 40)
+plt.scatter([3]*len(df_sham_40[column]), g4, color = 'indigo', s = 40)
 
 if column == 'c_reg':
     plt.ylabel('GCS [%]', fontsize = 17)
@@ -633,5 +569,78 @@ else:
     plt.ylabel('GRS [%]', fontsize = 17)
 
 plt.ylim(ymin, ymax)
+
+#ymin = plt.axis()[2]
+#ymax = plt.axis()[3]
+
+plt.show()
+
+#%%
+
+# MI
+
+infarct = []
+adjacent = []
+medial = []
+remote = []
+
+for key, value in df_mi_40[column].iteritems():
+    infarct.append(value[0])  
+    adjacent.append(value[1])  
+    medial.append(value[2])  
+    remote.append(value[3])  
+
+# regional colormap
+c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
+norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
+
+# p values compared with infarct
+
+pa = stats.ttest_ind(infarct, adjacent)[1]
+pm = stats.ttest_ind(infarct, medial)[1]
+pr = stats.ttest_ind(infarct, remote)[1]
+print(pa,pm,pr)
+
+# scatter/violin plot MI regional variation
+'''
+plt.figure(figsize=(6, 5))
+plt.title('GCS Regional variation MI')
+
+plt.scatter([0]*len(df_mi_40[column]), infarct, color = c_cmap(0))
+plt.scatter([1]*len(df_mi_40[column]), adjacent, color = c_cmap(1))
+plt.scatter([2]*len(df_mi_40[column]), medial, color = c_cmap(2))
+plt.scatter([3]*len(df_mi_40[column]), remote, color = c_cmap(3))
+
+plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
+plt.ylabel('%', fontsize = 17)
+
+plt.show()
+
+'''
+
+plt.figure(figsize=(7, 6), dpi=300)
+#plt.title('GRS Regional variation MI')
+sns.barplot(data = [infarct, adjacent, medial, remote], ci='sd', capsize=.4, \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], errwidth = 1.4)
+
+# uncomment to include p values relative to infarct
+#plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
+#                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
+    
+plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
+plt.scatter([0]*len(df_mi_40[column]), infarct, color = 'darkred', s = 40)
+plt.scatter([1]*len(df_mi_40[column]), adjacent, color = 'darkgreen', s = 40)
+plt.scatter([2]*len(df_mi_40[column]), medial, color = 'darkblue', s = 40)
+plt.scatter([3]*len(df_mi_40[column]), remote, color = 'indigo', s = 40)
+
+if column == 'c_reg':
+    plt.ylabel('GCS [%]', fontsize = 17)
+else:
+    plt.ylabel('GRS [%]', fontsize = 17)
+
+#plt.ylim(ymin, ymax)
+
+ymin = plt.axis()[2]
+ymax = plt.axis()[3]
 
 plt.show()
