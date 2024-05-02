@@ -2,9 +2,8 @@
 """
 Created on Tue Nov 11 2023
 
-(WIP) Expansion of the ComboDataSR_2D class, but applied to series of combodata slices.
-The final class will perform similar calculations but for a main slice (slice06?)
-plus a range of slices above and below. Or just a given range?
+Expansion of the ComboDataSR_2D class, but applied to series of combodata LV slices
+to analyze 3D deformation.
 
 @author: lassetot
 """
@@ -13,19 +12,13 @@ import os, time
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib import patches
 from matplotlib.lines import Line2D
 
-from numpy.linalg import norm
 from util import theta_rad, running_average, clockwise_angle
 
-
-import scipy.io as sio
 import scipy.ndimage as ndi 
-import scipy.interpolate as scint
-from scipy.integrate import cumtrapz, simpson
+from scipy.integrate import cumulative_trapezoid
 import imageio
-from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import seaborn as sns
 import h5py
@@ -34,7 +27,7 @@ import h5py
 class ComboDataSR_3D:
     def __init__(  # performs when an instance is created
             self,
-            filename,  # combodata file in 
+            filename,  # combodata file
             n = 2,  # every n'th voxel in mask sampled (n = 1 to sample all)
             sigma = 2,  # sigma of gaussian distribution that smoothes velocity data
             ):
@@ -43,7 +36,7 @@ class ComboDataSR_3D:
         self.n = n
         self.sigma = sigma
         
-        # generalize: make filename be whole directory line?
+        # data converted from MATLAB structure to Python dictionary
         self.data = h5py.File(f'R:\Lasse\combodata_3d_shax\{self.filename}.mat', 'r')['ComboData']
         
         # global parameters for this set
@@ -119,7 +112,7 @@ class ComboDataSR_3D:
          [dvz/dx, dvz/dy, dvz/dz]]
         '''
         
-        dy = dx = 1 # voxel length 1 in our image calculations
+        dy = dx = 1 # voxel length 1 in our image calculations, scaled properly later
         dz = self.dz
         
         # collecting fields at t
@@ -188,8 +181,8 @@ class ComboDataSR_3D:
         w1 = self.range_[:T_ed]*T_ed; w1 = w1/np.max(w1)
         w2 = np.flip(w1); w2 = w2/np.max(w2)
         
-        strain = cumtrapz(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial = 0)
-        strain_flipped = np.flip(cumtrapz(strain_rate[::-1][:T_ed], self.range_TR[::-1][:T_ed]/1000, initial = 0))
+        strain = cumulative_trapezoid(strain_rate[:T_ed], self.range_TR[:T_ed]/1000, initial = 0)
+        strain_flipped = np.flip(cumulative_trapezoid(strain_rate[::-1][:T_ed], self.range_TR[::-1][:T_ed]/1000, initial = 0))
         return w2*strain + w1*strain_flipped
     
     ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 

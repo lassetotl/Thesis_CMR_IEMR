@@ -2,18 +2,15 @@
 Created on Tue Nov 2
 Author Lasse Totland
 
-this is an expansion of the initial ellipse plot to try and make it work for 3d 
-collection of shax combodata slices (work in progress)
+This script sorts the slices according to their position from isocenter 
+to look at regional variation between LV slices. Parts of this script were later
+implemented into "ComboDataSR_3D.py", and this script was later used for 
+troubleshooting and for making specific plots.
 """
 
-import os
 import numpy as np
 import matplotlib as mpl
 import matplotlib.pyplot as plt
-from matplotlib import patches
-from numpy.linalg import norm
-from util import D_ij_2D, theta_rad, running_average, clockwise_angle
-from util import gaussian_2d, theta_extreme
 #import pandas as pd
 import seaborn as sns; sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
 
@@ -23,14 +20,9 @@ from ComboDataSR_3D import ComboDataSR_3D
 from math import ceil, floor
 
 import scipy.io as sio
-import scipy.ndimage as ndi 
-from scipy.signal import convolve2d
-import scipy.interpolate as scint
-from scipy.integrate import cumtrapz
-import imageio
-import copy
-import mat73, h5py
-from mpl_toolkits.axes_grid1 import make_axes_locatable
+from scipy.integrate import cumulative_trapezoid
+import h5py
+
 #%%
 # Converting .mat files to numpy array, dictionary
 
@@ -272,8 +264,8 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     w1 = range_*T_ed; w1 = w1/np.max(w1)
     w2 = np.flip(w1); w2 = w2/np.max(w2)
 
-    strain = cumtrapz(strain_rate, range_TR/1000, initial=0)
-    strain_flipped = np.flip(cumtrapz(strain_rate[::-1], range_TR[::-1]/1000, initial=0))
+    strain = cumulative_trapezoid(strain_rate, range_TR/1000, initial=0)
+    strain_flipped = np.flip(cumulative_trapezoid(strain_rate[::-1], range_TR[::-1]/1000, initial=0))
     return w2*strain + w1*strain_flipped
 
 # derive strain from the total sr curve, not sum of strain curves

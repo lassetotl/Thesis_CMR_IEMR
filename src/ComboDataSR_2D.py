@@ -6,7 +6,7 @@ This script contains a class that implements all of the work in the scripts comb
 It lets us easily prepare many separate instances (different datasets) in one run, and refer to the methods needed
 (f.ex. to get a velocity plot, create ellipse animation, or just collect analysis data)
 
-Will be expanded to 3d eventually, but functionality will be similar.
+Has been expanded to 3d ("ComboDataSR_3D.py"), with similar structure but using 3D SR tensors.
 
 @author: lassetot
 """
@@ -18,17 +18,13 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 from matplotlib.lines import Line2D
 
-from numpy.linalg import norm
-from util import D_ij_2D, theta_rad, running_average, clockwise_angle
-from util import gaussian_2d, theta_extreme
+
+from util import theta_rad, running_average, clockwise_angle
 
 import scipy.io as sio
-import scipy.ndimage as ndi 
-from scipy.signal import convolve2d
-import scipy.interpolate as scint
-from scipy.integrate import cumtrapz
+import scipy.ndimage as ndi
+from scipy.integrate import cumulative_trapezoid
 import imageio
-import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import seaborn as sns
@@ -36,9 +32,9 @@ import seaborn as sns
 
 # create instance for each dataset (of type combodata)
 class ComboDataSR_2D:
-    def __init__(  # initialize when an instance is created
+    def __init__(  # initializes when an instance is created
             self,
-            filename,  # combodata file in 
+            filename,  # combodata file
             n = 2,  # every n'th voxel in mask sampled (n = 1 to sample all)
             sigma = 2,  # sigma of gaussian distribution that smoothes velocity data
             ):
@@ -47,8 +43,9 @@ class ComboDataSR_2D:
         self.n = n
         self.sigma = sigma
         
-        # generalize: make filename be whole directory line?
+        # data converted from MATLAB structure to Python dictionary
         self.data = sio.loadmat(f'R:\Lasse\combodata_shax\{filename}')["ComboData_thisonly"]
+        
         self.V = self.data['V'][0,0]  # velocity field matrix
         self.M = self.data['Magn'][0,0]  # magnitude matrix
         self.mask = self.data['Mask'][0,0]  # binary mask of myocardium
@@ -77,13 +74,14 @@ class ComboDataSR_2D:
         # amount of segments in each remaining slice
         self.sl = int(np.floor((36 - abs(infarct_length))/6))
     
+    
     ### internal functions (prefixed by '_') are called by the main methods ###
     
     # calculate strain rate tensor for given point (x, y) and time t
     def _D_ij_2D(self, x, y, t): 
         L = np.zeros((2, 2), dtype = float) #Jacobian 2x2 matrix
         
-        dy = dx = 1 # voxel length 1 in our image calculations
+        dy = dx = 1 # voxel length 1 in our image calculations, scaled properly later
         vx = self.vx; vy = self.vy; C = self.C
         
         # note!: the diagonal has been switched for script testing!
@@ -108,8 +106,8 @@ class ComboDataSR_2D:
         w1 = self.range_*self.T_ed; w1 = w1/np.max(w1)
         w2 = np.flip(w1); w2 = w2/np.max(w2)
         
-        strain = cumtrapz(strain_rate, self.range_TR/1000 , initial=0)
-        strain_flipped = np.flip(cumtrapz(strain_rate[::-1], self.range_TR[::-1]/1000, initial=0))
+        strain = cumulative_trapezoid(strain_rate, self.range_TR/1000 , initial=0)
+        strain_flipped = np.flip(cumulative_trapezoid(strain_rate[::-1], self.range_TR[::-1]/1000, initial=0))
         return w2*strain + w1*strain_flipped
     
     ### methods 'overview', 'velocity' and 'strain_rate' are called from instances of the class ### 

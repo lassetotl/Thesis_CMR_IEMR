@@ -5,7 +5,7 @@ Created on Fri Feb  2 09:12:08 2024
 @author: lassetot
 
 Curve analysis parameters collected and used to construct a pandas dataframe
-for correlation analysis.
+for correlation analysis from the analysis using 3D strain rate tensors.
 """
 
 import os, time
@@ -18,7 +18,7 @@ from ComboDataSR_3D import ComboDataSR_3D
 from math import ceil, floor
 from scipy.integrate import cumtrapz
 from scipy import stats
-from util import running_average, drop_outliers_IQR
+from util import drop_outliers_IQR
 import pandas 
 import seaborn as sns; sns.set()
 import statsmodels.api as sm

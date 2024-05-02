@@ -4,11 +4,8 @@ Created on Thu Oct  5 10:39:12 2023
 
 @author: lassetot
 
-we collect generated global radial strain (GRS) curves and plot them together.
-make sure that all used data were generated using the same setup parameters!!
-
-curve analysis parameters collected and used to construct a pandas dataframe
-for correlation analysis
+Curve analysis parameters collected and used to construct a pandas dataframe
+for statistical analysis between Sham and MI, and between LV sectors.
 """
 
 import os, time
@@ -17,9 +14,9 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
 from ComboDataSR_2D import ComboDataSR_2D
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 from scipy import stats
-from util import running_average, drop_outliers_IQR
+from util import drop_outliers_IQR
 import pandas 
 import seaborn as sns; sns.set()
 
@@ -304,10 +301,10 @@ for file in os.listdir('R:\Lasse\\angle distribution data'):
            
     if str(file[0]) == 'm':  # compare angle cohesion
         plt.plot(range_TR[:len(diff)], diff, 'r', lw=1.3)
-        auc_mi.append([days, sum(cumtrapz(diff[:u]))])
+        auc_mi.append([days, sum(cumulative_trapezoid(diff[:u]))])
     else:
         plt.plot(range_TR[:len(diff)], diff, 'k', lw=1.3)
-        auc_sham.append([days, sum(cumtrapz(diff[:u]))])
+        auc_sham.append([days, sum(cumulative_trapezoid(diff[:u]))])
 
 legend_handles1 = [Line2D([0], [0], color = 'k', lw = 1.3, label = 'Sham'),
           Line2D([0], [0], color = 'r', lw = 1.3, label = 'MI')]
