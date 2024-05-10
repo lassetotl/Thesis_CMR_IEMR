@@ -16,7 +16,7 @@ from matplotlib.lines import Line2D
 from ComboDataSR_3D import ComboDataSR_3D
 
 from math import ceil, floor
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 from scipy import stats
 from util import drop_outliers_IQR
 import pandas 
@@ -34,8 +34,8 @@ def strain(strain_rate, T_ed, weight = 10):  # inherit from 2d class?
     w1 = range_[:T_ed]*T_ed; w1 = w1/np.max(w1)
     w2 = np.flip(w1); w2 = w2/np.max(w2)
 
-    strain = cumtrapz(strain_rate, range_TR/1000, initial=0)[:T_ed]
-    strain_flipped = np.flip(cumtrapz(strain_rate[::-1], range_TR[::-1]/1000, initial=0))[:T_ed]
+    strain = cumulative_trapezoid(strain_rate, range_TR/1000, initial=0)[:T_ed]
+    strain_flipped = np.flip(cumulative_trapezoid(strain_rate[::-1], range_TR[::-1]/1000, initial=0))[:T_ed]
     return w2*strain + w1*strain_flipped
 
 #%%

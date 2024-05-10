@@ -27,7 +27,7 @@ import scipy.io as sio
 import scipy.ndimage as ndi 
 from scipy.signal import convolve2d
 import scipy.interpolate as scint
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 import imageio
 import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -422,8 +422,8 @@ def strain(strain_rate, weight = 10):
     w = np.tanh((T_ed-range_)/weight)[:T_ed]
     w_f = np.tanh(range_/weight)[:T_ed]
 
-    strain = cumtrapz(strain_rate[:T_ed], range_TR[:T_ed], initial=0)
-    strain_flipped = np.flip(cumtrapz(strain_rate[:T_ed][::-1], range_TR[:T_ed][::-1], initial=0))
+    strain = cumulative_trapezoid(strain_rate[:T_ed], range_TR[:T_ed], initial=0)
+    strain_flipped = np.flip(cumulative_trapezoid(strain_rate[:T_ed][::-1], range_TR[:T_ed][::-1], initial=0))
     
     return (w*strain + w_f*strain_flipped)/2
 

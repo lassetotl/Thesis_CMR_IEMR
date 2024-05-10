@@ -809,13 +809,14 @@ class ComboDataSR_3D:
                 ax1 = fig.add_subplot(121)
                 ax2 = fig.add_subplot(122)
                 
-                plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
+                plt.suptitle('Strain rate direction (D4-4 41d, apical slice)', fontsize = 15)
+                #plt.suptitle(f'Strain rate direction ({ID})', fontsize = 15)
                 ax1.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
                 ax1.set_xlim(0, T_*self.TR*1000)
                 ax1.set_xlabel('Time [ms]', fontsize = 15)
-                ax1.set_ylabel('$Eigenvector angle \\theta$', fontsize = 17)
+                ax1.set_ylabel('$\\theta$', fontsize = 17)
 
-                ax2.set_ylabel('$Eigenvector angle \\phi$', fontsize = 17)
+                ax2.set_ylabel('$\\phi$', fontsize = 17)
                 ax2.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
                 ax2.set_xlim(0, T_*self.TR*1000)
                 ax2.set_xlabel('Time [ms]', fontsize = 15)
@@ -887,7 +888,7 @@ class ComboDataSR_3D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_3D('sham_D4-4_41d', n = 2)
+    run2 = ComboDataSR_3D('sham_D7-1_1d', n = 2)
     
     # get info/generate data 
     run2.overview()
@@ -896,7 +897,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     # slice: choose a slice between slices
-    run2.strain_rate(plot = 1, slice_ = 3, save = 0, segment = 0)
+    run2.strain_rate(plot = 1, slice_ = 6, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

@@ -23,7 +23,7 @@ import scipy.io as sio
 import scipy.ndimage as ndi 
 from scipy.signal import convolve2d
 import scipy.interpolate as scint
-from scipy.integrate import cumtrapz
+from scipy.integrate import cumulative_trapezoid
 import imageio
 import copy
 from mpl_toolkits.axes_grid1 import make_axes_locatable
@@ -396,11 +396,11 @@ plt.show()
 w = np.tanh((T_ed-range_)/10)[:T_ed+1]
 w_f = np.tanh(range_/10)[:T_ed+1]
 
-r_strain = cumtrapz(g1, range_TR, initial=0)[:T_ed+1]
-r_strain_flipped = np.flip(cumtrapz(g1[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
+r_strain = cumulative_trapezoid(g1, range_TR, initial=0)[:T_ed+1]
+r_strain_flipped = np.flip(cumulative_trapezoid(g1[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
 
-c_strain = cumtrapz(g2, range_TR, initial=0)[:T_ed+1]
-c_strain_flipped = np.flip(cumtrapz(g2[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
+c_strain = cumulative_trapezoid(g2, range_TR, initial=0)[:T_ed+1]
+c_strain_flipped = np.flip(cumulative_trapezoid(g2[:T_ed+1][::-1], range_TR[:T_ed+1][::-1], initial=0))
 
 plt.figure(figsize=(10, 8))
 
