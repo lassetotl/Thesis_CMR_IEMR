@@ -3,7 +3,7 @@
 `Python 3.9.12` was used throughout the development of the source code and to produce results.
 
 Requisite modules: `numpy`, `matplotlib`, `pandas`, `seaborn`, `scipy`, `h5py`
-## Note: only works with access to IEMR OUS R-disk; access to TPM combodata. 
+## Note: only works with access to TPM combodata from LCZ study. 
 
 ### `CombodataSR_2D.py`
 Contains a python class that takes combodata (with TPM magnitude, velocity fields in two spatial dimensions + time) as input to analyze 2D LV deformation. It produces and returns global strain rate data and can save these as separate files, as well as save videos that visualize the velocity vector field and strain rate as ellipses. See bottom of file for example of use.
