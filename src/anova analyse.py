@@ -8,7 +8,7 @@ Created on Thu May 29 11:23:43 2025
 import numpy as np
 import matplotlib.pyplot as plt
 import pandas as pd
-#import seaborn as sns; sns.set()
+import seaborn as sns; sns.set()
 
 ''' 
 data = {'subject_id': [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -33,7 +33,7 @@ df['ID'] = ID
 from statsmodels.formula.api import ols
 from statsmodels.stats.anova import anova_lm
 
-param = 'TSd'
+param = 'c_std'
 formula = f'{param} ~ Day + ID'
 
 df_sham = df[df['Condition']==0]
@@ -51,15 +51,34 @@ P_mi = anova_table_mi['PR(>F)']['Day']  # P-verdi for endring over dager
 
 print(f'Endring over tid for {param}: \n Sham: {np.round(P_sham, 3)} \n MI: {np.round(P_mi, 3)}')
 
-#%%
+
 plt.figure(figsize=(7, 6), dpi=300)
-#plt.title('GRS Regional variation Sham')
+plt.title(f'repeated measures ANOVA, linear model \n Sham: p = {np.round(P_sham, 3)} \n MI: p = {np.round(P_mi, 3)}')
+
+# paletter, html-koder
+mi_palette = ['#852F30', '#9B3637', '#B03D3E', '#C1494A', '#C95D5E', '#D07273', '#D88788', '#DF9C9C', '#E6B1B1']
+sham_palette = ['#373C9B', '#3E44B1', '#4B51C1', '#5F64C9', '#7478D0', '#898CD8', '#9DA1DF', '#B3B5E6', '#C8CAEE']
 
 # plotte linjer over tid for hvert individ
-
-individer = set(df.index.tolist())
+individer = set(df['ID'])
+mi_i = 0; sham_i = 0
 for id_ in individer:
-    print(id_)
-    days = df[df['ID']==id_]
-    plt.plot()
+    #print(id_)
+    days = list(df[df['ID']==id_]['Day'])
+    param_ = list(df[df['ID']==id_][param])
+    days_param_zip = sorted(zip(days, param_))
+    days_sorted, param_sorted = zip(*days_param_zip)
+    #print(days_sorted, param_sorted)
+    if df[df['ID']==id_]['Condition'].any()==1:
+        color = mi_palette[mi_i]
+        mi_i += 1
+        marker = 'v'
+    else:
+        color = sham_palette[sham_i]
+        sham_i += 1
+        marker = 'o'
+    plt.plot(days_sorted, param_sorted, c=color, marker=marker)
+    plt.xlabel('Days'); plt.ylabel(param)
     #plt.plot(df_sham[])
+    
+plt.show()
