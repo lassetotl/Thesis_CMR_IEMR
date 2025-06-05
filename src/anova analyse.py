@@ -82,3 +82,9 @@ for id_ in individer:
     #plt.plot(df_sham[])
     
 plt.show()
+
+#%%
+#POST HOC analyse
+# identifisere for hvilke rotter målingene endres signifikant
+#tukey_oneway_sham = pairwise_tukeyhsd(endog = df_sham[param], groups = df_sham['Day'])
+#tukey_oneway_mi = pairwise_tukeyhsd(endog = df_mi[param], groups = df_mi['Day'])
