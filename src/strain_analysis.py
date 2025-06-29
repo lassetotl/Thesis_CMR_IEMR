@@ -41,7 +41,7 @@ tp = 60
 st = time.time()
 filenr = 0
 save = 1
-for file in os.listdir('R:\Lasse\combodata_shax'):
+for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax_40d_2025'):
     file_ = os.path.splitext(file)
     run = ComboDataSR_2D(file_[0], n = 1)  # n = 1 should be used for proper analysis
     run.strain_rate(save = save, plot = 0, ellipse = 0)
@@ -90,6 +90,11 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
     r_strain_reg = run.__dict__['r_peakvals']
     c_strain_reg = run.__dict__['c_peakvals']
     
+    TSd_reg = run.__dict__['TSd_peakvals']
+    TSs_reg = run.__dict__['TSs_peakvals']
+    TCd_reg = run.__dict__['TCd_peakvals']
+    TCs_reg = run.__dict__['TCs_peakvals']
+    
     # expressed as percentage of cardiac cycle duration
     TR = run.__dict__['TR']
     r_strain_peaktime_std = 100*np.std(run.__dict__['r_peaktime'])/(TR*T_ed_list[-1])
@@ -112,10 +117,10 @@ for file in os.listdir('R:\Lasse\combodata_shax'):
                     r_strain_peaktime_std, c_strain_peaktime_std, r_sr_max, \
                         r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
                             a2_mean_max, a2_mean_min, r_strain_peak_std, c_strain_peak_std, \
-                                r_strain_reg, c_strain_reg, condition])
+                                r_strain_reg, c_strain_reg, TSd_reg, TSs_reg, TCd_reg, TCs_reg, condition])
     filenr += 1
-    if os.path.exists(f'R:\Lasse\plots\MP4\{file}') == False:
-        os.makedirs(f'R:\Lasse\plots\MP4\{file}')
+    if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}') == False:
+        os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}')
     
 et = time.time()
 print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st)/60)} minutes')  
@@ -166,7 +171,7 @@ ax2.legend(fontsize = 12)
 
 plt.subplots_adjust(wspace=0.07)
 if save == 1:
-    plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
+    plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}\{file}_GS.PNG')
 plt.show()
 
 
@@ -195,10 +200,10 @@ ax2.axhline(0, c = 'k', lw = 1)
 ax2.set_xlim(0, np.max(T_ed_list)*TR)
 ax2.set_xlabel('Time [s]', fontsize = 15)
 
-for file in os.listdir('R:\Lasse\strain data'):
+for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\strain data'):
     # drop this method and save matrices instead?
-    r_strain = np.load(fr'R:\Lasse\strain data\{str(file)}\r_strain.npy', allow_pickle = 1)
-    c_strain = np.load(fr'R:\Lasse\strain data\{str(file)}\c_strain.npy', allow_pickle = 1)
+    r_strain = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{str(file)}\r_strain.npy', allow_pickle = 1)
+    c_strain = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{str(file)}\c_strain.npy', allow_pickle = 1)
     
     T_ = len(r_strain)  # stops at respective end diastole
     if str(file[0]) == 'm':  # double check that folder includes only 6w mi
@@ -219,7 +224,7 @@ ax1.legend(handles = legend_handles1, fontsize = 12)
 ax2.legend(handles = legend_handles2, fontsize = 12)
 
 plt.subplots_adjust(wspace=0.07)
-plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
+plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}\{file}_GS.PNG')
 plt.show()
 
 
@@ -243,9 +248,9 @@ ax2.axhline(0, c = 'k', lw = 1)
 ax2.set_xlim(0, np.max(T_ed_list)*TR)
 ax2.set_xlabel('Time [s]', fontsize = 15)
 
-for file in os.listdir('R:\Lasse\strain rate data'):
-    r_strain_rate = np.load(fr'R:\Lasse\strain rate data\{str(file)}\r_strain_rate.npy', allow_pickle = 1)
-    c_strain_rate = np.load(fr'R:\Lasse\strain rate data\{str(file)}\c_strain_rate.npy', allow_pickle = 1)
+for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data'):
+    r_strain_rate = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{str(file)}\r_strain_rate.npy', allow_pickle = 1)
+    c_strain_rate = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{str(file)}\c_strain_rate.npy', allow_pickle = 1)
     
     T_ = len(r_strain_rate) # stops at respective end diastole
     if str(file[0]) == 'm':
@@ -266,56 +271,10 @@ ax1.legend(handles = legend_handles1, fontsize = 12)
 ax2.legend(handles = legend_handles2, fontsize = 12)
 
 plt.subplots_adjust(wspace=0.07)
-plt.savefig(f'R:\Lasse\plots\MP4\{file}\{file}_GS.PNG')
+plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}\{file}_GS.PNG')
 plt.show()
 
-#%%
-# angle distributions
-'''
-plt.figure(figsize = (10, 8))
-plt.title('Mean direction of compression', fontsize = 15)
-plt.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-plt.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-plt.xlim(0, np.max(T_ed_list)*TR)#; plt.ylim(0, 50)
-plt.xlabel('Timepoints', fontsize = 15)
-plt.ylabel('Degrees', fontsize = 20)
 
-
-a1_mean = np.zeros(T); a2_mean = np.zeros(T)
-auc_mi = []; auc_sham = []  # to fill with tuples (days, auc)
-for file in os.listdir('R:\Lasse\\angle distribution data'):
-    a1 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_pos.npy', allow_pickle = 1)
-    a2 = np.load(fr'R:\Lasse\\angle distribution data\{str(file)}\angle_distribution_neg.npy', allow_pickle = 1)
-    
-    diff = running_average(a2, 4)
-    
-    # auc at systole/diastole only
-    u = int(np.mean(T_es_list))
-    u_ = int(np.mean(T_ed_list))
-      
-    #days = 0
-    if str(file[-1]) == 'w':
-           days = int(file.split('_')[2].replace('w', ''))*7
-    if str(file[-1]) == 'd':
-           days = int(file.split('_')[2].replace('d', ''))
-           
-    if str(file[0]) == 'm':  # compare angle cohesion
-        plt.plot(range_TR[:len(diff)], diff, 'r', lw=1.3)
-        auc_mi.append([days, sum(cumulative_trapezoid(diff[:u]))])
-    else:
-        plt.plot(range_TR[:len(diff)], diff, 'k', lw=1.3)
-        auc_sham.append([days, sum(cumulative_trapezoid(diff[:u]))])
-
-legend_handles1 = [Line2D([0], [0], color = 'k', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'r', lw = 1.3, label = 'MI')]
-
-# difference
-plt.legend(handles = legend_handles1, loc = 'upper right')
-plt.show()
-
-auc_mi = np.array(auc_mi)
-auc_sham = np.array(auc_sham)
-'''
 #%%
 # dataframe analysis
 
@@ -326,13 +285,14 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'TSd', 'TSs', 'TCs', 'TCd', \
                                                     'r_std', 'c_std', 'r_reg', 'c_reg', \
-                                                        'Condition']) 
+                                                        'TSd_reg', 'TSs_reg', 'TCd_reg', 'TCs_reg', 'Condition']) 
 #'''
 # to analyze a generated csv file instead
 #df = pandas.read_csv('combodata_analysis')
+#df = pandas.read_csv('combodata_analysis_40d_2025', dtype=object)
     
 # uncomment to save new csv file
-#df.to_csv('combodata_analysis', sep=',', index=False, encoding='utf-8')
+#df.to_csv('combodata_analysis_40d_2025', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
@@ -511,12 +471,12 @@ print(f'Day 40+: {df_.round(2)}')
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 
 
-df_mi_1 = df_mi[df_mi['Day'] == 1]
+#df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
 
-# c_reg or r_reg
-column = 'r_reg'
+# c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg
+column = 'TCs_reg'
 
 # Sham
 
@@ -526,7 +486,7 @@ g3 = []
 g4 = []
 
 # c_reg or r_reg
-for key, value in df_sham_40[column].iteritems():
+for key, value in df_sham_40[column].items():
     g1.append(value[0])  
     g2.append(value[1])  
     g3.append(value[2])  
@@ -541,14 +501,14 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 pa = stats.ttest_ind(g1, g2)[1]
 pm = stats.ttest_ind(g1, g3)[1]
 pr = stats.ttest_ind(g1, g4)[1]
-print(pa,pm,pr)
+print(column, 'sham:', pa,pm,pr)
 
 
 # scatter/violin plot MI regional variation
 plt.figure(figsize=(7, 6), dpi=300)
 #plt.title('GRS Regional variation Sham')
-sns.barplot(data = [g1, g2, g3, g4], ci='sd', capsize=.4, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], errwidth = 1.4)
+sns.barplot(data = [g1, g2, g3, g4], errorbar='sd', capsize=.4, \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 1.4})
 
 #plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
 #                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
@@ -562,10 +522,19 @@ plt.scatter([3]*len(df_sham_40[column]), g4, color = 'indigo', s = 40)
 
 if column == 'c_reg':
     plt.ylabel('GCS [%]', fontsize = 17)
-else:
+if column == 'r_reg':
     plt.ylabel('GRS [%]', fontsize = 17)
+if column == 'TSs_reg':
+    plt.ylabel(r'$\theta_{Stretch, systole}$ [$^{\circ}$]', fontsize = 17)
+if column == 'TSd_reg':
+    plt.ylabel(r'$\theta_{Stretch, diastole}$ [$^{\circ}$]', fontsize = 17)
+if column == 'TCd_reg':
+    plt.ylabel(r'$\theta_{compression, diastole}$ [$^{\circ}$]', fontsize = 17)
+if column == 'TCs_reg':
+    plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
-plt.ylim(ymin, ymax)
+
+#plt.ylim(ymin, ymax)
 
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
@@ -581,11 +550,17 @@ adjacent = []
 medial = []
 remote = []
 
-for key, value in df_mi_40[column].iteritems():
+for key, value in df_mi_40[column].items():
     infarct.append(value[0])  
     adjacent.append(value[1])  
     medial.append(value[2])  
     remote.append(value[3])  
+
+#clean lists of nans
+infarct = [x for x in infarct if not pandas.isnull(x)]
+adjacent = [x for x in adjacent if not pandas.isnull(x)]
+medial = [x for x in medial if not pandas.isnull(x)]
+remote = [x for x in remote if not pandas.isnull(x)]
 
 # regional colormap
 c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
@@ -596,7 +571,7 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 pa = stats.ttest_ind(infarct, adjacent)[1]
 pm = stats.ttest_ind(infarct, medial)[1]
 pr = stats.ttest_ind(infarct, remote)[1]
-print(pa,pm,pr)
+print(column, 'mi:', pa,pm,pr)
 
 # scatter/violin plot MI regional variation
 '''
@@ -617,23 +592,31 @@ plt.show()
 
 plt.figure(figsize=(7, 6), dpi=300)
 #plt.title('GRS Regional variation MI')
-sns.barplot(data = [infarct, adjacent, medial, remote], ci='sd', capsize=.4, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], errwidth = 1.4)
+sns.barplot(data = [infarct, adjacent, medial, remote], errorbar='sd', capsize=.4, \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 1.4})
 
 # uncomment to include p values relative to infarct
 #plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
 #                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
     
 plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
-plt.scatter([0]*len(df_mi_40[column]), infarct, color = 'darkred', s = 40)
-plt.scatter([1]*len(df_mi_40[column]), adjacent, color = 'darkgreen', s = 40)
-plt.scatter([2]*len(df_mi_40[column]), medial, color = 'darkblue', s = 40)
-plt.scatter([3]*len(df_mi_40[column]), remote, color = 'indigo', s = 40)
+plt.scatter([0]*len(infarct), infarct, color = 'darkred', s = 40)
+plt.scatter([1]*len(adjacent), adjacent, color = 'darkgreen', s = 40)
+plt.scatter([2]*len(medial), medial, color = 'darkblue', s = 40)
+plt.scatter([3]*len(remote), remote, color = 'indigo', s = 40)
 
 if column == 'c_reg':
     plt.ylabel('GCS [%]', fontsize = 17)
-else:
+if column == 'r_reg':
     plt.ylabel('GRS [%]', fontsize = 17)
+if column == 'TSs_reg':
+    plt.ylabel(r'$\theta_{Stretch, systole}$ [$^{\circ}$]', fontsize = 17)
+if column == 'TSd_reg':
+    plt.ylabel(r'$\theta_{Stretch, diastole}$ [$^{\circ}$]', fontsize = 17)
+if column == 'TCd_reg':
+    plt.ylabel(r'$\theta_{compression, diastole}$ [$^{\circ}$]', fontsize = 17)
+if column == 'TCs_reg':
+    plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
 #plt.ylim(ymin, ymax)
 
