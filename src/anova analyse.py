@@ -13,6 +13,8 @@ import seaborn as sns; sns.set()
 from statsmodels.formula.api import ols
 from statsmodels.stats.anova import anova_lm
 from matplotlib.lines import Line2D
+import pingouin as pg
+
 ''' 
 data = {'subject_id': [1, 1, 1, 2, 2, 2, 3, 3, 3],
         'time_point': [1, 2, 3, 1, 2, 3, 1, 2, 3],
@@ -21,7 +23,7 @@ df = pd.DataFrame(data)
 print(df)
 '''
 #subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
-df = pd.read_csv('combodata_analysis')
+df = pd.read_csv('combodata_analysis_aug_2025')
 
 #%%
 # legger til en egen kolonne med ID'er
@@ -31,9 +33,15 @@ for row in range(len(df)):
     ID.append(df['Name'][row].split('_')[1])
 df['ID'] = ID
 #df = df.set_index('ID')
+
+# create another column of integers mapped to IDs
+mapping = {item:i for i, item in enumerate(df['ID'].unique())}
+df['ID_int'] = df['ID'].apply(lambda x: mapping[x])
+
+#df.dropna() # angle std values are not nan
 #%%
 
-param = 'GCSRs'
+param = 'angle_std_e'
 formula = f'{param} ~ Day + ID'
 
 df_sham = df[df['Condition']==0]
@@ -93,8 +101,22 @@ for id_ in individer:
         marker = 'o'
     plt.plot(days_sorted, param_sorted, c=color, marker=marker)
 
-plt.xlabel('Days')#; plt.ylabel(param)
-plt.ylabel(r'GC-SRs [$s^{-1}$]')
+plt.xlabel('Days'); plt.ylabel(param)
+#plt.ylabel(r'GC-SRs [$s^{-1}$]')
 #plt.ylabel(r'$\theta_{compression, diastole} \ [^{\circ}]$', fontsize = 15)
 plt.legend(handles=legend_handles1, prop={'size': 12})
 plt.show()
+
+#%%
+# pingouin - sphericity corrected RM ANOVA
+'''
+spher, W, chisq, dof, pval = pg.sphericity(df_sham, dv=param, within='Day', subject = 'ID_int')
+print('Sphericity, df_sham:', spher, round(W, 3), round(chisq, 3), dof, round(pval, 3))
+
+spher, W, chisq, dof, pval = pg.sphericity(df_mi)
+print('Sphericity, df_mi:', spher, round(W, 3), round(chisq, 3), dof, round(pval, 3))
+'''
+pd.options.display.max_columns = 90
+pg.rm_anova(df_mi)
+
+#print(pg.rm_anova(data = df_mi, dv = param, within = 'Day', subject = 'ID_int', correction = 'GG'))

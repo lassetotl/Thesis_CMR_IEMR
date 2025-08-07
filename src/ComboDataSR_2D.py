@@ -18,7 +18,6 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 from matplotlib.lines import Line2D
 
-
 from util import theta_rad, running_average, clockwise_angle
 
 import scipy.io as sio
@@ -44,7 +43,7 @@ class ComboDataSR_2D:
         self.sigma = sigma
         
         # data converted from MATLAB structure to Python dictionary
-        self.data = sio.loadmat(f'R:\Lasse\combodata_shax\{filename}')["ComboData_thisonly"]
+        self.data = sio.loadmat(fr'C:\Users\\lasse\\Desktop\\IEMR\\Lasse\\combodata_shax\\{filename}')["ComboData_thisonly"]
         
         self.V = self.data['V'][0,0]  # velocity field matrix
         self.M = self.data['Magn'][0,0]  # magnitude matrix
@@ -180,7 +179,7 @@ class ComboDataSR_2D:
           
             w = 25  # +- window from center of mass at t = 0
             plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
-            plt.savefig(f'R:\Lasse\plots\Vdump\V(t={t}).PNG')
+            plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\Vdump\V(t={t}).PNG')
             plt.show()
             
         plt.figure(figsize=(10, 8))
@@ -193,10 +192,10 @@ class ComboDataSR_2D:
         plt.legend()
         
         # save video in folder named after filename
-        filenames = [f'R:\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
+        filenames = [fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
         
         # create .mp4 or .gif files from Vdump folder
-        with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Velocity.gif', fps=5) as writer:
+        with imageio.get_writer(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}\Velocity.gif', fps=5) as writer:
             for filename in filenames:
                 image = imageio.imread(filename)  # load the image file
                 writer.append_data(image)
@@ -223,6 +222,8 @@ class ComboDataSR_2D:
         # for each segment, we store angles corresponding to positive/negative eigenvalues 
         self.theta1 = np.zeros((4, self.T_ed), dtype = 'object')  # 'positive' angles (stretch direction)
         self.theta2 = np.zeros((4, self.T_ed), dtype = 'object')  # 'negative' angles (compression direction)
+        self.theta1_global_ = np.zeros((self.T_ed), dtype = 'object')  # positive, global
+        self.theta2_global_ = np.zeros((self.T_ed), dtype = 'object')  # negative, global
         
         # center of mass at t=0
         self.cx_0, self.cy_0 = ndi.center_of_mass(ndi.binary_fill_holes(self.mask[:, :, 0, 0]))
@@ -254,12 +255,12 @@ class ComboDataSR_2D:
                       Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Sector 4')]
         
         if save == 1:
-            if os.path.exists(f'R:\Lasse\plots\MP4\{self.filename}') == False:
-                os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
+            if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}') == False:
+                os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}')
                 
         sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
         
-        print(f'Calculating Global Strain rate for {self.filename}...')
+        print(fr'Calculating {self.filename}...')
         for t in self.range_:
 
             # combodata mask 
@@ -286,6 +287,7 @@ class ComboDataSR_2D:
             
             # angles from sectors appended here, reset every t
             theta1_ = [[], [], [], []]; theta2_ = [[], [], [], []]
+            theta1_global = []; theta2_global = []
             
             # amount of ellipses in this timepoint in each sector 1-4 is stored here
             e_count = np.zeros(4)
@@ -388,13 +390,17 @@ class ComboDataSR_2D:
                         # does not assume that each 2d tensor has a positive and negative eigenvector
                         if val[val_max_i] > 0:
                             theta1_[sector].append(theta) 
+                            theta1_global.append(theta) #
                         if val[val_min_i] > 0:
                             theta1_[sector].append(theta_)
+                            theta1_global.append(theta_) #
                             
                         if val[val_max_i] < 0:
                             theta2_[sector].append(theta) 
+                            theta2_global.append(theta) #
                         if val[val_min_i] < 0:
                             theta2_[sector].append(theta_)
+                            theta2_global.append(theta_) #
                         
                         if (ellipse == 1) is True:
                             # hex code, inputs in range (0, 1) so theta is scaled
@@ -456,7 +462,7 @@ class ComboDataSR_2D:
                 
                 plt.tight_layout()
                 
-                plt.savefig(f'R:\Lasse\plots\SRdump\SR(t={t}).PNG')
+                plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\SRdump\SR(t={t}).PNG')
                 plt.show(); plt.close()    
         
             for sector in range(4):  # scaling for correct units 
@@ -467,6 +473,10 @@ class ComboDataSR_2D:
                 self.theta1[sector, t] = np.array(theta1_[sector])*180/np.pi
                 self.theta2[sector, t] = np.array(theta2_[sector])*180/np.pi
         
+            # collecting global angle values
+            self.theta1_global_[t] = np.array(theta1_global)*180/np.pi
+            self.theta2_global_[t] = np.array(theta2_global)*180/np.pi
+            
         # add strain rate parameters to dictionary
         r_sr_global = np.sum(self.r_matrix, axis = 0) / 4
         c_sr_global = np.sum(self.c_matrix, axis = 0) / 4
@@ -497,13 +507,29 @@ class ComboDataSR_2D:
         self.c_peakvals = np.zeros(4); self.r_peakvals = np.zeros(4)
         self.c_peaktime = np.zeros(4); self.r_peaktime = np.zeros(4)
         
+        self.TSd_peakvals = np.zeros(4); self.TSs_peakvals = np.zeros(4)
+        self.TCd_peakvals = np.zeros(4); self.TCs_peakvals = np.zeros(4)
+        
+        std1 = np.zeros(self.T_ed); std2 = np.zeros(self.T_ed)
+        for i in self.range_:
+            std1[i] = np.std(self.theta1_global_[i])
+            std2[i] = np.std(self.theta2_global_[i])
+            
+        std_comb = running_average((std1 + std2)/2, 4)
+        
         for sector in range(4):
             rs = 100*self._strain(self.r_matrix[sector, :])
             cs = 100*self._strain(self.c_matrix[sector, :])
+            Theta_S = theta1_mean[sector, :]
+            Theta_C = theta2_mean[sector, :]
             
             # this regional data can be aquired for segment == 0 as well
             self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR
             self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR
+            
+            # regional theta values
+            self.TSd_peakvals[sector] = np.max(Theta_S); self.TSs_peakvals[sector] = np.min(Theta_S)
+            self.TCd_peakvals[sector] = np.min(Theta_C); self.TCs_peakvals[sector] = np.max(Theta_C)
             
         if plot == 1:
             # plot strain rate
@@ -532,39 +558,40 @@ class ComboDataSR_2D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain rate ({self.filename})', fontsize = 15)
+                plt.title('Global strain rate', fontsize = 15)
                 rsr = running_average(np.sum(self.r_matrix, axis = 0) / 4, 4)
                 csr = running_average(np.sum(self.c_matrix, axis = 0) / 4, 4)
                 
-                plt.plot(self.range_TR, rsr, c = 'darkblue', lw=2, label = 'Radial')
-                plt.plot(self.range_TR, csr, c = 'chocolate', lw=2, label = 'Circumferential')
+                plt.plot(self.range_TR, rsr, c = 'darkblue', lw=2.5, label = 'Radial')
+                plt.plot(self.range_TR, csr, c = 'darkblue', lw=2.5, ls='--', label = 'Circumferential')
                 
                 # plot peak values
-                plt.scatter(np.argmax(rsr)*self.TR*1000, np.max(rsr), color = 'darkblue', marker = 'x', s = 130)
-                plt.scatter(np.argmin(rsr)*self.TR*1000, np.min(rsr), color = 'darkblue', marker = 'x', s = 130)
-                plt.scatter(np.argmax(csr)*self.TR*1000, np.max(csr), color = 'chocolate', marker = 'x', s = 130)
-                plt.scatter(np.argmin(csr)*self.TR*1000, np.min(csr), color = 'chocolate', marker = 'x', s = 130)
+                #plt.scatter(np.argmax(rsr)*self.TR*1000, np.max(rsr), color = 'darkblue', marker = 'x', s = 130)
+                #plt.scatter(np.argmin(rsr)*self.TR*1000, np.min(rsr), color = 'darkblue', marker = 'x', s = 130)
+                #plt.scatter(np.argmax(csr)*self.TR*1000, np.max(csr), color = 'chocolate', marker = 'x', s = 130)
+                #plt.scatter(np.argmin(csr)*self.TR*1000, np.min(csr), color = 'chocolate', marker = 'x', s = 130)
                 
+                plt.ylim(-6, 6)
                 plt.legend()
 
             plt.subplots_adjust(wspace=0.25)
             
             if save == 1:
-                if os.path.exists(f'R:\Lasse\plots\MP4\{self.filename}') == False:
-                    os.makedirs(f'R:\Lasse\plots\MP4\{self.filename}')
+                if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}') == False:
+                    os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}')
                     
-                plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GSR.PNG')
+                plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}\{self.filename}_GSR.PNG')
                 
-                filenames = [f'R:\Lasse\plots\SRdump\SR(t={t}).PNG' for t in self.range_]  
+                filenames = [fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\SRdump\SR(t={t}).PNG' for t in self.range_]  
                   
-                with imageio.get_writer(f'R:\Lasse\plots\MP4\{self.filename}\Ellipses.gif', 
+                with imageio.get_writer(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}\Ellipses.gif', 
                                         fps=5) as writer:    # inputs: filename, frame per second
                     for filename in filenames:
                         image = imageio.imread(filename)                         # load the image file
                         writer.append_data(image)
                 
             plt.show()
-                
+        
         if plot == 1:
             # plot strain over time
 
@@ -593,8 +620,8 @@ class ComboDataSR_2D:
                     plt.scatter(self.c_peaktime[sector]*1000, self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                 
                 # control
-                #r_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
-                #c_strain_ = np.load(r'R:\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
+                #r_strain_ = np.load(r'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
+                #c_strain_ = np.load(r'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\sham_D4-4_41d\c_strain.npy', allow_pickle = 1)
                 #plt.plot(self.range_TR[:self.T_ed], r_strain_[:self.T_ed], 'midnightblue', lw=2)
                 #plt.plot(self.range_TR[:self.T_ed], c_strain_[:self.T_ed], 'midnightblue', lw=2, ls='--')
                 
@@ -616,7 +643,7 @@ class ComboDataSR_2D:
             
             plt.subplots_adjust(wspace=0.25)
             if save == 1:
-                plt.savefig(f'R:\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
+                plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}\{self.filename}_GS.PNG')
             plt.show()
             
             #angles over time
@@ -651,7 +678,7 @@ class ComboDataSR_2D:
             else:  # global angle distribution 
                 plt.figure(figsize = (8, 7))
                 mpl.rc_file_defaults()  # remove sns style
-                plt.title(f'Strain rate direction ({self.filename})', fontsize = 15)
+                plt.title('Strain rate angle distribution', fontsize = 15)
                 plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2) #, label = 'End Systole')
                 #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
                 plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
@@ -675,7 +702,22 @@ class ComboDataSR_2D:
                 plt.legend(loc = 'upper right')
 
             plt.show()
-        
+            
+            ## plott global varianse/std over tid
+            plt.figure(figsize = (8, 7))
+            sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
+            plt.title('Strain rate angle standard deviation', fontsize = 15)
+            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            
+            #plt.plot(self.range_TR, std1, label = 'stretch', alpha = 0.7)
+            #plt.plot(self.range_TR, std2, label = 'compression', alpha = 0.7)
+            plt.plot(self.range_TR[2:-1], std_comb[2:-1], 'k', label = 'Standard deviation', lw=2.5)
+            
+            plt.ylim(12, 33)
+            plt.xlabel('Time [ms]', fontsize = 15)
+            plt.ylabel('Eigenvector angle $\\theta$', fontsize = 15)
+            plt.legend(); plt.show()
+            
         if segment == 0:  # turn all return arrays global
             self.r_matrix = r_sr_global
             self.c_matrix = c_sr_global
@@ -688,6 +730,8 @@ class ComboDataSR_2D:
             
             self.theta1 = theta1_mean_global
             self.theta2 = theta2_mean_global
+            self.theta_std_s = np.min(std_comb[2:self.T_es]) #
+            self.theta_std_e = np.min(std_comb[self.T_es:-1]) #
             
         else:
             self.theta1 = theta1_mean
@@ -698,23 +742,23 @@ class ComboDataSR_2D:
         if save == 1:
             # save strain/strain rate/angle dist npy files for analysis
 
-            if os.path.exists(f'R:\Lasse\strain data\{self.filename}') == False:
-                os.makedirs(f'R:\Lasse\strain data\{self.filename}')
+            if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{self.filename}') == False:
+                os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{self.filename}')
                 
-            np.save(fr'R:\Lasse\strain data\{self.filename}\r_strain', self.r_strain)
-            np.save(fr'R:\Lasse\strain data\{self.filename}\c_strain', self.c_strain)
+            np.save(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{self.filename}\r_strain', self.r_strain)
+            np.save(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{self.filename}\c_strain', self.c_strain)
                 
-            if os.path.exists(f'R:\Lasse\strain rate data\{self.filename}') == False:
-                os.makedirs(f'R:\Lasse\strain rate data\{self.filename}')
+            if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{self.filename}') == False:
+                os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{self.filename}')
             
-            np.save(fr'R:\Lasse\strain rate data\{self.filename}\r_strain_rate', self.r_matrix)
-            np.save(fr'R:\Lasse\strain rate data\{self.filename}\c_strain_rate', self.c_matrix)
+            np.save(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{self.filename}\r_strain_rate', self.r_matrix)
+            np.save(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{self.filename}\c_strain_rate', self.c_matrix)
             
-            if os.path.exists(f'R:\Lasse\\angle distribution data\{self.filename}') == False:
-                os.makedirs(f'R:\Lasse\\angle distribution data\{self.filename}')
+            if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\\angle distribution data\{self.filename}') == False:
+                os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\\angle distribution data\{self.filename}')
             
-            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_pos', self.theta1)
-            np.save(fr'R:\Lasse\\angle distribution data\{self.filename}\angle_distribution_neg', self.theta2)
+            np.save(fr'C:\Users\lasse\Desktop\IEMR\Lasse\\angle distribution data\{self.filename}\angle_distribution_pos', self.theta1)
+            np.save(fr'C:\Users\lasse\Desktop\IEMR\Lasse\\angle distribution data\{self.filename}\angle_distribution_neg', self.theta2)
                 
         # if save = 0 the parameters can still be collected from return statement without overwriting 
         return self.r_matrix, self.c_matrix, self.theta1, self.theta2
@@ -726,8 +770,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run1 = ComboDataSR_2D('mi_D9-3_40d', n = 2)
-    run2 = ComboDataSR_2D('sham_D7-1_40d', n = 2)
+    run2 = ComboDataSR_2D('mi_D9-3_6w', n = 2)
+    #run2 = ComboDataSR_2D('sham_D7-1_40d', n = 2)
     
     # get info/generate data 
     #run1.overview()
@@ -745,6 +789,8 @@ if __name__ == "__main__":
     
     et = time.time()
     print(f'Time elapsed: {et-st:.3f} s')
+    print(run2.__dict__['theta_std_s']) #
+    print(run2.__dict__['theta_std_e']) #
 
 #%%
     #d1 = run1.__dict__['d']  # divergence over time
