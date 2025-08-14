@@ -72,6 +72,7 @@ class ComboDataSR_2D:
         
         # amount of segments in each remaining slice
         self.sl = int(np.floor((36 - abs(infarct_length))/6))
+        #print(infarct_length, self.sl)
     
     
     ### internal functions (prefixed by '_') are called by the main methods ###
@@ -338,11 +339,11 @@ class ComboDataSR_2D:
                         # need two ranges for every segment to counter invalid ranges (f.ex. range(33, 17))
                         # all values that add/subtract risk becoming negative or >36, solved by %
                         mis = self.mis; sl = self.sl
-                        range0 = range(mis[0], mis[1]); range0_ = range(mis[1], mis[0])
-                        range1 = range((mis[0]-sl)%36, mis[0]); range1_ = range(mis[0], (mis[0]-sl)%36)
-                        range11 = range(mis[1], (mis[1]+sl)%36); range11_ = range((mis[1]+sl)%36, mis[1])
-                        range2 = range((mis[0]-2*sl)%36, (mis[0]-sl)%36); range2_ = range((mis[0]-sl)%36, (mis[0]-2*sl)%36)
-                        range22 = range((mis[1]+sl)%36, (mis[1]+2*sl)%36); range22_ = range((mis[1]+2*sl)%36, (mis[1]+sl)%36)
+                        range0 = range(int(mis[0]), int(mis[1])); range0_ = range(int(mis[1]), int(mis[0]))
+                        range1 = range((int(mis[0])-sl)%36, int(mis[0])); range1_ = range(int(mis[0]), (int(mis[0])-sl)%36)
+                        range11 = range(int(mis[1]), (int(mis[1])+sl)%36); range11_ = range((int(mis[1])+sl)%36, int(mis[1]))
+                        range2 = range((int(mis[0])-2*sl)%36, (int(mis[0])-sl)%36); range2_ = range((int(mis[0])-sl)%36, (int(mis[0])-2*sl)%36)
+                        range22 = range((int(mis[1])+sl)%36, (int(mis[1])+2*sl)%36); range22_ = range((int(mis[1])+2*sl)%36, (int(mis[1])+sl)%36)
                         
                         # sector 4 defined from the ends of sector 3
                         if any(range22):
@@ -616,8 +617,8 @@ class ComboDataSR_2D:
                     plt.plot(self.range_TR, rs, c = c_cmap(sector), lw=2)
                     plt.plot(self.range_TR, cs, c = c_cmap(sector), lw=2, ls = '--')
                     
-                    plt.scatter(self.r_peaktime[sector]*1000, self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
-                    plt.scatter(self.c_peaktime[sector]*1000, self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                    #plt.scatter(self.r_peaktime[sector]*1000, self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
+                    #plt.scatter(self.c_peaktime[sector]*1000, self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                 
                 # control
                 #r_strain_ = np.load(r'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\sham_D4-4_41d\r_strain.npy', allow_pickle = 1)
@@ -770,8 +771,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_2D('mi_D9-3_6w', n = 2)
-    #run2 = ComboDataSR_2D('sham_D7-1_40d', n = 2)
+    #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
+    run2 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
     
     # get info/generate data 
     #run1.overview()
@@ -783,14 +784,14 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
     et = time.time()
     print(f'Time elapsed: {et-st:.3f} s')
-    print(run2.__dict__['theta_std_s']) #
-    print(run2.__dict__['theta_std_e']) #
+    #print(run2.__dict__['theta_std_s']) #
+    #print(run2.__dict__['theta_std_e']) #
 
 #%%
     #d1 = run1.__dict__['d']  # divergence over time
