@@ -489,10 +489,13 @@ class ComboDataSR_2D:
         
         # mean stretch/compression (theta1/theta2) angles
         theta1_mean = np.zeros((4, self.T_ed)); theta2_mean = np.zeros((4, self.T_ed))
+        theta1_std = np.zeros((4, self.T_ed)); theta2_std = np.zeros((4, self.T_ed)) ###
         for t in self.range_:
             for sector in range(4):
                 theta1_mean[sector, t] = np.mean(self.theta1[sector, t])
                 theta2_mean[sector, t] = np.mean(self.theta2[sector, t])
+                theta1_std[sector, t] = np.std(self.theta1[sector, t]) ###
+                theta2_std[sector, t] = np.std(self.theta2[sector, t]) ###
              
         # mean angles
         theta1_mean_global = np.sum(theta1_mean, axis = 0) / 4
@@ -510,12 +513,14 @@ class ComboDataSR_2D:
         
         self.TSd_peakvals = np.zeros(4); self.TSs_peakvals = np.zeros(4)
         self.TCd_peakvals = np.zeros(4); self.TCs_peakvals = np.zeros(4)
+        self.std_s_min = np.zeros(4); self.std_e_min = np.zeros(4) ###
         
         std1 = np.zeros(self.T_ed); std2 = np.zeros(self.T_ed)
         for i in self.range_:
             std1[i] = np.std(self.theta1_global_[i])
             std2[i] = np.std(self.theta2_global_[i])
-            
+
+        # global std.dev of angle dist
         std_comb = running_average((std1 + std2)/2, 4)
         
         for sector in range(4):
@@ -523,6 +528,9 @@ class ComboDataSR_2D:
             cs = 100*self._strain(self.c_matrix[sector, :])
             Theta_S = theta1_mean[sector, :]
             Theta_C = theta2_mean[sector, :]
+            theta_std_s = theta1_std[sector, :]
+            theta_std_c = theta2_std[sector, :]
+            theta_std_comb = (theta_std_s + theta_std_c)/2
             
             # this regional data can be aquired for segment == 0 as well
             self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR
@@ -531,6 +539,7 @@ class ComboDataSR_2D:
             # regional theta values
             self.TSd_peakvals[sector] = np.max(Theta_S); self.TSs_peakvals[sector] = np.min(Theta_S)
             self.TCd_peakvals[sector] = np.min(Theta_C); self.TCs_peakvals[sector] = np.max(Theta_C)
+            self.std_s_min[sector] = np.min(theta_std_comb[2:self.T_es]); self.std_e_min[sector] = np.min(theta_std_comb[self.T_es:-1]) ###
             
         if plot == 1:
             # plot strain rate
@@ -794,4 +803,5 @@ if __name__ == "__main__":
     #print(run2.__dict__['theta_std_e']) #
 
 #%%
+
     #d1 = run1.__dict__['d']  # divergence over time
