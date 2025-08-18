@@ -94,6 +94,8 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
     #TSs_reg = run.__dict__['TSs_peakvals']
     #TCd_reg = run.__dict__['TCd_peakvals']
     #TCs_reg = run.__dict__['TCs_peakvals']
+    std_s_min = run.__dict__['std_s_min']
+    std_e_min = run.__dict__['std_e_min']
     
     # expressed as percentage of cardiac cycle duration
     TR = run.__dict__['TR']
@@ -114,13 +116,15 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
     
     a_std_s = run.__dict__['theta_std_s']
     a_std_e = run.__dict__['theta_std_e']
+    t_peak_diff_s = run.__dict__['peaktime_diff_s'] #
+    t_peak_diff_e = run.__dict__['peaktime_diff_e'] #
     
     # dataframe row
     df_list.append([filename, days, r_strain_peak_mean, c_strain_peak_mean, \
                     r_strain_peaktime_std, c_strain_peaktime_std, r_sr_max, \
                         r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
                             a2_mean_max, a2_mean_min, r_strain_peak_std, c_strain_peak_std, \
-                                r_strain_reg, c_strain_reg, a_std_s, a_std_e, condition])
+                                r_strain_reg, c_strain_reg, a_std_s, a_std_e, std_s_min, std_e_min, t_peak_diff_s, t_peak_diff_e, condition])
     filenr += 1
     if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}') == False:
         os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}')
@@ -288,7 +292,8 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                             'GRSRd', 'GCSRd', 'GCSRs', \
                                                 'TSd', 'TSs', 'TCs', 'TCd', \
                                                     'r_std', 'c_std', 'r_reg', 'c_reg', \
-                                                        'angle_std_s', 'angle_std_e', 'Condition']) 
+                                                        'angle_std_s', 'angle_std_e', \
+                                                            'std_s_reg', 'std_e_reg', 't_peak_diff_s', 't_peak_diff_e', 'Condition']) 
 #'''
 # to analyze a generated csv file instead
 #df = pandas.read_csv('combodata_analysis')
@@ -462,7 +467,7 @@ sns_plot('TCd', ylabel_ = r'$\theta_{cd}$ [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'angle std e'
+column = 't_peak_diff_s'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 
@@ -472,7 +477,7 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 'angle std e'
+column = 't_peak_diff_e'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
@@ -490,7 +495,7 @@ print(fr'p-value: {round(pval, 3)}')
 # box plot MI hearts regional variation
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 # c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg
-column = 'TCd_reg'
+column = 'std_s_reg'
 
 # Sham
 
@@ -512,9 +517,9 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 # p values compared with infarct
 
-pa = stats.ttest_rel(g1, g2)[1]
-pm = stats.ttest_rel(g1, g3)[1]
-pr = stats.ttest_rel(g1, g4)[1]
+pa = round(stats.ttest_rel(g1, g2)[1], 3)
+pm = round(stats.ttest_rel(g1, g3)[1], 3)
+pr = round(stats.ttest_rel(g1, g4)[1], 3)
 print(column, 'sham:', pa,pm,pr)
 
 
@@ -547,8 +552,8 @@ if column == 'TCd_reg':
 if column == 'TCs_reg':
     plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
-plt.title('sham')
-#plt.ylim(ymin, ymax)
+plt.title(f'{column}, sham: a {pa}, m {pm}, r {pr}')
+plt.ylim(0, 22)
 
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
@@ -569,7 +574,7 @@ for key, value in df_mi_40[column].items():
     adjacent.append(value[1])  
     medial.append(value[2])  
     remote.append(value[3])  
-print(remote)
+
 #clean lists of nans
 infarct = [x for x in infarct if not pandas.isnull(x)]
 adjacent = [x for x in adjacent if not pandas.isnull(x)]
@@ -582,10 +587,9 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 # p values compared with infarct
 
-pa = stats.ttest_rel(infarct, adjacent)[1]
-pm = stats.ttest_rel(infarct[1:], medial)[1]  # first value in medial was NaN, remove first infarct index
-del infarct[2]
-pr = stats.ttest_rel(infarct[1:], remote)[1]
+pa = round(stats.ttest_rel(infarct, adjacent)[1], 3)
+pm = round(stats.ttest_rel(infarct, medial)[1], 3)  # first value in medial was NaN, remove first infarct index
+pr = round(stats.ttest_rel(infarct[:-1], remote)[1], 3)
 print(column, 'mi:', pa,pm,pr)
 
 # scatter/violin plot MI regional variation
@@ -633,10 +637,10 @@ if column == 'TCd_reg':
 if column == 'TCs_reg':
     plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
-#plt.ylim(ymin, ymax)
+plt.ylim(0, 22)
 
-ymin = plt.axis()[2]
-ymax = plt.axis()[3]
+#ymin = plt.axis()[2]
+#ymax = plt.axis()[3]
 
-plt.title('mi')
+plt.title(f'{column}, mi: a {pa}, m {pm}, r {pr}')
 plt.show()

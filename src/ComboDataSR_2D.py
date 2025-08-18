@@ -541,6 +541,18 @@ class ComboDataSR_2D:
             self.TCd_peakvals[sector] = np.min(Theta_C); self.TCs_peakvals[sector] = np.max(Theta_C)
             self.std_s_min[sector] = np.min(theta_std_comb[2:self.T_es]); self.std_e_min[sector] = np.min(theta_std_comb[self.T_es:-1]) ###
             
+        # deviation in SR and std.dev timing
+        sr_sys_t = (np.argmin(c_sr_global) + np.argmax(r_sr_global))*self.TR*1000/2 
+        sr_dia_t = (np.argmax(c_sr_global) + np.argmin(r_sr_global))*self.TR*1000/2 
+        astd_sys_t = np.argmin(std_comb[2:self.T_es])*self.TR*1000
+        astd_dia_t = (np.argmin(std_comb[self.T_es:-1]) + self.T_es)*self.TR*1000 
+        print(sr_sys_t, sr_dia_t)
+        print(astd_sys_t, astd_dia_t)
+        
+        # difference in milliseconds
+        self.peaktime_diff_s = (astd_sys_t - sr_sys_t)
+        self.peaktime_diff_e = (astd_dia_t - sr_dia_t)
+            
         if plot == 1:
             # plot strain rate
 
@@ -780,8 +792,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
-    run2 = ComboDataSR_2D('sham_D4-4_41d', n = 2)
+    #run2 = ComboDataSR_2D('mi_D8-8_6w', n = 1)
+    run2 = ComboDataSR_2D('sham_D3-2_21d', n = 1)
     
     # get info/generate data 
     #run1.overview()
@@ -793,14 +805,16 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
     et = time.time()
     print(f'Time elapsed: {et-st:.3f} s')
-    #print(run2.__dict__['theta_std_s']) #
-    #print(run2.__dict__['theta_std_e']) #
+    
+    print('Difference in min_std and SR peak timings (ms)')
+    print('systole', round(run2.__dict__['peaktime_diff_s'], 3)) #
+    print('diastole', round(run2.__dict__['peaktime_diff_e'], 3)) #
 
 #%%
 
