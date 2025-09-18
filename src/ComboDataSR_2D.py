@@ -330,9 +330,28 @@ class ComboDataSR_2D:
                         val_max_i = np.argmax(val)  # most positive value
                         val_min_i = np.argmin(val)  # most negative
                         
-                        theta = theta_rad(r, vec[val_max_i])  # angle between highest eigenvector and r
-                        theta_ = theta_rad(r, vec[val_min_i])  # angle between lowest eigenvector and r
+                        theta = theta_rad(r, vec[val_max_i], 0)  # angle between highest eigenvector and r
+                        theta_ = theta_rad(r, vec[val_min_i], 0)  # angle between lowest eigenvector and r
+                        #theta = clockwise_angle(r, vec[val_max_i])  # angle between highest eigenvector and r
+                        #theta_ = clockwise_angle(r, vec[val_min_i])  # angle between lowest eigenvector and r
                         
+                        # experimental: move y-axis, loop values above max
+                        theta_max = 140
+                        if theta*180/np.pi > theta_max:
+                            theta -= np.pi
+                        if theta_*180/np.pi > theta_max:
+                            theta_ -= np.pi
+                            
+                        #for a in [-np.pi, np.pi]:
+                            #thetaa = theta + a
+                            #thetaa_ = theta_ + a
+                            #print(thetaa*180/np.pi, thetaa_*180/np.pi)
+                            #if (theta_min < thetaa*180/np.pi) and (thetaa*180/np.pi < theta_max):
+                            #    theta = thetaa
+                            #if (theta_min < thetaa_*180/np.pi) and (thetaa_*180/np.pi < theta_max):
+                            #    theta_ = thetaa_
+                            
+                            
                         # local contribution
                         sect_xy = mask_segment_t[x, y]  # sector value in (x,y)
                         
@@ -425,7 +444,7 @@ class ComboDataSR_2D:
                             #unit_ellipse = patches.Ellipse((x, y), 1, 1, color = 'k'); ax.add_artist(unit_ellipse)
                             
                             ax.add_artist(ellipse_)
-                            
+                        
             # ellipse plot
             if ellipse == 1: 
                 plt.axis('off')
@@ -546,8 +565,7 @@ class ComboDataSR_2D:
         sr_dia_t = (np.argmax(c_sr_global) + np.argmin(r_sr_global))*self.TR*1000/2 
         astd_sys_t = np.argmin(std_comb[2:self.T_es])*self.TR*1000
         astd_dia_t = (np.argmin(std_comb[self.T_es:-1]) + self.T_es)*self.TR*1000 
-        print(sr_sys_t, sr_dia_t)
-        print(astd_sys_t, astd_dia_t)
+        
         
         # difference in milliseconds
         self.peaktime_diff_s = (astd_sys_t - sr_sys_t)
@@ -716,10 +734,10 @@ class ComboDataSR_2D:
                 plt.plot(self.range_TR, theta1_mean_global, 'r', lw=2, label = 'Mean stretch angle')
                 plt.plot(self.range_TR, theta2_mean_global, 'g', lw=2, label = 'Mean compression angle')
                 
-                plt.scatter(np.argmax(theta1_mean_global)*self.TR*1000, np.max(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
-                plt.scatter(np.argmin(theta1_mean_global)*self.TR*1000, np.min(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
-                plt.scatter(np.argmax(theta2_mean_global)*self.TR*1000, np.max(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
-                plt.scatter(np.argmin(theta2_mean_global)*self.TR*1000, np.min(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
+                #plt.scatter(np.argmax(theta1_mean_global)*self.TR*1000, np.max(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
+                #plt.scatter(np.argmin(theta1_mean_global)*self.TR*1000, np.min(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
+                #plt.scatter(np.argmax(theta2_mean_global)*self.TR*1000, np.max(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
+                #plt.scatter(np.argmin(theta2_mean_global)*self.TR*1000, np.min(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
                 
                 plt.legend(loc = 'upper right')
 
@@ -728,14 +746,14 @@ class ComboDataSR_2D:
             ## plott global varianse/std over tid
             plt.figure(figsize = (8, 7))
             sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
-            plt.title('Strain rate angle standard deviation', fontsize = 15)
+            plt.title('Strain rate angle dispersion', fontsize = 15)
             plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             
-            #plt.plot(self.range_TR, std1, label = 'stretch', alpha = 0.7)
-            #plt.plot(self.range_TR, std2, label = 'compression', alpha = 0.7)
+            #plt.plot(self.range_TR, std1, label = 'std stretch', c = 'r', lw=2)
+            #plt.plot(self.range_TR, std2, label = 'std compression', c = 'g', lw=2)
             plt.plot(self.range_TR[2:-1], std_comb[2:-1], 'k', label = 'Standard deviation', lw=2.5)
             
-            plt.ylim(12, 33)
+            plt.ylim(20, 55)
             plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('Eigenvector angle $\\theta$', fontsize = 15)
             plt.legend(); plt.show()
@@ -792,8 +810,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run2 = ComboDataSR_2D('mi_D8-8_6w', n = 1)
-    run2 = ComboDataSR_2D('sham_D3-2_21d', n = 1)
+    #run2 = ComboDataSR_2D('mi_D9-3_6w', n = 2)
+    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
     
     # get info/generate data 
     #run1.overview()
