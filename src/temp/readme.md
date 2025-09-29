@@ -1,1 +1,0 @@
-This folder is used for version discrepancies due to working on scripts on different devices. New functionalities should be implemented in the src folder, and the temp files should be deleted afterward.
