@@ -297,10 +297,10 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
 #'''
 # to analyze a generated csv file instead
 #df = pandas.read_csv('combodata_analysis')
-#df = pandas.read_csv('combodata_analysis_40d_2025', dtype=object)
+#df = pandas.read_csv('combodata_analysis_aug_2025')
     
 # uncomment to save new csv file
-#df.to_csv('combodata_analysis_aug_2025', sep=',', index=False, encoding='utf-8')
+df.to_csv('combodata_analysis_sep_2025', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
@@ -464,10 +464,13 @@ sns_plot('TSs', ylabel_ = r'$\theta_{ss}$ [Degrees]')
 sns_plot('TCs', ylabel_ = r'$\theta_{cs}$ [Degrees]')
 sns_plot('TCd', ylabel_ = r'$\theta_{cd}$ [Degrees]')
 
+sns_plot('angle_std_s', ylabel_ = r'$\theta_{cs}$ [Degrees]')
+sns_plot('angle_std_e', ylabel_ = r'$\theta_{cd}$ [Degrees]')
+
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 't_peak_diff_s'
+column = 'angle_std_e'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 
@@ -477,7 +480,7 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 't_peak_diff_e'
+column = 'angle_std_e'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
@@ -494,7 +497,7 @@ print(fr'p-value: {round(pval, 3)}')
 #%%
 # box plot MI hearts regional variation
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
-# c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg
+# c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg
 column = 'std_s_reg'
 
 # Sham
@@ -517,9 +520,9 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 # p values compared with infarct
 
-pa = round(stats.ttest_rel(g1, g2)[1], 3)
-pm = round(stats.ttest_rel(g1, g3)[1], 3)
-pr = round(stats.ttest_rel(g1, g4)[1], 3)
+pa = round(stats.ttest_ind(g1, g2)[1], 3)
+pm = round(stats.ttest_ind(g1, g3)[1], 3)
+pr = round(stats.ttest_ind(g1, g4)[1], 3)
 print(column, 'sham:', pa,pm,pr)
 
 
@@ -532,7 +535,7 @@ sns.barplot(data = [g1, g2, g3, g4], errorbar='sd', capsize=.4, \
 #plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
 #                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
     
-plt.xticks([0, 1, 2, 3], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'])
+plt.xticks([0, 1, 2, 3], ['Anterior', 'Lateral', 'Posterior', 'Septum'])
                           
 plt.scatter([0]*len(df_sham_40[column]), g1, color = 'darkred', s = 40)
 plt.scatter([1]*len(df_sham_40[column]), g2, color = 'darkgreen', s = 40)
@@ -553,7 +556,7 @@ if column == 'TCs_reg':
     plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
 plt.title(f'{column}, sham: a {pa}, m {pm}, r {pr}')
-plt.ylim(0, 22)
+#plt.ylim(0, 22)
 
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
@@ -587,9 +590,9 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 # p values compared with infarct
 
-pa = round(stats.ttest_rel(infarct, adjacent)[1], 3)
-pm = round(stats.ttest_rel(infarct, medial)[1], 3)  # first value in medial was NaN, remove first infarct index
-pr = round(stats.ttest_rel(infarct[:-1], remote)[1], 3)
+pa = round(stats.ttest_ind(infarct, adjacent)[1], 3)
+pm = round(stats.ttest_ind(infarct, medial)[1], 3)  # first value in medial was NaN, remove first infarct index
+pr = round(stats.ttest_ind(infarct, remote)[1], 3)
 print(column, 'mi:', pa,pm,pr)
 
 # scatter/violin plot MI regional variation
@@ -637,7 +640,7 @@ if column == 'TCd_reg':
 if column == 'TCs_reg':
     plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
-plt.ylim(0, 22)
+#plt.ylim(0, 22)
 
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]

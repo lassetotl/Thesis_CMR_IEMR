@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 from numpy.linalg import norm
 import pandas
-import statsmodels.api as sm
+#import statsmodels.api as sm
 from scipy import stats
 
 import scipy.io as sio
@@ -95,9 +95,9 @@ def D_ij_3D(x, y, V, M, t, sigma, mask, slice_): #Construct SR tensor for specif
 
 
 # Note: returns smallest angle in radians between vectors 
-def theta_rad(v, w):
+def theta_rad(v, w, quarter=1):
     theta_r = np.arccos(v.dot(w)/(norm(v)*norm(w)))
-    if theta_r > np.pi/2:
+    if (quarter == 1) and (theta_r > np.pi/2):
         theta_r = np.pi - theta_r
     return theta_r
 #https://stackoverflow.com/questions/2827393/angles-between-two-n-dimensional-vectors-in-python
