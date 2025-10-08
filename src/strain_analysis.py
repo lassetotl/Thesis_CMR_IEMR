@@ -31,6 +31,7 @@ T_es_list = []
 T_ed_list = []
 
 df_list = []
+mis_list = []
 
 # sham, mi 1d and >40d in separate lists
 rs_sham = []; cs_sham = []
@@ -63,8 +64,10 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
     cs = run.__dict__['c_strain']
     cs = np.pad(cs, (0, tp - len(cs)), 'constant', constant_values = (0))
     
+    condition = 0
     if str(filename[0]) == 'm':
            condition = 1  # mi
+           mis_list.append(run.__dict__['mis'])
            if days == 1:
                rs_mi_1d.append(rs)
                cs_mi_1d.append(cs)
@@ -73,7 +76,6 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
                cs_mi_40d.append(cs)
                
     else:
-           condition = 0 # sham
            rs_sham.append(rs)
            cs_sham.append(cs)
     
@@ -89,6 +91,10 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
     # index order - infarct, adjacent, medial, remote
     r_strain_reg = run.__dict__['r_peakvals']
     c_strain_reg = run.__dict__['c_peakvals']
+    GCSRs_reg = run.__dict__['GCSRs_peakvals']
+    GCSRd_reg = run.__dict__['GCSRd_peakvals']
+    GRSRs_reg = run.__dict__['GRSRs_peakvals']
+    GRSRd_reg = run.__dict__['GRSRd_peakvals']
     
     #TSd_reg = run.__dict__['TSd_peakvals']
     #TSs_reg = run.__dict__['TSs_peakvals']
@@ -124,7 +130,9 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
                     r_strain_peaktime_std, c_strain_peaktime_std, r_sr_max, \
                         r_sr_min, c_sr_max, c_sr_min, a1_mean_max, a1_mean_min, \
                             a2_mean_max, a2_mean_min, r_strain_peak_std, c_strain_peak_std, \
-                                r_strain_reg, c_strain_reg, a_std_s, a_std_e, std_s_min, std_e_min, t_peak_diff_s, t_peak_diff_e, condition])
+                                r_strain_reg, c_strain_reg, a_std_s, a_std_e, std_s_min, \
+                                    std_e_min, t_peak_diff_s, t_peak_diff_e, GCSRs_reg, \
+                                        GCSRd_reg, GRSRs_reg, GRSRd_reg, condition])
     filenr += 1
     if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}') == False:
         os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}')
@@ -132,6 +140,17 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
 et = time.time()
 print(f'Time elapsed for strain rate calculations on {filenr} files: {int((et-st)/60)} minutes')  
 
+#%% mean infarct sectors
+
+#print(mis_list)
+'''
+m1 = []; m2 = []
+for t in mis_list:
+    m2.append(max(t))
+    m1.append(min(t))
+print(f'Mean MI sector: [{int(np.mean(m1))}, {int(np.mean(m2))}]')
+'''
+# output: Mean MI sector: [5, 18]
 #%%
 # mean strain with std
 T = 77  # timepoints
@@ -293,14 +312,15 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                                 'TSd', 'TSs', 'TCs', 'TCd', \
                                                     'r_std', 'c_std', 'r_reg', 'c_reg', \
                                                         'angle_std_s', 'angle_std_e', \
-                                                            'std_s_reg', 'std_e_reg', 't_peak_diff_s', 't_peak_diff_e', 'Condition']) 
+                                                            'std_s_reg', 'std_e_reg', 't_peak_diff_s', 't_peak_diff_e', 'GCSRs_reg', \
+                                                                'GCSRd_reg', 'GRSRs_reg', 'GRSRd_reg','Condition']) 
 #'''
 # to analyze a generated csv file instead
 #df = pandas.read_csv('combodata_analysis')
-#df = pandas.read_csv('combodata_analysis_aug_2025')
+#df = pandas.read_csv('combodata_analysis_oct_2025')
     
 # uncomment to save new csv file
-df.to_csv('combodata_analysis_sep_2025', sep=',', index=False, encoding='utf-8')
+df.to_csv('combodata_analysis_oct_2025', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
@@ -467,10 +487,13 @@ sns_plot('TCd', ylabel_ = r'$\theta_{cd}$ [Degrees]')
 sns_plot('angle_std_s', ylabel_ = r'$\theta_{cs}$ [Degrees]')
 sns_plot('angle_std_e', ylabel_ = r'$\theta_{cd}$ [Degrees]')
 
+sns_plot('t_peak_diff_s', ylabel_ = r'$\theta_{cs}$ [Degrees]')
+sns_plot('t_peak_diff_e', ylabel_ = r'$\theta_{cd}$ [Degrees]')
+
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'angle_std_e'
+column = 'GCSRd'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 
@@ -480,14 +503,14 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 'angle_std_e'
+column = 't_peak_diff_e'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
 
 meanval_sham = np.mean(df_sham_40[column]); stdval_sham = np.std(df_sham_40[column])
 meanval_mi = np.mean(df_mi_40[column]); stdval_mi = np.std(df_mi_40[column])
-pval = stats.ttest_ind(df_sham_40[column], df_mi_40[column])[1]
+pval = stats.ttest_ind(df_sham_40[column].dropna(), df_mi_40[column].dropna())[1]
 
 print(f'stats - {column}:')
 print(fr'Sham: {round(meanval_sham, 3)} $\pm$ {round(stdval_sham, 3)}')
@@ -497,8 +520,8 @@ print(fr'p-value: {round(pval, 3)}')
 #%%
 # box plot MI hearts regional variation
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
-# c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg
-column = 'std_s_reg'
+# c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg or 
+column = 'std_e_reg'
 
 # Sham
 
@@ -513,6 +536,11 @@ for key, value in df_sham_40[column].items():
     g2.append(value[1])  
     g3.append(value[2])  
     g4.append(value[3])  
+
+g1 = np.array(g1)[~np.isnan(g1)]
+g2 = np.array(g2)[~np.isnan(g2)]
+g3 = np.array(g3)[~np.isnan(g3)]
+g4 = np.array(g4)[~np.isnan(g4)]
 
 # regional colormap
 c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
@@ -530,17 +558,17 @@ print(column, 'sham:', pa,pm,pr)
 plt.figure(figsize=(7, 6), dpi=300)
 #plt.title('GRS Regional variation Sham')
 sns.barplot(data = [g1, g2, g3, g4], errorbar='sd', capsize=.4, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 1.4})
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 2})
 
 #plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
 #                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
     
-plt.xticks([0, 1, 2, 3], ['Anterior', 'Lateral', 'Posterior', 'Septum'])
+plt.xticks([0, 1, 2, 3], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'])
                           
-plt.scatter([0]*len(df_sham_40[column]), g1, color = 'darkred', s = 40)
-plt.scatter([1]*len(df_sham_40[column]), g2, color = 'darkgreen', s = 40)
-plt.scatter([2]*len(df_sham_40[column]), g3, color = 'darkblue', s = 40)
-plt.scatter([3]*len(df_sham_40[column]), g4, color = 'indigo', s = 40)
+#plt.scatter([0]*len(df_sham_40[column]), g1, color = 'darkred', s = 40)
+#plt.scatter([1]*len(df_sham_40[column]), g2, color = 'darkgreen', s = 40)
+#plt.scatter([2]*len(df_sham_40[column]), g3, color = 'darkblue', s = 40)
+#plt.scatter([3]*len(df_sham_40[column]), g4, color = 'indigo', s = 40)
 
 if column == 'c_reg':
     plt.ylabel('GCS [%]', fontsize = 17)
@@ -556,33 +584,32 @@ if column == 'TCs_reg':
     plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
 plt.title(f'{column}, sham: a {pa}, m {pm}, r {pr}')
-#plt.ylim(0, 22)
 
-#ymin = plt.axis()[2]
-#ymax = plt.axis()[3]
-
+ymin = plt.axis()[2]
+ymax = plt.axis()[3]
+#plt.ylim(ymin, ymax)
 plt.show()
 
 #%%
 
 # MI
 
-infarct = []
-adjacent = []
-medial = []
-remote = []
+g1 = []
+g2 = []
+g3 = []
+g4 = []
 
+# c_reg or r_reg
 for key, value in df_mi_40[column].items():
-    infarct.append(value[0])  
-    adjacent.append(value[1])  
-    medial.append(value[2])  
-    remote.append(value[3])  
+    g1.append(value[0])  
+    g2.append(value[1])  
+    g3.append(value[2])  
+    g4.append(value[3])  
 
-#clean lists of nans
-infarct = [x for x in infarct if not pandas.isnull(x)]
-adjacent = [x for x in adjacent if not pandas.isnull(x)]
-medial = [x for x in medial if not pandas.isnull(x)]
-remote = [x for x in remote if not pandas.isnull(x)]
+infarct = np.array(g1)[~np.isnan(g1)]
+adjacent = np.array(g2)[~np.isnan(g2)]
+medial = np.array(g3)[~np.isnan(g3)]
+remote = np.array(g4)[~np.isnan(g4)]
 
 # regional colormap
 c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
@@ -592,7 +619,7 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 pa = round(stats.ttest_ind(infarct, adjacent)[1], 3)
 pm = round(stats.ttest_ind(infarct, medial)[1], 3)  # first value in medial was NaN, remove first infarct index
-pr = round(stats.ttest_ind(infarct, remote)[1], 3)
+pr = round(stats.ttest_ind(infarct, remote)[1], 4)
 print(column, 'mi:', pa,pm,pr)
 
 # scatter/violin plot MI regional variation
@@ -615,17 +642,17 @@ plt.show()
 plt.figure(figsize=(7, 6), dpi=300)
 #plt.title('GRS Regional variation MI')
 sns.barplot(data = [infarct, adjacent, medial, remote], errorbar='sd', capsize=.4, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 1.4})
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 2})
 
 # uncomment to include p values relative to infarct
 #plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
 #                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
     
 plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
-plt.scatter([0]*len(infarct), infarct, color = 'darkred', s = 40)
-plt.scatter([1]*len(adjacent), adjacent, color = 'darkgreen', s = 40)
-plt.scatter([2]*len(medial), medial, color = 'darkblue', s = 40)
-plt.scatter([3]*len(remote), remote, color = 'indigo', s = 40)
+#plt.scatter([0]*len(infarct), infarct, color = 'darkred', s = 40)
+#plt.scatter([1]*len(adjacent), adjacent, color = 'darkgreen', s = 40)
+#plt.scatter([2]*len(medial), medial, color = 'darkblue', s = 40)
+#plt.scatter([3]*len(remote), remote, color = 'indigo', s = 40)
 
 if column == 'c_reg':
     plt.ylabel('GCS [%]', fontsize = 17)
@@ -640,10 +667,8 @@ if column == 'TCd_reg':
 if column == 'TCs_reg':
     plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
-#plt.ylim(0, 22)
-
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
-
+plt.ylim(ymin, ymax)
 plt.title(f'{column}, mi: a {pa}, m {pm}, r {pr}')
 plt.show()

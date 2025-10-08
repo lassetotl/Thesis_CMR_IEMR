@@ -18,7 +18,7 @@ import matplotlib.pyplot as plt
 from matplotlib import patches
 from matplotlib.lines import Line2D
 
-from util import theta_rad, running_average, clockwise_angle
+from util import theta_rad, running_average, clockwise_angle, theta_rad_alt
 
 import scipy.io as sio
 import scipy.ndimage as ndi
@@ -59,7 +59,8 @@ class ComboDataSR_2D:
         
         # infarct sector, arbitrary choice if no infarct sector in metadata
         self.infarct = 0  # MI true = 1 or false = 0
-        self.mis = [4, 13]  # similar sectors to MI hearts, with roughly equal distribution of voxels for 4 groups
+        #self.mis = [4, 13]  # similar sectors to MI hearts, with roughly equal distribution of voxels for 4 groups
+        self.mis = [5, 18]  # the average MI sector
         l = self.filename.split('_')
         if l[0] == 'mi' and (any(np.isnan(self.data['InfarctSector'][0,0][0])) == False):
             self.mis = self.data['InfarctSector'][0,0][0]  # infarc sector range tuple
@@ -220,6 +221,8 @@ class ComboDataSR_2D:
         # each row contains strain rate data for sector 1, 2, 3, 4
         self.r_matrix = np.zeros((4, self.T_ed)); self.r_matrix[:, :] = np.nan
         self.c_matrix = np.zeros((4, self.T_ed)); self.c_matrix[:, :] = np.nan
+        self.r_global = np.zeros(self.T_ed)
+        self.c_global = np.zeros(self.T_ed)
 
         # for each segment, we store angles corresponding to positive/negative eigenvalues 
         self.theta1 = np.zeros((4, self.T_ed), dtype = 'object')  # 'positive' angles (stretch direction)
@@ -335,6 +338,8 @@ class ComboDataSR_2D:
                         theta_ = theta_rad(r, vec[val_min_i], 0)  # angle between lowest eigenvector and r
                         #theta = clockwise_angle(r, vec[val_max_i])  # angle between highest eigenvector and r
                         #theta_ = clockwise_angle(r, vec[val_min_i])  # angle between lowest eigenvector and r
+                        #theta = theta_rad_alt(r, vec[val_max_i])
+                        #theta_ = theta_rad_alt(r, vec[val_min_i])
                         
                         # experimental: move y-axis, loop values above max
                         theta_max = 140; theta_min = theta_max - 180
@@ -361,48 +366,48 @@ class ComboDataSR_2D:
                         mis = self.mis; sl = self.sl
                         
                         range0 = range(int(mis[0]), int(mis[1])); range0_ = range(int(mis[1]), int(mis[0]))
-                        if self.infarct == 1:  # infarct - adjacent - medial - remote
-                            range1 = range((int(mis[0])-sl)%36, int(mis[0])); range1_ = range(int(mis[0]), (int(mis[0])-sl)%36)
-                            range11 = range(int(mis[1]), (int(mis[1])+sl)%36); range11_ = range((int(mis[1])+sl)%36, int(mis[1]))
-                            range2 = range((int(mis[0])-2*sl)%36, (int(mis[0])-sl)%36); range2_ = range((int(mis[0])-sl)%36, (int(mis[0])-2*sl)%36)
-                            range22 = range((int(mis[1])+sl)%36, (int(mis[1])+2*sl)%36); range22_ = range((int(mis[1])+2*sl)%36, (int(mis[1])+sl)%36)
-                            # remote defined from the ends of sector 3
-                            if any(range22):
-                                p_end = range22[-1]%36
-                            else:
-                                p_end = range22_[0]%36
+                        # infarct - adjacent - medial - remote
+                        range1 = range((int(mis[0])-sl)%36, int(mis[0])); range1_ = range(int(mis[0]), (int(mis[0])-sl)%36)
+                        range11 = range(int(mis[1]), (int(mis[1])+sl)%36); range11_ = range((int(mis[1])+sl)%36, int(mis[1]))
+                        range2 = range((int(mis[0])-2*sl)%36, (int(mis[0])-sl)%36); range2_ = range((int(mis[0])-sl)%36, (int(mis[0])-2*sl)%36)
+                        range22 = range((int(mis[1])+sl)%36, (int(mis[1])+2*sl)%36); range22_ = range((int(mis[1])+2*sl)%36, (int(mis[1])+sl)%36)
+                        # remote defined from the ends of sector 3
+                        if any(range22):
+                            p_end = range22[-1]%36
+                        else:
+                            p_end = range22_[0]%36
                                 
-                            if any(range2):
-                                n_end = (range2[0] + 1)%36
-                            else:
-                                n_end = (range2_[-1] + 1)%36
+                        if any(range2):
+                            n_end = (range2[0] + 1)%36
+                        else:
+                            n_end = (range2_[-1] + 1)%36
                             
-                            # infarct sector (red)
-                            if sect_xy in range0 or (sect_xy not in range0_)*any(range0_):  
-                                sector = 0
-                                e_count[sector] += 1
+                        # infarct sector (red)
+                        if sect_xy in range0 or (sect_xy not in range0_)*any(range0_):  
+                            sector = 0
+                            e_count[sector] += 1
                             
-                            # adjacent (green)
-                            elif sect_xy in range1 or (sect_xy not in range1_)*any(range1_) \
-                                or sect_xy in range11 or (sect_xy not in range11_)*any(range11_):   
-                                sector = 1
-                                e_count[sector] += 1
+                        # adjacent (green)
+                        elif sect_xy in range1 or (sect_xy not in range1_)*any(range1_) \
+                            or sect_xy in range11 or (sect_xy not in range11_)*any(range11_):   
+                            sector = 1
+                            e_count[sector] += 1
                                 
-                            # medial (blue)                
-                            elif sect_xy in range2 or (sect_xy not in range2_)*any(range2_) \
-                                or sect_xy in range22 or (sect_xy not in range22_)*any(range22_):   
-                                sector = 2
-                                e_count[sector] += 1
+                        # medial (blue)                
+                        elif sect_xy in range2 or (sect_xy not in range2_)*any(range2_) \
+                            or sect_xy in range22 or (sect_xy not in range22_)*any(range22_):   
+                            sector = 2
+                            e_count[sector] += 1
                             
-                            # remote (purple)
-                            elif sect_xy in range(p_end, n_end) \
-                                or (sect_xy not in range(n_end, p_end))*any(range(n_end, p_end)):
-                                sector = 3
-                                e_count[sector] += 1
-                            
-                            else:  # avoid plotting ellipses in invalid ranges
-                                continue
-                            
+                        # remote (purple)
+                        elif sect_xy in range(p_end, n_end) \
+                            or (sect_xy not in range(n_end, p_end))*any(range(n_end, p_end)):
+                            sector = 3
+                            e_count[sector] += 1
+                        
+                        else:  # avoid plotting ellipses in invalid ranges
+                            continue
+                        '''    
                         else:  # anterior - lateral - posterior - septum
                             range1 = range((int(mis[1]))%36, int(mis[1])+9); range1_ = range(int(mis[1]), (int(mis[1]))%36) 
                             range2 = range((int(mis[1])+9)%36, (int(mis[1])+18)%36); range2_ = range((int(mis[1])+18)%36, (int(mis[1])+9)%36)
@@ -430,14 +435,20 @@ class ComboDataSR_2D:
                             
                             else:  # avoid plotting ellipses in invalid ranges
                                 continue
+                        '''
                         
-                        
-                        
-                        
+                        # regional strain rate
                         self.r_matrix[sector, t] += (val[val_max_i])*abs(np.cos(theta)) \
                             + (val[val_min_i])*abs(np.cos(theta_))
                         self.c_matrix[sector, t] += (val[val_max_i])*abs(np.sin(theta)) \
                             + (val[val_min_i])*abs(np.sin(theta_))
+                            
+                        # global strain rate
+                        self.r_global[t] += (val[val_max_i])*abs(np.cos(theta)) \
+                            + (val[val_min_i])*abs(np.cos(theta_))
+                        self.c_global[t] += (val[val_max_i])*abs(np.sin(theta)) \
+                            + (val[val_min_i])*abs(np.sin(theta_))
+                            
                         
                         # angle sum collected, scaled to get average angle each t
                         # does not assume that each 2d tensor has a positive and negative eigenvector
@@ -525,7 +536,12 @@ class ComboDataSR_2D:
                 # collect angles in degrees
                 self.theta1[sector, t] = np.array(theta1_[sector])*180/np.pi
                 self.theta2[sector, t] = np.array(theta2_[sector])*180/np.pi
-        
+                
+            # scaling r_global, c_global
+            self.r_global[t] = self.r_global[t]*1000 / sum(e_count)*self.res
+            self.c_global[t] = self.c_global[t]*1000 / sum(e_count)*self.res
+            
+            
             # collecting global angle values
             self.theta1_global_[t] = np.array(theta1_global)*180/np.pi
             self.theta2_global_[t] = np.array(theta2_global)*180/np.pi
@@ -534,10 +550,10 @@ class ComboDataSR_2D:
         r_sr_global = np.sum(self.r_matrix, axis = 0) / 4
         c_sr_global = np.sum(self.c_matrix, axis = 0) / 4
         
-        self.c_sr_max = np.max(c_sr_global)
-        self.r_sr_max = np.max(r_sr_global)
-        self.c_sr_min = np.min(c_sr_global)
-        self.r_sr_min = np.min(r_sr_global)
+        self.c_sr_max = np.max(self.c_global)
+        self.r_sr_max = np.max(self.r_global)
+        self.c_sr_min = np.min(self.c_global)
+        self.r_sr_min = np.min(self.r_global)
         
         # mean stretch/compression (theta1/theta2) angles
         theta1_mean = np.zeros((4, self.T_ed)); theta2_mean = np.zeros((4, self.T_ed))
@@ -556,10 +572,6 @@ class ComboDataSR_2D:
                 theta2_mean[sector, t] = circmean(self.theta2[sector, t]*np.pi/180, high=theta_max*np.pi/180, low=theta_min*np.pi/180)
                 theta1_std[sector, t] = circstd(self.theta1[sector, t]*np.pi/180, high=theta_max*np.pi/180, low=theta_min*np.pi/180) ###
                 theta2_std[sector, t] = circstd(self.theta2[sector, t]*np.pi/180, high=theta_max*np.pi/180, low=theta_min*np.pi/180) ###
-             
-        # mean angles
-        theta1_mean_global = np.sum(theta1_mean, axis = 0) / 4
-        theta2_mean_global = np.sum(theta2_mean, axis = 0) / 4
         
         #theta1_circmean_global = np.sum(theta1_circmean, axis = 0) / 4
         #theta2_circmean_global = np.sum(theta2_circmean, axis = 0) / 4
@@ -569,20 +581,26 @@ class ComboDataSR_2D:
         self.c_peakvals = np.zeros(4); self.r_peakvals = np.zeros(4)
         self.c_peaktime = np.zeros(4); self.r_peaktime = np.zeros(4)
         
+        # regional SR
+        self.GCSRs_peakvals = np.zeros(4); self.GCSRd_peakvals = np.zeros(4)
+        self.GRSRs_peakvals = np.zeros(4); self.GRSRd_peakvals = np.zeros(4)
+        
         self.TSd_peakvals = np.zeros(4); self.TSs_peakvals = np.zeros(4)
         self.TCd_peakvals = np.zeros(4); self.TCs_peakvals = np.zeros(4)
         self.std_s_min = np.zeros(4); self.std_e_min = np.zeros(4) ###
         
         std1 = np.zeros(self.T_ed); std2 = np.zeros(self.T_ed)
-        
-        #circstd1 = np.zeros(self.T_ed); circstd2 = np.zeros(self.T_ed)
+        # mean angles
+        theta1_mean_global = np.zeros(self.T_ed); theta2_mean_global = np.zeros(self.T_ed)
         
         for i in self.range_:
-            #std1[i] = np.std(self.theta1_global_[i])
-            #std2[i] = np.std(self.theta2_global_[i])
+            theta1_mean_global[i] = circmean(self.theta1_global_[i]*np.pi/180, high=theta_max*np.pi/180, low=theta_min*np.pi/180)
+            theta2_mean_global[i] = circmean(self.theta2_global_[i]*np.pi/180, high=theta_max*np.pi/180, low=theta_min*np.pi/180)
             
-            std1[i] = circstd(self.theta1_global_[i]*np.pi/180, high=np.pi, low=0)
-            std2[i] = circstd(self.theta2_global_[i]*np.pi/180, high=np.pi, low=0)
+            std1[i] = circstd(self.theta1_global_[i]*np.pi/180, high=theta_max*np.pi/180, low=theta_min*np.pi/180)
+            std2[i] = circstd(self.theta2_global_[i]*np.pi/180, high=theta_max*np.pi/180, low=theta_min*np.pi/180)
+            
+            
 
         # global std.dev of angle dist
         std_comb = running_average((std1 + std2)/2, 4)
@@ -601,27 +619,30 @@ class ComboDataSR_2D:
             self.r_peakvals[sector] = np.max(rs); self.r_peaktime[sector] = np.argmax(rs)*self.TR
             self.c_peakvals[sector] = np.min(cs); self.c_peaktime[sector] = np.argmin(cs)*self.TR
             
+            self.GCSRs_peakvals[sector] = np.min(self.c_matrix[sector, :]); self.GCSRd_peakvals[sector] = np.max(self.c_matrix[sector, :])
+            self.GRSRs_peakvals[sector] = np.max(self.r_matrix[sector, :]); self.GRSRd_peakvals[sector] = np.min(self.r_matrix[sector, :])
+            
             # regional theta values
             self.TSd_peakvals[sector] = np.max(Theta_S); self.TSs_peakvals[sector] = np.min(Theta_S)
             self.TCd_peakvals[sector] = np.min(Theta_C); self.TCs_peakvals[sector] = np.max(Theta_C)
             self.std_s_min[sector] = np.min(theta_std_comb[2:self.T_es]); self.std_e_min[sector] = np.min(theta_std_comb[self.T_es:-1]) ###
             
         # deviation in SR and std.dev timing
-        sr_sys_t = (np.argmin(c_sr_global) + np.argmax(r_sr_global))*self.TR*1000/2 
-        sr_dia_t = (np.argmax(c_sr_global) + np.argmin(r_sr_global))*self.TR*1000/2 
-        astd_sys_t = np.argmin(std_comb[2:self.T_es])*self.TR*1000
-        astd_dia_t = (np.argmin(std_comb[self.T_es:-1]) + self.T_es)*self.TR*1000 
+        sr_sys_t = (np.argmin(self.c_global) + np.argmax(self.r_global))*self.TR*1000/2 
+        sr_dia_t = (np.argmax(self.c_global) + np.argmin(self.r_global))*self.TR*1000/2 
+        astd_sys_t = np.argmin(std_comb[2:self.T_es])
+        astd_dia_t = (np.argmin(std_comb[self.T_es:-1]) + self.T_es) 
         
         # max/min of mean curve
         ## try: at time point of min std "astd_sys_t", +-10ms
-        self.theta1_mean_max = np.max(theta1_mean_global)*180/np.pi
-        self.theta1_mean_min = np.min(theta1_mean_global)*180/np.pi
-        self.theta2_mean_max = np.max(theta2_mean_global)*180/np.pi
-        self.theta2_mean_min = np.min(theta2_mean_global)*180/np.pi
+        self.theta1_mean_max = theta1_mean_global[astd_dia_t]*180/np.pi
+        self.theta1_mean_min = theta1_mean_global[astd_sys_t]*180/np.pi
+        self.theta2_mean_max = theta2_mean_global[astd_sys_t]*180/np.pi
+        self.theta2_mean_min = theta2_mean_global[astd_dia_t]*180/np.pi
         
         # difference in milliseconds
-        self.peaktime_diff_s = (astd_sys_t - sr_sys_t)
-        self.peaktime_diff_e = (astd_dia_t - sr_dia_t)
+        self.peaktime_diff_s = (astd_sys_t*self.TR*1000 - sr_sys_t)
+        self.peaktime_diff_e = (astd_dia_t*self.TR*1000 - sr_dia_t)
             
         if plot == 1:
             # plot strain rate
@@ -641,18 +662,19 @@ class ComboDataSR_2D:
                     csr = self.c_matrix[sector, :]
                     
                     plt.plot(self.range_TR, running_average(rsr, 4), c = c_cmap(sector), lw=2)
-                    plt.plot(self.range_TR, running_average(csr, 4), c = c_cmap(sector), lw=2)
+                    plt.plot(self.range_TR, running_average(csr, 4), c = c_cmap(sector), lw=2, ls='--')
                     
                     #include curve parameters in these plots too?
                     #plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                     #plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
-                
+                    plt.ylim(-11, 11)
+                    
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
                 plt.title('Global strain rate', fontsize = 15)
-                rsr = running_average(np.sum(self.r_matrix, axis = 0) / 4, 4)
-                csr = running_average(np.sum(self.c_matrix, axis = 0) / 4, 4)
+                rsr = running_average(self.r_global, 4)
+                csr = running_average(self.c_global, 4)
                 
                 plt.plot(self.range_TR, rsr, c = 'darkblue', lw=2.5, label = 'Radial')
                 plt.plot(self.range_TR, csr, c = 'darkblue', lw=2.5, ls='--', label = 'Circumferential')
@@ -663,7 +685,7 @@ class ComboDataSR_2D:
                 #plt.scatter(np.argmax(csr)*self.TR*1000, np.max(csr), color = 'chocolate', marker = 'x', s = 130)
                 #plt.scatter(np.argmin(csr)*self.TR*1000, np.min(csr), color = 'chocolate', marker = 'x', s = 130)
                 
-                plt.ylim(-6, 6)
+                #plt.ylim(-8, 12)
                 plt.legend()
 
             plt.subplots_adjust(wspace=0.25)
@@ -720,16 +742,16 @@ class ComboDataSR_2D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain ({self.filename})', fontsize = 15)
+                plt.title(f'Global Strain)', fontsize = 15)
                 
-                rs = 100*self._strain(r_sr_global)
-                cs = 100*self._strain(c_sr_global)
+                rs = 100*self._strain(self.r_global)
+                cs = 100*self._strain(self.c_global)
                 
-                plt.plot(self.range_TR, rs, c = 'darkblue', lw=2, label = 'Radial')
-                plt.plot(self.range_TR, cs, c = 'chocolate', lw=2, label = 'Circumferential')
+                plt.plot(self.range_TR, rs, c = 'darkblue', lw=2.5, label = 'Radial')
+                plt.plot(self.range_TR, cs, c = 'darkblue', lw=2.5, label = 'Circumferential', ls='--')
                 
-                plt.scatter(np.argmax(rs)*self.TR*1000, np.max(rs), color = 'darkblue', marker = 'x', s = 130)
-                plt.scatter(np.argmin(cs)*self.TR*1000, np.min(cs), color = 'chocolate', marker = 'x', s = 130)
+                #plt.scatter(np.argmax(rs)*self.TR*1000, np.max(rs), color = 'darkblue', marker = 'x', s = 130)
+                #plt.scatter(np.argmin(cs)*self.TR*1000, np.min(cs), color = 'chocolate', marker = 'x', s = 130)
                 
                 plt.legend()
             
@@ -815,12 +837,12 @@ class ComboDataSR_2D:
             plt.legend(); plt.show()
             
         if segment == 0:  # turn all return arrays global
-            self.r_matrix = r_sr_global
-            self.c_matrix = c_sr_global
+            self.r_matrix = self.r_global
+            self.c_matrix = self.c_global
             
             #r_strain = 100*self._strain(self.r_matrix)
             #c_strain = 100*self._strain(self.c_matrix)
-            
+            #?
             self.r_strain = r_sr_global
             self.c_strain = c_sr_global
             
@@ -867,7 +889,7 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
-    run2 = ComboDataSR_2D('sham_D7-1_40d', n = 2)
+    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
     
     # get info/generate data 
     #run1.overview()
@@ -879,7 +901,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 1)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
