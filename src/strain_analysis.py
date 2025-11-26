@@ -324,6 +324,21 @@ df.to_csv('combodata_analysis_oct_2025', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
+
+#%%
+# modifiser TSd til å vise avstand som avstand fra 90
+
+TSd_mod = []; TSs_mod = []
+TCd_mod = []; TCs_mod = []
+for row in range(len(df)):
+    TSd_mod.append(abs(90 - df['TSd'][row]))
+    TSs_mod.append(abs(df['TSs'][row]))
+    
+    TCd_mod.append(abs(df['TCd'][row]))
+    TCs_mod.append(abs(90 - df['TCs'][row]))
+    
+df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
+df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
 #%%
 # correlation analysis
 # https://www.kaggle.com/code/datafan07/heart-disease-and-some-scikit-learn-magic/notebook
@@ -503,7 +518,7 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 't_peak_diff_e'
+column = 'TCd_mod'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
@@ -521,7 +536,7 @@ print(fr'p-value: {round(pval, 3)}')
 # box plot MI hearts regional variation
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 # c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg or 
-column = 'std_e_reg'
+column = 'TSs_reg'
 
 # Sham
 
