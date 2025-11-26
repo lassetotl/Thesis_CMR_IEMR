@@ -14,6 +14,7 @@ from statsmodels.formula.api import ols
 from statsmodels.stats.anova import anova_lm
 from matplotlib.lines import Line2D
 import pingouin as pg
+from scipy.stats import pearsonr, linregress
 
 ''' 
 data = {'subject_id': [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -23,7 +24,54 @@ df = pd.DataFrame(data)
 print(df)
 '''
 #subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
-df = pd.read_csv('combodata_analysis_aug_2025')
+df = pd.read_csv('combodata_analysis_oct_2025')
+
+#%% correlation heatmap
+
+df_num = df.copy()
+df_num = df_num.drop(columns = ['Name', 'std_s_reg', 'std_e_reg', 'GCSRs_reg', 'GCSRd_reg', 'GRSRs_reg', 't_peak_diff_s',
+'t_peak_diff_e', 'GRSRd_reg', 'r_std', 'c_std', 'r_reg', 'c_reg', 'Rad SDI', 'Circ SDI', 'TSd', 'TSs', 'TCs', 'TCd'])
+
+corr = df_num.corr(method='pearson')
+mask = np.triu(corr)  # diagonal + upper triangle redundant
+fig = plt.figure(figsize=(14,12))
+sns.heatmap(corr, mask=mask, cmap='coolwarm', annot=True, norm='linear', annot_kws={'size':14}, fmt='.2f')
+plt.xticks(fontsize=12); plt.yticks(fontsize=12)
+fig.get_axes()[1].remove()
+plt.show()
+
+#%% correlation plot
+
+#sns.lmplot(data=df_num, x='angle_std_s', y='GCSRs', hue = 'Condition', palette='Set1', ci=None)
+
+param = ['angle_std_e', 'GCSRs']
+
+df_num_s = df[df['Condition']==0]
+df_num_mi = df[df['Condition']==1]
+
+x_s = df_num_s[param[0]]; y_s = df_num_s[param[1]]
+mask = ~np.isnan(x_s) & ~np.isnan(y_s)
+x_s = x_s[mask]; y_s = y_s[mask]
+
+a_s, b_s = linregress(x_s, y_s)[:2]
+pear_s, p_s = pearsonr(x_s, y_s).statistic, pearsonr(x_s, y_s).pvalue
+
+x_mi = df_num_mi[param[0]]; y_mi = df_num_mi[param[1]]
+mask = ~np.isnan(x_mi) & ~np.isnan(y_mi)
+x_mi = x_mi[mask]; y_mi = y_mi[mask]
+
+a_mi, b_mi = linregress(x_mi, y_mi)[:2]
+pear_mi, p_mi = pearsonr(x_mi, y_mi).statistic, pearsonr(x_mi, y_mi).pvalue
+
+plt.scatter(x_s, y_s, c='b', label = f'Sham, pearson {round(pear_s, 3)} (p = {round(p_s, 3)})')
+plt.scatter(x_mi, y_mi, c='r', label = f'MI, pearson {round(pear_mi, 3)} (p = {round(p_mi, 3)})')
+
+x = np.linspace(min([min(x_mi), min(x_s)]), max([max(x_mi), min(x_s)]), 1000)
+plt.plot(x, a_mi*x + b_mi, 'r')
+plt.plot(x, a_s*x + b_s, 'b')
+
+plt.xlabel(param[0]); plt.ylabel(param[1])
+plt.legend(); plt.show()
 
 #%%
 # legger til en egen kolonne med ID'er
@@ -40,8 +88,22 @@ df['ID_int'] = df['ID'].apply(lambda x: mapping[x])
 
 #df.dropna() # angle std values are not nan
 #%%
+# modifiser TSd til å vise avstand som avstand fra 90
 
-param = 'angle_std_e'
+TSd_mod = []; TSs_mod = []
+TCd_mod = []; TCs_mod = []
+for row in range(len(df)):
+    TSd_mod.append(abs(90 - df['TSd'][row]))
+    TSs_mod.append(abs(df['TSs'][row]))
+    
+    TCd_mod.append(abs(df['TCd'][row]))
+    TCs_mod.append(abs(90 - df['TCs'][row]))
+    
+df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
+df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
+#%%
+
+param = 'GRS'
 formula = f'{param} ~ Day + ID'
 
 df_sham = df[df['Condition']==0]
