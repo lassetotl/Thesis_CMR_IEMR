@@ -40,11 +40,34 @@ plt.xticks(fontsize=12); plt.yticks(fontsize=12)
 fig.get_axes()[1].remove()
 plt.show()
 
-#%% correlation plot
+#%%
+# legger til en egen kolonne med ID'er
 
-#sns.lmplot(data=df_num, x='angle_std_s', y='GCSRs', hue = 'Condition', palette='Set1', ci=None)
+ID = []
+for row in range(len(df)):
+    ID.append(df['Name'][row].split('_')[1])
+df['ID'] = ID
+#df = df.set_index('ID')
 
-param = ['angle_std_e', 'GCSRs']
+# create another column of integers mapped to IDs
+mapping = {item:i for i, item in enumerate(df['ID'].unique())}
+df['ID_int'] = df['ID'].apply(lambda x: mapping[x])
+
+#df.dropna() # angle std values are not nan
+
+
+
+#%%
+# paletter, html-koder
+mi_palette = ['#852F30', '#9B3637', '#B03D3E', '#C1494A', '#C95D5E', '#D07273', '#D88788', '#DF9C9C', '#E6B1B1']
+sham_palette = ['#373C9B', '#3E44B1', '#4B51C1', '#5F64C9', '#7478D0', '#898CD8', '#9DA1DF', '#B3B5E6', '#C8CAEE']
+
+# mi x7, sham x6
+palette_ = mi_palette[:7] + sham_palette[:6]
+
+#%% correlation plot (use pg.rm_corr)
+
+param = ['angle_std_e', 'GCSRd']
 
 df_num_s = df[df['Condition']==0]
 df_num_mi = df[df['Condition']==1]
@@ -73,20 +96,19 @@ plt.plot(x, a_s*x + b_s, 'b')
 plt.xlabel(param[0]); plt.ylabel(param[1])
 plt.legend(); plt.show()
 
-#%%
-# legger til en egen kolonne med ID'er
+#repeated measures correlation
 
-ID = []
-for row in range(len(df)):
-    ID.append(df['Name'][row].split('_')[1])
-df['ID'] = ID
-#df = df.set_index('ID')
+rm_corr = pg.rm_corr(data=df, x=param[0], y=param[1], subject='ID')
+r = rm_corr['r'].iloc[0]
+p = rm_corr['pval'].iloc[0]
+dof = rm_corr['dof'].iloc[0]
+ci_lower, ci_upper = rm_corr['CI95%'].iloc[0]
+power = rm_corr['power'].iloc[0]
 
-# create another column of integers mapped to IDs
-mapping = {item:i for i, item in enumerate(df['ID'].unique())}
-df['ID_int'] = df['ID'].apply(lambda x: mapping[x])
+fig = pg.plot_rm_corr(data=df, x=param[0], y=param[1], subject='ID', kwargs_facetgrid={'aspect': 1.2, 'height': 6, 'palette':palette_})
+plt.title(f'RM correlation (r = {r.round(3)}, p = {p.round(3)})')
+plt.show()
 
-#df.dropna() # angle std values are not nan
 #%%
 # modifiser TSd til å vise avstand som avstand fra 90
 
@@ -135,9 +157,6 @@ print(f'Endring over tid for {param}: \n Sham: {np.round(P_sham, 3)} \n MI: {np.
 f = plt.figure(figsize=(6, 5), dpi=200)
 #plt.title('Repeated measures ANOVA, OLS linear model')
 
-# paletter, html-koder
-mi_palette = ['#852F30', '#9B3637', '#B03D3E', '#C1494A', '#C95D5E', '#D07273', '#D88788', '#DF9C9C', '#E6B1B1']
-sham_palette = ['#373C9B', '#3E44B1', '#4B51C1', '#5F64C9', '#7478D0', '#898CD8', '#9DA1DF', '#B3B5E6', '#C8CAEE']
 
 # labels
 legend_handles1 = [Line2D([0], [0], color = sham_palette[1], lw = 2, label = fr'$\beta_1$ = {np.round(slope_sham, 3)}, p = {np.round(P_sham, 3)}', marker = 'o'),
