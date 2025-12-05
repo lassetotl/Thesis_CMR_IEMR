@@ -24,7 +24,7 @@ df = pd.DataFrame(data)
 print(df)
 '''
 #subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
-df = pd.read_csv('combodata_analysis_oct_2025')
+df = pd.read_csv('combodata_analysis_des_2025')
 
 #%% correlation heatmap
 
@@ -64,10 +64,11 @@ sham_palette = ['#373C9B', '#3E44B1', '#4B51C1', '#5F64C9', '#7478D0', '#898CD8'
 
 # mi x7, sham x6
 palette_ = mi_palette[:7] + sham_palette[:6]
+markers_ = ['v']*7 + ['o']*6
 
 #%% correlation plot (use pg.rm_corr)
 
-param = ['angle_std_e', 'GCSRd']
+param = ['TCs_mod', 'GCSRs']
 
 df_num_s = df[df['Condition']==0]
 df_num_mi = df[df['Condition']==1]
@@ -105,7 +106,9 @@ dof = rm_corr['dof'].iloc[0]
 ci_lower, ci_upper = rm_corr['CI95%'].iloc[0]
 power = rm_corr['power'].iloc[0]
 
-fig = pg.plot_rm_corr(data=df, x=param[0], y=param[1], subject='ID', kwargs_facetgrid={'aspect': 1.2, 'height': 6, 'palette':palette_})
+fig = pg.plot_rm_corr(data=df, x=param[0], y=param[1], subject='ID', \
+                      kwargs_facetgrid={'aspect': 1.2, 'height': 4.5, 'palette':palette_},\
+                          kwargs_scatter={'edgecolors':'None'})
 plt.title(f'RM correlation (r = {r.round(3)}, p = {p.round(3)})')
 plt.show()
 
@@ -125,7 +128,7 @@ df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
 df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
 #%%
 
-param = 'GRS'
+param = 'angle_std_e'
 formula = f'{param} ~ Day + ID'
 
 df_sham = df[df['Condition']==0]
@@ -133,7 +136,7 @@ model_sham = ols(formula, data=df_sham).fit()
 #print(model_sham.summary())
 slope_sham = model_sham.params.iloc[-1] # indexing to exclude intercept and Day
 std_sham = model_sham.bse.iloc[-1]
-print(f'OLS regression, sham: ({slope_sham} \pm {std_sham})')
+print(f'OLS regression, sham: ({slope_sham.round(3)} \pm {std_sham.round(3)})')
 
 anova_table_sham = anova_lm(model_sham)
 print(f'ANOVA results {param} (sham): \n', anova_table_sham, '\n')
@@ -146,7 +149,7 @@ anova_table_mi = anova_lm(model_mi)
 #print(model_mi.summary())
 slope_mi = model_mi.params.iloc[-1] # indexing to exclude intercept and Day
 std_mi = model_mi.bse.iloc[-1]
-print(f'OLS regression, mi: ({slope_mi} \pm {std_mi})')
+print(f'OLS regression, mi: ({slope_mi.round(3)} \pm {std_mi.round(3)})')
 
 print(f'ANOVA results {param} (mi): \n', anova_table_mi, '\n')
 P_mi = anova_table_mi['PR(>F)']['Day']  # P-verdi for endring over dager
@@ -185,7 +188,8 @@ for id_ in individer:
 plt.xlabel('Days'); plt.ylabel(param)
 #plt.ylabel(r'GC-SRs [$s^{-1}$]')
 #plt.ylabel(r'$\theta_{compression, diastole} \ [^{\circ}]$', fontsize = 15)
-plt.legend(handles=legend_handles1, prop={'size': 12})
+#plt.legend(handles=legend_handles1, prop={'size': 12})
+plt.legend(handles=legend_handles1, prop={'size': 12}, loc='upper right', bbox_to_anchor=(0.99, 0.8))
 plt.show()
 
 #%%

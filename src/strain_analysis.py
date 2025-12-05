@@ -320,7 +320,7 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
 #df = pandas.read_csv('combodata_analysis_oct_2025')
     
 # uncomment to save new csv file
-df.to_csv('combodata_analysis_oct_2025', sep=',', index=False, encoding='utf-8')
+#df.to_csv('combodata_analysis_des_2025', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
@@ -518,7 +518,7 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 'TCd_mod'
+column = 'angle_std_e'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI

@@ -44,18 +44,24 @@ class ComboDataSR_2D:
         self.sigma = sigma
         
         # data converted from MATLAB structure to Python dictionary
-        self.data = sio.loadmat(fr'C:\Users\\lasse\\Desktop\\IEMR\\Lasse\\combodata_shax\\{filename}')["ComboData_thisonly"]
+        try:
+            self.data = sio.loadmat(fr'C:\Users\\lasse\\Desktop\\IEMR\\Lasse\\combodata_shax\\{filename}')["ComboData_thisonly"]
+        except KeyError:
+            self.data = sio.loadmat(fr'C:\Users\\lasse\\Desktop\\IEMR\\Lasse\\combodata_shax\\{filename}')["ComboData"]
         
         self.V = self.data['V'][0,0]  # velocity field matrix
         self.M = self.data['Magn'][0,0]  # magnitude matrix
-        self.mask = self.data['Mask'][0,0]  # binary mask of myocardium
+        self.mask = self.data['Mask'][0,0]  # binary mask of LV myocardium
+        #self.lumenmask = self.data['Mask_Lumen'][0,0]  # binary mask of LV lumen
         self.mask_segment = self.data['MaskS_medium'][0,0]  # sector mask matrix
+        #self.orientation = self.data['OrientationDataString'][0,0][0][0]
         
         self.T = len(self.V[0,0,0,:,0])  #Total amount of time steps
         self.T_es = self.data['TimePointEndSystole'][0,0][0][0]
         self.T_ed = self.data['TimePointEndDiastole'][0,0][0][0]
         self.res = self.data['Resolution'][0,0][0][0]  # temporal resolution
         self.TR = self.data['TR'][0,0][0][0]  # repetition time
+        self.image_day = self.data['ImageDay'][0,0][0]  # repetition time
         
         # infarct sector, arbitrary choice if no infarct sector in metadata
         self.infarct = 0  # MI true = 1 or false = 0
@@ -117,6 +123,7 @@ class ComboDataSR_2D:
     # print out a short data overview
     def overview(self):
         print(f'{self.filename} overview:')
+        print(f'Follow-up at {self.image_day} days post-surgery.\n')
         print(f'Velocity field shape: {np.shape(self.V)}')
         print(f'Magnitudes field shape: {np.shape(self.M)}')
         print(f'Mask shape: {np.shape(self.mask)}')
@@ -254,10 +261,10 @@ class ComboDataSR_2D:
             # remove controls
             
         else:
-            legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = 'Anterior'),
-                      Line2D([0], [0], color = c_cmap(1), lw = 2, label = 'Lateral'),
-                      Line2D([0], [0], color = c_cmap(2), lw = 2, label = 'Posterior'),
-                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Septum')]
+            legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = 'Sector 1'),
+                      Line2D([0], [0], color = c_cmap(1), lw = 2, label = 'Sector 2'),
+                      Line2D([0], [0], color = c_cmap(2), lw = 2, label = 'Sector 3'),
+                      Line2D([0], [0], color = c_cmap(3), lw = 2, label = 'Sector 4')]
         
         if save == 1:
             if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}') == False:
@@ -656,7 +663,7 @@ class ComboDataSR_2D:
             plt.ylabel('$s^{-1}$', fontsize = 17)
             
             if segment == 1:
-                plt.title(f'Regional Strain rate ({self.filename})', fontsize = 15)
+                plt.title(f'Regional Strain rate', fontsize = 15)
                 for sector in range(4):
                     rsr = self.r_matrix[sector, :]
                     csr = self.c_matrix[sector, :]
@@ -856,7 +863,8 @@ class ComboDataSR_2D:
             self.theta2 = theta2_mean
             self.r_strain = rs
             self.c_strain = cs
-            
+        
+        #print(self.orientation)
         if save == 1:
             # save strain/strain rate/angle dist npy files for analysis
 
@@ -888,11 +896,11 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 2)
-    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
+    run2 = ComboDataSR_2D('mi_D8-7_6w', n = 2)
+    #run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
     
     # get info/generate data 
-    #run1.overview()
+    run2.overview()
     #grv1 = run1.velocity()
     
     ### strain rate analysis ###
