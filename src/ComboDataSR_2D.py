@@ -179,7 +179,7 @@ class ComboDataSR_2D:
                         r = np.array([x - cx, y - cy])
                         
                         v_ = np.array([vx[x, y], vy[x, y]])
-                        plt.quiver(x, y, v_[0], v_[1], color = 'w', scale = 10, minshaft = 1, minlength = 0, width = 0.005)
+                        plt.quiver(x, y, v_[0], v_[1], color = 'w', scale = 15, minshaft = 1, minlength = 0, width = 0.005)
                         theta = clockwise_angle(r, v_) + np.pi
                         
                         self.gr[t] += np.linalg.norm(v_)*np.cos(theta) 
@@ -189,6 +189,7 @@ class ComboDataSR_2D:
           
             w = 25  # +- window from center of mass at t = 0
             plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
+            plt.grid(0)
             plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\Vdump\V(t={t}).PNG')
             plt.show()
             
@@ -522,7 +523,7 @@ class ComboDataSR_2D:
                     sm = plt.cm.ScalarMappable(cmap = c_cmap, norm = norm_)
                     cbar = plt.colorbar(sm, cax = cax)
                     cbar.ax.tick_params(labelsize=18)
-                    cbar.set_label('$\Theta$ (degrees)', fontsize = 20)
+                    cbar.set_label('$\Theta$ (degrees), relative to rad. axis', fontsize = 20)
                     
                 else:
                     plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, 'Ellipse count:', color = 'w', fontsize = 15)
@@ -655,7 +656,7 @@ class ComboDataSR_2D:
             # plot strain rate
 
             plt.figure(figsize=(8, 6))
-            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            #plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             plt.axhline(0, c = 'k', lw = 1)
 
             plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
@@ -692,7 +693,7 @@ class ComboDataSR_2D:
                 #plt.scatter(np.argmax(csr)*self.TR*1000, np.max(csr), color = 'chocolate', marker = 'x', s = 130)
                 #plt.scatter(np.argmin(csr)*self.TR*1000, np.min(csr), color = 'chocolate', marker = 'x', s = 130)
                 
-                #plt.ylim(-8, 12)
+                plt.ylim(-8, 12)
                 plt.legend()
 
             plt.subplots_adjust(wspace=0.25)
@@ -725,7 +726,7 @@ class ComboDataSR_2D:
             plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
             plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('%', fontsize = 15)
-            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            #plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
                 
             if segment == 1:
                 plt.title(f'Regional Strain ({self.filename})', fontsize = 15)
@@ -749,7 +750,7 @@ class ComboDataSR_2D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain)', fontsize = 15)
+                plt.title(f'Global Strain', fontsize = 15)
                 
                 rs = 100*self._strain(self.r_global)
                 cs = 100*self._strain(self.c_global)
@@ -800,7 +801,7 @@ class ComboDataSR_2D:
                 plt.figure(figsize = (8, 7))
                 mpl.rc_file_defaults()  # remove sns style
                 plt.title('Strain rate angle distribution', fontsize = 15)
-                plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2) #, label = 'End Systole')
+                #plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2) #, label = 'End Systole')
                 #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
                 plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
                 plt.xlabel('Time [ms]', fontsize = 15)
@@ -831,16 +832,16 @@ class ComboDataSR_2D:
             plt.figure(figsize = (8, 7))
             sns.set_style("darkgrid", {'font.family': ['sans-serif'], 'font.sans-serif': ['DejaVu Sans']})
             plt.title('Strain rate angle dispersion', fontsize = 15)
-            plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
+            #plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2, label = 'End Systole')
             
-            #plt.plot(self.range_TR, std1, label = 'std stretch', c = 'r', lw=2)
-            #plt.plot(self.range_TR, std2, label = 'std compression', c = 'g', lw=2)
+            plt.plot(self.range_TR[2:-1], running_average((180/np.pi)*std1, 4)[2:-1], label = 'Stretch', c = 'r', lw=1.5, ls='--')
+            plt.plot(self.range_TR[2:-1], running_average((180/np.pi)*std2, 4)[2:-1], label = 'Compression', c = 'g', lw=1.5, ls='--')
             #plt.plot(self.range_TR[2:-1], std_comb[2:-1], 'k', label = 'Standard deviation', lw=2.5)
-            plt.plot(self.range_TR[2:-1], (180/np.pi)*std_comb[2:-1], 'k', label = 'Standard deviation', lw=2.5)
+            plt.plot(self.range_TR[2:-1], (180/np.pi)*std_comb[2:-1], 'k', label = 'Average', lw=2.5)
             
-            plt.ylim(10, 65)
+            plt.ylim(10, 75)
             plt.xlabel('Time [ms]', fontsize = 15)
-            plt.ylabel('Eigenvector angle $\\theta$', fontsize = 15)
+            plt.ylabel('Standard deviation of $\\theta$', fontsize = 15)
             plt.legend(); plt.show()
             
         if segment == 0:  # turn all return arrays global
@@ -896,12 +897,12 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_2D('mi_D8-7_6w', n = 2)
-    #run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
+    #run2 = ComboDataSR_2D('mi_D9-3_42d', n = 2)
+    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
     
     # get info/generate data 
-    run2.overview()
-    #grv1 = run1.velocity()
+    #run2.overview()
+    #grv1 = run2.velocity()
     
     ### strain rate analysis ###
     # ellipse = 1: show ellipse plot for entire heart cycle

@@ -317,7 +317,7 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
 #'''
 # to analyze a generated csv file instead
 #df = pandas.read_csv('combodata_analysis')
-#df = pandas.read_csv('combodata_analysis_oct_2025')
+#df = pandas.read_csv('combodata_analysis_des_2025')
     
 # uncomment to save new csv file
 #df.to_csv('combodata_analysis_des_2025', sep=',', index=False, encoding='utf-8')
@@ -525,7 +525,7 @@ df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
 
 meanval_sham = np.mean(df_sham_40[column]); stdval_sham = np.std(df_sham_40[column])
 meanval_mi = np.mean(df_mi_40[column]); stdval_mi = np.std(df_mi_40[column])
-pval = stats.ttest_ind(df_sham_40[column].dropna(), df_mi_40[column].dropna())[1]
+pval = stats.ttest_ind(df_sham_40[column].dropna(), df_mi_40[column].dropna(), equal_var=False, nan_policy='raise')[1]
 
 print(f'stats - {column}:')
 print(fr'Sham: {round(meanval_sham, 3)} $\pm$ {round(stdval_sham, 3)}')
@@ -536,7 +536,8 @@ print(fr'p-value: {round(pval, 3)}')
 # box plot MI hearts regional variation
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 # c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg or 
-column = 'TSs_reg'
+# GCSRs_reg or
+column = 'std_s_reg'
 
 # Sham
 
@@ -552,10 +553,11 @@ for key, value in df_sham_40[column].items():
     g3.append(value[2])  
     g4.append(value[3])  
 
-g1 = np.array(g1)[~np.isnan(g1)]
-g2 = np.array(g2)[~np.isnan(g2)]
-g3 = np.array(g3)[~np.isnan(g3)]
-g4 = np.array(g4)[~np.isnan(g4)]
+mask = ~np.isnan(g1) & ~np.isnan(g2) & ~np.isnan(g3) & ~np.isnan(g4)
+g1 = np.array(g1)[mask]
+g2 = np.array(g2)[mask]
+g3 = np.array(g3)[mask]
+g4 = np.array(g4)[mask]
 
 # regional colormap
 c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
@@ -563,9 +565,9 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 # p values compared with infarct
 
-pa = round(stats.ttest_ind(g1, g2)[1], 3)
-pm = round(stats.ttest_ind(g1, g3)[1], 3)
-pr = round(stats.ttest_ind(g1, g4)[1], 3)
+pa = round(stats.ttest_ind(g1, g2, equal_var=False)[1], 3)
+pm = round(stats.ttest_ind(g1, g3, equal_var=False)[1], 3)
+pr = round(stats.ttest_ind(g1, g4, equal_var=False)[1], 3)
 print(column, 'sham:', pa,pm,pr)
 
 
@@ -600,31 +602,32 @@ if column == 'TCs_reg':
 
 plt.title(f'{column}, sham: a {pa}, m {pm}, r {pr}')
 
-ymin = plt.axis()[2]
-ymax = plt.axis()[3]
+#ymin = plt.axis()[2]
+#ymax = plt.axis()[3]
 #plt.ylim(ymin, ymax)
 plt.show()
 
-#%%
+#%
 
 # MI
 
-g1 = []
-g2 = []
-g3 = []
-g4 = []
+g1_ = []
+g2_ = []
+g3_ = []
+g4_ = []
 
 # c_reg or r_reg
 for key, value in df_mi_40[column].items():
-    g1.append(value[0])  
-    g2.append(value[1])  
-    g3.append(value[2])  
-    g4.append(value[3])  
+    g1_.append(value[0])  
+    g2_.append(value[1])  
+    g3_.append(value[2])  
+    g4_.append(value[3])  
 
-infarct = np.array(g1)[~np.isnan(g1)]
-adjacent = np.array(g2)[~np.isnan(g2)]
-medial = np.array(g3)[~np.isnan(g3)]
-remote = np.array(g4)[~np.isnan(g4)]
+mask = ~np.isnan(g1_) & ~np.isnan(g2_) & ~np.isnan(g3_) & ~np.isnan(g4_)
+infarct = np.array(g1_)[mask]
+adjacent = np.array(g2_)[mask]
+medial = np.array(g3_)[mask]
+remote = np.array(g4_)[mask]
 
 # regional colormap
 c_cmap = mpl.colors.ListedColormap(sns.color_palette('hls', 4).as_hex())
@@ -684,6 +687,42 @@ if column == 'TCs_reg':
 
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
-plt.ylim(ymin, ymax)
+#plt.ylim(ymin, ymax)
 plt.title(f'{column}, mi: a {pa}, m {pm}, r {pr}')
+plt.show()
+
+#% Sham vs MI @ 6w
+
+''' save manually:
+sham_SR = np.concatenate([g2, g3], axis = None)
+mi_SR = np.concatenate([adjacent, medial], axis = None)
+sham_mean_SR = np.mean([g2, g3], axis=0)
+mi_mean_SR = np.mean([adjacent, medial], axis=0)
+'''
+sham = np.concatenate([g2, g3], axis = None)
+mi = np.concatenate([adjacent, medial], axis = None)
+sham_mean = np.mean([g2, g3], axis=0)
+mi_mean = np.mean([adjacent, medial], axis=0)
+
+meanval_sham = np.mean(sham); stdval_sham = np.std(sham)
+meanval_mi = np.mean(mi); stdval_mi = np.std(mi)
+pval = stats.ttest_ind(sham, mi)[1]
+
+print(f'stats, viable myocardium - {column}:')
+print(fr'Sham: {round(meanval_sham, 3)} $\pm$ {round(stdval_sham, 3)}')
+print(fr'MI: {round(meanval_mi, 3)} $\pm$ {round(stdval_mi, 3)}')
+print(fr'p-value: {round(pval, 3)}')
+
+#%% viable correlation - spearman
+
+color_ = ['#373C9B']*len(sham_mean_SR) + ['#B03D3E']*len(mi_mean_SR)
+SR = np.concatenate([sham_mean_SR, mi_mean_SR])
+std = np.concatenate([sham_mean*180/np.pi, mi_mean*180/np.pi])
+
+spear, p_s = stats.spearmanr(std, SR).statistic, stats.spearmanr(std, SR).pvalue
+print(spear, p_s)
+
+plt.scatter(std, SR, color = color_)
+plt.title(f'Spearman correlation, six weeks post-MI (r = {spear.round(3)}, p = {p_s.round(3)})')
+plt.xlabel('angle_std_e'); plt.ylabel('GRSRd')
 plt.show()
