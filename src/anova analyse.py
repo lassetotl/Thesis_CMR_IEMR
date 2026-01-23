@@ -10,11 +10,11 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns; sns.set()
 
-from statsmodels.formula.api import ols
+from statsmodels.formula.api import ols, mixedlm
 from statsmodels.stats.anova import anova_lm
 from matplotlib.lines import Line2D
 import pingouin as pg
-from scipy.stats import pearsonr, linregress
+from scipy.stats import pearsonr, linregress, spearmanr
 
 ''' 
 data = {'subject_id': [1, 1, 1, 2, 2, 2, 3, 3, 3],
@@ -25,6 +25,27 @@ print(df)
 '''
 #subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
 df = pd.read_csv('combodata_analysis_des_2025')
+
+#%% dataframe where with viable means instead of global
+# if reg parameters dont work, create a fresh df instead of import ("strain_analysis.py")
+
+std_s_v = []; std_e_v = []
+GCSRs_v = []; GCSRd_v = []
+GRSRs_v = []; GRSRd_v = []
+for i in range(len(df['std_e_reg'])):
+    std_s_v.append(np.mean(df['std_s_reg'][i][1:4])*180/np.pi)
+    std_e_v.append(np.mean(df['std_e_reg'][i][1:4])*180/np.pi)
+    GCSRs_v.append(np.mean(df['GCSRs_reg'][i][1:4]))
+    GCSRd_v.append(np.mean(df['GCSRd_reg'][i][1:4]))
+    GRSRs_v.append(np.mean(df['GRSRs_reg'][i][1:4]))
+    GRSRd_v.append(np.mean(df['GRSRd_reg'][i][1:4]))
+    
+df['std_s_v'] = std_s_v
+df['std_e_v'] = std_e_v
+df['GCSRs_v'] = GCSRs_v
+df['GCSRd_v'] = GCSRd_v
+df['GRSRs_v'] = GRSRs_v
+df['GRSRd_v'] = GRSRd_v
 
 #%% correlation heatmap
 
@@ -68,7 +89,7 @@ markers_ = ['v']*7 + ['o']*6
 
 #%% correlation plot (use pg.rm_corr)
 
-param = ['TCs_mod', 'GCSRs']
+param = ['std_s_v', 'GCSRs_v']
 
 df_num_s = df[df['Condition']==0]
 df_num_mi = df[df['Condition']==1]
@@ -105,11 +126,31 @@ p = rm_corr['pval'].iloc[0]
 dof = rm_corr['dof'].iloc[0]
 ci_lower, ci_upper = rm_corr['CI95%'].iloc[0]
 power = rm_corr['power'].iloc[0]
+if p < 0.001:
+    p = '< 0.001'
+else:
+    p = f'= {p.round(3)}'
 
 fig = pg.plot_rm_corr(data=df, x=param[0], y=param[1], subject='ID', \
                       kwargs_facetgrid={'aspect': 1.2, 'height': 4.5, 'palette':palette_},\
                           kwargs_scatter={'edgecolors':'None'})
-plt.title(f'RM correlation (r = {r.round(3)}, p = {p.round(3)})')
+    
+plt.title(f'RM correlation (r = {r.round(3)}, p {p})')
+plt.show()
+
+#%% spearman 6w
+param = ['angle_std_s', 'GCSRd']
+df_num_6w = df[df['Day']>=40]
+
+
+x = df_num_6w[param[0]]
+y = df_num_6w[param[1]]
+spear, p_s = spearmanr(x, y).statistic, spearmanr(x, y).pvalue
+print(spear, p_s)
+
+plt.scatter(x, y, color = palette_)
+plt.title(f'Spearman correlation @ 40+ days (r = {spear.round(3)}, p = {p_s.round(3)})')
+plt.xlabel(param[0]); plt.ylabel(param[1])
 plt.show()
 
 #%%
@@ -126,12 +167,15 @@ for row in range(len(df)):
     
 df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
 df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
-#%%
+#%% lm ANOVA
 
-param = 'angle_std_e'
+param = 'TCd_mod'
 formula = f'{param} ~ Day + ID'
 
 df_sham = df[df['Condition']==0]
+df_sham = df_sham.dropna()
+
+'''
 model_sham = ols(formula, data=df_sham).fit()
 #print(model_sham.summary())
 slope_sham = model_sham.params.iloc[-1] # indexing to exclude intercept and Day
@@ -142,8 +186,10 @@ anova_table_sham = anova_lm(model_sham)
 print(f'ANOVA results {param} (sham): \n', anova_table_sham, '\n')
 P_sham = anova_table_sham['PR(>F)']['Day']  # P-verdi for endring over dager
 
-
+'''
 df_mi = df[df['Condition']==1]
+df_mi = df_mi.dropna()
+'''
 model_mi = ols(formula, data=df_mi).fit()
 anova_table_mi = anova_lm(model_mi)
 #print(model_mi.summary())
@@ -164,6 +210,23 @@ f = plt.figure(figsize=(6, 5), dpi=200)
 # labels
 legend_handles1 = [Line2D([0], [0], color = sham_palette[1], lw = 2, label = fr'$\beta_1$ = {np.round(slope_sham, 3)}, p = {np.round(P_sham, 3)}', marker = 'o'),
           Line2D([0], [0], color = mi_palette[1], lw = 2, label = fr'$\beta_1$ = {np.round(slope_mi,3)}, p = {np.round(P_mi, 3)}', marker = 'v')]
+'''
+'''
+# RM ANOVA
+#df_sham input
+rm_anova_sham = AnovaRM(data=df_sham, depvar=param, subject='ID', within=['Day'])
+rm_results_sham = rm_anova_sham.fit()
+print(rm_results_sham.anova_table)
+'''
+
+#mixed linear model
+md = mixedlm(f'{param} ~ Day', data=df_sham, groups=df_sham["ID"])
+mdf = md.fit()
+print(mdf.summary())
+
+md_mi = mixedlm(f'{param} ~ Day', data=df_mi, groups=df_mi["ID"])
+mdf_mi = md_mi.fit()
+print(mdf_mi.summary())
 
 # plotte linjer over tid for hvert individ
 individer = set(df['ID'])
@@ -189,7 +252,7 @@ plt.xlabel('Days'); plt.ylabel(param)
 #plt.ylabel(r'GC-SRs [$s^{-1}$]')
 #plt.ylabel(r'$\theta_{compression, diastole} \ [^{\circ}]$', fontsize = 15)
 #plt.legend(handles=legend_handles1, prop={'size': 12})
-plt.legend(handles=legend_handles1, prop={'size': 12}, loc='upper right', bbox_to_anchor=(0.99, 0.8))
+#plt.legend(handles=legend_handles1, prop={'size': 12}, loc='upper right', bbox_to_anchor=(0.99, 0.8))
 plt.show()
 
 #%%
