@@ -76,11 +76,11 @@ class ComboDataSR_2D:
         if self.mis[0] < self.mis[1]:
             infarct_length = self.mis[1] - self.mis[0]  # length in nr of sectors
         else:
-            infarct_length = self.mis[0] - 36 - self.mis[1]
+            infarct_length = int(self.mis[0]) - 36 - int(self.mis[1])
         
         # amount of segments in each remaining slice
         self.sl = int(np.floor((36 - abs(infarct_length))/6))
-        #print(infarct_length, self.sl)
+        print(self.mis, infarct_length, self.sl)
     
     
     ### internal functions (prefixed by '_') are called by the main methods ###
@@ -898,7 +898,8 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run2 = ComboDataSR_2D('mi_D9-3_42d', n = 2)
-    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
+    #run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
+    run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
     
     # get info/generate data 
     #run2.overview()
@@ -910,7 +911,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

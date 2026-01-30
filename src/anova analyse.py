@@ -24,7 +24,7 @@ df = pd.DataFrame(data)
 print(df)
 '''
 #subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
-df = pd.read_csv('combodata_analysis_des_2025')
+df = pd.read_csv('combodata_analysis_jan_2026')
 
 #%% dataframe where with viable means instead of global
 # if reg parameters dont work, create a fresh df instead of import ("strain_analysis.py")
@@ -89,7 +89,7 @@ markers_ = ['v']*7 + ['o']*6
 
 #%% correlation plot (use pg.rm_corr)
 
-param = ['std_s_v', 'GCSRs_v']
+param = ['std_e_v', 'GCSRd_v']
 
 df_num_s = df[df['Condition']==0]
 df_num_mi = df[df['Condition']==1]

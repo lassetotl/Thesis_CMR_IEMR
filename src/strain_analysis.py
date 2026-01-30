@@ -320,7 +320,7 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
 #df = pandas.read_csv('combodata_analysis_des_2025')
     
 # uncomment to save new csv file
-#df.to_csv('combodata_analysis_des_2025', sep=',', index=False, encoding='utf-8')
+#df.to_csv('combodata_analysis_jan_2026', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
@@ -533,11 +533,13 @@ print(fr'MI: {round(meanval_mi, 3)} $\pm$ {round(stdval_mi, 3)}')
 print(fr'p-value: {round(pval, 3)}')
 
 #%%
+
+#%%
 # box plot MI hearts regional variation
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 # c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg or 
 # GCSRs_reg or
-column = 'std_s_reg'
+column = 'GCSRd_reg'
 
 # Sham
 
@@ -565,42 +567,34 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 # p values compared with infarct
 
-pa = round(stats.ttest_ind(g1, g2, equal_var=False)[1], 3)
-pm = round(stats.ttest_ind(g1, g3, equal_var=False)[1], 3)
-pr = round(stats.ttest_ind(g1, g4, equal_var=False)[1], 3)
-print(column, 'sham:', pa,pm,pr)
+pa_sham = round(stats.ttest_ind(g1, g2, equal_var=False)[1], 3)
+pm_sham = round(stats.ttest_ind(g1, g3, equal_var=False)[1], 3)
+pr_sham = round(stats.ttest_ind(g1, g4, equal_var=False)[1], 3)
+#print(column, 'sham:', pa_sham,pm_sham,pr_sham)
 
 
 # scatter/violin plot MI regional variation
-plt.figure(figsize=(7, 6), dpi=300)
+'''
+plt.figure(figsize=(5, 4), dpi=200)
 #plt.title('GRS Regional variation Sham')
-sns.barplot(data = [g1, g2, g3, g4], errorbar='sd', capsize=.4, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 2})
+sns.stripplot(data = [g1, g2, g3, g4], size=6, \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
 
+sns.pointplot(data = [g1, g2, g3, g4], errorbar=None, marker='_', \
+              markersize=20, markeredgewidth=3, color='k')
+    
+plt.xticks([0, 1, 2, 3], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'])
+'''
 #plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
 #                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
     
-plt.xticks([0, 1, 2, 3], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'])
                           
 #plt.scatter([0]*len(df_sham_40[column]), g1, color = 'darkred', s = 40)
 #plt.scatter([1]*len(df_sham_40[column]), g2, color = 'darkgreen', s = 40)
 #plt.scatter([2]*len(df_sham_40[column]), g3, color = 'darkblue', s = 40)
 #plt.scatter([3]*len(df_sham_40[column]), g4, color = 'indigo', s = 40)
 
-if column == 'c_reg':
-    plt.ylabel('GCS [%]', fontsize = 17)
-if column == 'r_reg':
-    plt.ylabel('GRS [%]', fontsize = 17)
-if column == 'TSs_reg':
-    plt.ylabel(r'$\theta_{Stretch, systole}$ [$^{\circ}$]', fontsize = 17)
-if column == 'TSd_reg':
-    plt.ylabel(r'$\theta_{Stretch, diastole}$ [$^{\circ}$]', fontsize = 17)
-if column == 'TCd_reg':
-    plt.ylabel(r'$\theta_{compression, diastole}$ [$^{\circ}$]', fontsize = 17)
-if column == 'TCs_reg':
-    plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
-
-plt.title(f'{column}, sham: a {pa}, m {pm}, r {pr}')
+#plt.title(f'{column}, sham: a {pa}, m {pm}, r {pr}')
 
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
@@ -635,9 +629,9 @@ norm_ = mpl.colors.Normalize(vmin = 1, vmax = 4)
 
 # p values compared with infarct
 
-pa = round(stats.ttest_ind(infarct, adjacent)[1], 3)
-pm = round(stats.ttest_ind(infarct, medial)[1], 3)  # first value in medial was NaN, remove first infarct index
-pr = round(stats.ttest_ind(infarct, remote)[1], 4)
+pa = round(stats.ttest_ind(infarct, adjacent, equal_var=False)[1], 3)
+pm = round(stats.ttest_ind(infarct, medial, equal_var=False)[1], 3)  # first value in medial was NaN, remove first infarct index
+pr = round(stats.ttest_ind(infarct, remote, equal_var=False)[1], 4)
 print(column, 'mi:', pa,pm,pr)
 
 # scatter/violin plot MI regional variation
@@ -657,52 +651,47 @@ plt.show()
 
 '''
 
-plt.figure(figsize=(7, 6), dpi=300)
+plt.figure(figsize=(8, 4), dpi=200)
 #plt.title('GRS Regional variation MI')
-sns.barplot(data = [infarct, adjacent, medial, remote], errorbar='sd', capsize=.4, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)], err_kws={'linewidth': 2})
 
+ax1=sns.stripplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], size=6, \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)]*2)
+
+ax2=sns.pointplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], errorbar=None, marker='_', \
+              markersize=20, markeredgewidth=3, color='k', join=False)
+plt.setp(ax1.collections, zorder=1)
+plt.setp(ax2.collections, zorder=1)
+    
 # uncomment to include p values relative to infarct
 #plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
 #                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
     
-plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
+plt.xticks([0, 1, 2, 3, 4, 5, 6, 7], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Infarct', 'Adjacent', 'Medial', 'Remote'], size=10)
 #plt.scatter([0]*len(infarct), infarct, color = 'darkred', s = 40)
 #plt.scatter([1]*len(adjacent), adjacent, color = 'darkgreen', s = 40)
 #plt.scatter([2]*len(medial), medial, color = 'darkblue', s = 40)
 #plt.scatter([3]*len(remote), remote, color = 'indigo', s = 40)
 
-if column == 'c_reg':
-    plt.ylabel('GCS [%]', fontsize = 17)
-if column == 'r_reg':
-    plt.ylabel('GRS [%]', fontsize = 17)
-if column == 'TSs_reg':
-    plt.ylabel(r'$\theta_{Stretch, systole}$ [$^{\circ}$]', fontsize = 17)
-if column == 'TSd_reg':
-    plt.ylabel(r'$\theta_{Stretch, diastole}$ [$^{\circ}$]', fontsize = 17)
-if column == 'TCd_reg':
-    plt.ylabel(r'$\theta_{compression, diastole}$ [$^{\circ}$]', fontsize = 17)
-if column == 'TCs_reg':
-    plt.ylabel(r'$\theta_{compression, systole}$ [$^{\circ}$]', fontsize = 17)
 
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
 #plt.ylim(ymin, ymax)
-plt.title(f'{column}, mi: a {pa}, m {pm}, r {pr}')
+plt.axvline(3.5, color='dimgrey', linewidth=3)
+plt.title(f'{column}, sham:, 2) {pa_sham}, 3) {pm_sham}, 4) {pr_sham} - mi: a {pa}, m {pm}, r {pr}')
 plt.show()
 
 #% Sham vs MI @ 6w
 
 ''' save manually:
-sham_SR = np.concatenate([g2, g3], axis = None)
-mi_SR = np.concatenate([adjacent, medial], axis = None)
-sham_mean_SR = np.mean([g2, g3], axis=0)
-mi_mean_SR = np.mean([adjacent, medial], axis=0)
+sham_SR = np.concatenate([g2, g3, g4], axis = None)
+mi_SR = np.concatenate([adjacent, medial, remote], axis = None)
+sham_mean_SR = np.mean([g2, g3, g4], axis=0)
+mi_mean_SR = np.mean([adjacent, medial, remote], axis=0)
 '''
-sham = np.concatenate([g2, g3], axis = None)
-mi = np.concatenate([adjacent, medial], axis = None)
-sham_mean = np.mean([g2, g3], axis=0)
-mi_mean = np.mean([adjacent, medial], axis=0)
+sham = np.concatenate([g2, g3, g4], axis = None)
+mi = np.concatenate([adjacent, medial, remote], axis = None)
+sham_mean = np.mean([g2, g3, g4], axis=0)
+mi_mean = np.mean([adjacent, medial, remote], axis=0)
 
 meanval_sham = np.mean(sham); stdval_sham = np.std(sham)
 meanval_mi = np.mean(mi); stdval_mi = np.std(mi)
