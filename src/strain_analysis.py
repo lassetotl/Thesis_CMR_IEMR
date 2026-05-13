@@ -96,10 +96,10 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
     GRSRs_reg = run.__dict__['GRSRs_peakvals']
     GRSRd_reg = run.__dict__['GRSRd_peakvals']
     
-    #TSd_reg = run.__dict__['TSd_peakvals']
-    #TSs_reg = run.__dict__['TSs_peakvals']
-    #TCd_reg = run.__dict__['TCd_peakvals']
-    #TCs_reg = run.__dict__['TCs_peakvals']
+    TSd_reg = run.__dict__['TSd_peakvals']
+    TSs_reg = run.__dict__['TSs_peakvals']
+    TCd_reg = run.__dict__['TCd_peakvals']
+    TCs_reg = run.__dict__['TCs_peakvals']
     std_s_min = run.__dict__['std_s_min']
     std_e_min = run.__dict__['std_e_min']
     
@@ -132,7 +132,8 @@ for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
                             a2_mean_max, a2_mean_min, r_strain_peak_std, c_strain_peak_std, \
                                 r_strain_reg, c_strain_reg, a_std_s, a_std_e, std_s_min, \
                                     std_e_min, t_peak_diff_s, t_peak_diff_e, GCSRs_reg, \
-                                        GCSRd_reg, GRSRs_reg, GRSRd_reg, condition])
+                                        GCSRd_reg, GRSRs_reg, GRSRd_reg, TSs_reg, TSd_reg,\
+                                            TCs_reg, TCd_reg, condition])
     filenr += 1
     if os.path.exists(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}') == False:
         os.makedirs(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}')
@@ -313,14 +314,15 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
                                                     'r_std', 'c_std', 'r_reg', 'c_reg', \
                                                         'angle_std_s', 'angle_std_e', \
                                                             'std_s_reg', 'std_e_reg', 't_peak_diff_s', 't_peak_diff_e', 'GCSRs_reg', \
-                                                                'GCSRd_reg', 'GRSRs_reg', 'GRSRd_reg','Condition']) 
+                                                                'GCSRd_reg', 'GRSRs_reg', 'GRSRd_reg', 'TSs_reg', 'TSd_reg',\
+                                                                    'TCs_reg', 'TCd_reg','Condition']) 
 #'''
 # to analyze a generated csv file instead
 #df = pandas.read_csv('combodata_analysis')
-#df = pandas.read_csv('combodata_analysis_des_2025')
+#df = pandas.read_csv('combodata_analysis_may_2026')
     
 # uncomment to save new csv file
-#df.to_csv('combodata_analysis_jan_2026', sep=',', index=False, encoding='utf-8')
+#df.to_csv('combodata_analysis_may_2026', sep=',', index=False, encoding='utf-8')
     
 # display 8 random data samples
 print(f'Shape of dataset (instances, features): {df.shape}')
@@ -339,6 +341,19 @@ for row in range(len(df)):
     
 df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
 df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
+
+TSd_reg_mod = []; TSs_reg_mod = []
+TCd_reg_mod = []; TCs_reg_mod = []
+
+for row in range(len(df)):
+    TSd_reg_mod.append(abs(90 - 180/np.pi*np.array(df['TSd_reg'][row])))
+    TSs_reg_mod.append(abs(180*np.pi*np.array(df['TSs_reg'][row])))
+    
+    TCd_reg_mod.append(abs(180*np.pi*np.array(df['TCd_reg'][row])))
+    TCs_reg_mod.append(abs(90 - 180/np.pi*np.array(df['TCs_reg'][row])))
+    
+df['TSd_reg_mod'] = TSd_reg_mod; df['TSs_reg_mod'] = TSs_reg_mod
+df['TCd_reg_mod'] = TCd_reg_mod; df['TCs_reg_mod'] = TCs_reg_mod
 #%%
 # correlation analysis
 # https://www.kaggle.com/code/datafan07/heart-disease-and-some-scikit-learn-magic/notebook
@@ -535,11 +550,11 @@ print(fr'p-value: {round(pval, 3)}')
 #%%
 
 #%%
-# box plot MI hearts regional variation
+# box plot MI hearts regional variation (only works with fresh dataframe ??)
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 # c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg or 
-# GCSRs_reg or
-column = 'GCSRd_reg'
+# GCSRs_reg or TSs_reg_mod (etc)
+column = 'TSs_reg_mod'
 
 # Sham
 
@@ -572,6 +587,15 @@ pm_sham = round(stats.ttest_ind(g1, g3, equal_var=False)[1], 3)
 pr_sham = round(stats.ttest_ind(g1, g4, equal_var=False)[1], 3)
 #print(column, 'sham:', pa_sham,pm_sham,pr_sham)
 
+# Holm-Bonferroni correction
+pvals_sham = sorted([pa_sham, pm_sham, pr_sham])
+HB_sham = ''
+for i in range(3):
+    p_corr = 0.05/(3-i)
+    if pvals_sham[i] <= p_corr:
+        HB_sham += 'V'
+    else: 
+        HB_sham += 'X'
 
 # scatter/violin plot MI regional variation
 '''
@@ -634,6 +658,17 @@ pm = round(stats.ttest_ind(infarct, medial, equal_var=False)[1], 3)  # first val
 pr = round(stats.ttest_ind(infarct, remote, equal_var=False)[1], 4)
 print(column, 'mi:', pa,pm,pr)
 
+# Holm-Bonferroni correction
+pvals_mi = sorted([pa, pm, pr])
+HB_mi = ''
+for i in range(3):
+    p_corr = 0.05/(3-i)
+    print(p_corr)
+    if pvals_mi[i] <= p_corr:
+        HB_mi += 'V'
+    else: 
+        HB_mi += 'X'
+
 # scatter/violin plot MI regional variation
 '''
 plt.figure(figsize=(6, 5))
@@ -651,7 +686,7 @@ plt.show()
 
 '''
 
-plt.figure(figsize=(8, 4), dpi=200)
+plt.figure(figsize=(9, 4), dpi=200)
 #plt.title('GRS Regional variation MI')
 
 ax1=sns.stripplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], size=6, \
@@ -676,8 +711,8 @@ plt.xticks([0, 1, 2, 3, 4, 5, 6, 7], ['Sector 1', 'Sector 2', 'Sector 3', 'Secto
 #ymin = plt.axis()[2]
 #ymax = plt.axis()[3]
 #plt.ylim(ymin, ymax)
-plt.axvline(3.5, color='dimgrey', linewidth=3)
-plt.title(f'{column}, sham:, 2) {pa_sham}, 3) {pm_sham}, 4) {pr_sham} - mi: a {pa}, m {pm}, r {pr}')
+plt.axvline(3.5, color='white', linewidth=7)
+plt.title(f'{column}, sham:, 2) {pa_sham}, 3) {pm_sham}, 4) {pr_sham} {HB_sham[::-1]}- mi: a {pa}, m {pm}, r {pr} {HB_mi[::-1]}')
 plt.show()
 
 #% Sham vs MI @ 6w
@@ -715,3 +750,6 @@ plt.scatter(std, SR, color = color_)
 plt.title(f'Spearman correlation, six weeks post-MI (r = {spear.round(3)}, p = {p_s.round(3)})')
 plt.xlabel('angle_std_e'); plt.ylabel('GRSRd')
 plt.show()
+
+#%% identify outlier mi
+

@@ -23,8 +23,8 @@ data = {'subject_id': [1, 1, 1, 2, 2, 2, 3, 3, 3],
 df = pd.DataFrame(data)
 print(df)
 '''
-#subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
-df = pd.read_csv('combodata_analysis_jan_2026')
+#%%subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
+df = pd.read_csv('combodata_analysis_apr_2026')
 
 #%% dataframe where with viable means instead of global
 # if reg parameters dont work, create a fresh df instead of import ("strain_analysis.py")
@@ -84,8 +84,8 @@ mi_palette = ['#852F30', '#9B3637', '#B03D3E', '#C1494A', '#C95D5E', '#D07273', 
 sham_palette = ['#373C9B', '#3E44B1', '#4B51C1', '#5F64C9', '#7478D0', '#898CD8', '#9DA1DF', '#B3B5E6', '#C8CAEE']
 
 # mi x7, sham x6
-palette_ = mi_palette[:7] + sham_palette[:6]
-markers_ = ['v']*7 + ['o']*6
+palette_ = mi_palette[:6] + sham_palette[:6]
+markers_ = ['v']*6 + ['o']*6
 
 #%% correlation plot (use pg.rm_corr)
 
@@ -167,7 +167,7 @@ for row in range(len(df)):
     
 df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
 df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
-#%% lm ANOVA
+#%% mixed linear models longitudinal data
 
 param = 'TCd_mod'
 formula = f'{param} ~ Day + ID'

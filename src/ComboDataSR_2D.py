@@ -61,7 +61,7 @@ class ComboDataSR_2D:
         self.T_ed = self.data['TimePointEndDiastole'][0,0][0][0]
         self.res = self.data['Resolution'][0,0][0][0]  # temporal resolution
         self.TR = self.data['TR'][0,0][0][0]  # repetition time
-        self.image_day = self.data['ImageDay'][0,0][0]  # repetition time
+        self.image_day = self.data['ImageDay'][0,0][0]
         
         # infarct sector, arbitrary choice if no infarct sector in metadata
         self.infarct = 0  # MI true = 1 or false = 0
@@ -80,7 +80,7 @@ class ComboDataSR_2D:
         
         # amount of segments in each remaining slice
         self.sl = int(np.floor((36 - abs(infarct_length))/6))
-        print(self.mis, infarct_length, self.sl)
+        #print(self.mis, infarct_length, self.sl)
     
     
     ### internal functions (prefixed by '_') are called by the main methods ###
@@ -135,7 +135,7 @@ class ComboDataSR_2D:
             print(f'No infarct sector found in this slice, sector 1 set as {self.mis}')      
     
     # plots vector field over time, saves video, returns global radial velocity
-    def velocity(self):
+    def velocity(self, plot = 1, save = 0):
         # range of time-points
         self.range_ = range(self.T_ed)
         
@@ -155,21 +155,27 @@ class ComboDataSR_2D:
             frame1 = self.M[:, :, 0, t]  # proton density at time t
             mask_t = self.mask[:, :, 0, t]
             
-            plt.subplots(figsize=(10,10))
-            plt.imshow(frame1.T/np.max(frame1), origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
+            if plot == 1:
+                plt.subplots(figsize=(10,10))
+                plt.imshow(frame1.T/np.max(frame1), origin = 'lower', cmap = 'gray', vmin = 0, vmax = 1)
+                plt.title(f'Velocity plot over proton density at timepoint t = {t} ({self.filename})', fontsize = 15)
             
             # find center of mass of filled mask (middle of the heart)
             cx, cy = ndi.center_of_mass(ndi.binary_fill_holes(mask_t))
             
-            plt.title(f'Velocity plot over proton density at timepoint t = {t} ({self.filename})', fontsize = 15)
+            
             
             
             # certainty matrix
             C = frame1/np.max(frame1)
             
             # noise reduction
-            vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*C, sigma = 2)*mask_t  # x components of velocity w mask
-            vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*C, sigma = 2)*mask_t  # y components 
+            #vx = ndi.gaussian_filter(self.V[:, :, 0, t, 0]*C, sigma = 1)*mask_t  # x components of velocity w mask
+            #vy = ndi.gaussian_filter(self.V[:, :, 0, t, 1]*C, sigma = 1)*mask_t  # y components 
+            
+            # no gaussian smoothing
+            vx = self.V[:, :, 0, t, 0]*C*mask_t
+            vy = self.V[:, :, 0, t, 1]*C*mask_t
             
             # vector decomposition
             for x in range(0, self.ax, self.n):
@@ -179,19 +185,21 @@ class ComboDataSR_2D:
                         r = np.array([x - cx, y - cy])
                         
                         v_ = np.array([vx[x, y], vy[x, y]])
-                        plt.quiver(x, y, v_[0], v_[1], color = 'w', scale = 15, minshaft = 1, minlength = 0, width = 0.005)
+                        if plot == 1:
+                            plt.quiver(x, y, v_[0], v_[1], color = 'w', scale = 15, minshaft = 1, minlength = 0, width = 0.005)
                         theta = clockwise_angle(r, v_) + np.pi
                         
                         self.gr[t] += np.linalg.norm(v_)*np.cos(theta) 
                         self.gc[t] += np.linalg.norm(v_)*np.sin(theta) 
             
-            plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
-          
-            w = 25  # +- window from center of mass at t = 0
-            plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
-            plt.grid(0)
-            plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\Vdump\V(t={t}).PNG')
-            plt.show()
+            if plot == 1:
+                plt.scatter(cx, cy, marker = 'x', c = 'w', s = 210, linewidths = 3)
+              
+                w = 25  # +- window from center of mass at t = 0
+                plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
+                plt.grid(0)
+                plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\Vdump\V(t={t}).PNG')
+                plt.show()
             
         plt.figure(figsize=(10, 8))
         plt.title(f'Global velocity over time ({self.filename})', fontsize = 15)
@@ -202,14 +210,15 @@ class ComboDataSR_2D:
         plt.plot(self.range_, self.gr, lw = 2, label = 'Radial')
         plt.legend()
         
-        # save video in folder named after filename
-        filenames = [fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
-        
-        # create .mp4 or .gif files from Vdump folder
-        with imageio.get_writer(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}\Velocity.gif', fps=5) as writer:
-            for filename in filenames:
-                image = imageio.imread(filename)  # load the image file
-                writer.append_data(image)
+        if save == 1:
+            # save video in folder named after filename
+            filenames = [fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\Vdump\V(t={t}).PNG' for t in self.range_]
+            
+            # create .mp4 or .gif files from Vdump folder
+            with imageio.get_writer(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{self.filename}\Velocity.gif', fps=5) as writer:
+                for filename in filenames:
+                    image = imageio.imread(filename)  # load the image file
+                    writer.append_data(image)
         
         return self.gr
     
@@ -508,15 +517,18 @@ class ComboDataSR_2D:
                 plt.xlim(self.cx_0-w, self.cx_0+w); plt.ylim(self.cy_0-w, self.cy_0+w)
                 
                 # informatic text on plot
+                '''
                 plt.text(self.cx_0 - w + 3, self.cy_0 - w + 3, f'Gaussian smoothing ($\sigma = {self.sigma}$)',
                          color = 'w', fontsize = 15)
                 res_ = round(self.res*w*2, 4)
                 plt.text(self.cx_0 - w + 3, self.cy_0 - w + 9, f'{res_} x {res_} cm', 
                          color = 'w', fontsize = 15)
-                
+                '''
                 if segment == 0:
+                    '''
                     plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, f'{int(sum(e_count))} Ellipses', 
                              color = 'w', fontsize = 15)
+                    '''
                     divider = make_axes_locatable(ax)
                     cax = divider.append_axes("right", size="7%", pad=0.09)
                     
@@ -526,12 +538,13 @@ class ComboDataSR_2D:
                     cbar.set_label('$\Theta$ (degrees), relative to rad. axis', fontsize = 20)
                     
                 else:
+                    '''
                     plt.text(self.cx_0 - w + 3, self.cy_0 - w + 6, 'Ellipse count:', color = 'w', fontsize = 15)
                     plt.text(self.cx_0 - w + 12, self.cy_0 - w + 6, f'{int(e_count[0])}', color = c_cmap(0), fontsize = 15)
                     plt.text(self.cx_0 - w + 15, self.cy_0 - w + 6, f'{int(e_count[1])}', color = c_cmap(1), fontsize = 15)
                     plt.text(self.cx_0 - w + 18, self.cy_0 - w + 6, f'{int(e_count[2])}', color = c_cmap(2), fontsize = 15)
                     plt.text(self.cx_0 - w + 21, self.cy_0 - w + 6, f'{int(e_count[3])}', color = c_cmap(3), fontsize = 15)
-                
+                    '''
                 plt.tight_layout()
                 
                 plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\SRdump\SR(t={t}).PNG')
@@ -675,7 +688,7 @@ class ComboDataSR_2D:
                     #include curve parameters in these plots too?
                     #plt.scatter(self.r_peaktime[sector], self.r_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
                     #plt.scatter(self.c_peaktime[sector], self.c_peakvals[sector], color = c_cmap(sector), marker = 'x', s = 100)
-                    plt.ylim(-11, 11)
+                    #plt.ylim(-11, 11)
                     
                 plt.legend(handles = legend_handles1)
                     
@@ -684,6 +697,12 @@ class ComboDataSR_2D:
                 rsr = running_average(self.r_global, 4)
                 csr = running_average(self.c_global, 4)
                 
+                
+                # noisy data (for fig 2)
+                plt.plot(self.range_TR, self.r_global, c = 'grey', alpha = 0.7, lw=1.5)
+                plt.plot(self.range_TR, self.c_global, c = 'grey', alpha = 0.7, lw=1.5)
+                
+                # smoothed
                 plt.plot(self.range_TR, rsr, c = 'darkblue', lw=2.5, label = 'Radial')
                 plt.plot(self.range_TR, csr, c = 'darkblue', lw=2.5, ls='--', label = 'Circumferential')
                 
@@ -693,7 +712,7 @@ class ComboDataSR_2D:
                 #plt.scatter(np.argmax(csr)*self.TR*1000, np.max(csr), color = 'chocolate', marker = 'x', s = 130)
                 #plt.scatter(np.argmin(csr)*self.TR*1000, np.min(csr), color = 'chocolate', marker = 'x', s = 130)
                 
-                plt.ylim(-8, 12)
+                #plt.ylim(-8, 12)
                 plt.legend()
 
             plt.subplots_adjust(wspace=0.25)
@@ -713,6 +732,10 @@ class ComboDataSR_2D:
                         writer.append_data(image)
                 
             plt.show()
+        
+        self.rs = 100*self._strain(self.r_global)
+        self.cs = 100*self._strain(self.c_global)
+        self.dispersion_curve = (180/np.pi)*std_comb[2:-1]
         
         if plot == 1:
             # plot strain over time
@@ -750,13 +773,10 @@ class ComboDataSR_2D:
                 plt.legend(handles = legend_handles1)
                     
             if segment == 0:
-                plt.title(f'Global Strain', fontsize = 15)
+                plt.title('Global Strain', fontsize = 15)
                 
-                rs = 100*self._strain(self.r_global)
-                cs = 100*self._strain(self.c_global)
-                
-                plt.plot(self.range_TR, rs, c = 'darkblue', lw=2.5, label = 'Radial')
-                plt.plot(self.range_TR, cs, c = 'darkblue', lw=2.5, label = 'Circumferential', ls='--')
+                plt.plot(self.range_TR, self.rs, c = 'darkblue', lw=2.5, label = 'Radial')
+                plt.plot(self.range_TR, self.cs, c = 'darkblue', lw=2.5, label = 'Circumferential', ls='--')
                 
                 #plt.scatter(np.argmax(rs)*self.TR*1000, np.max(rs), color = 'darkblue', marker = 'x', s = 130)
                 #plt.scatter(np.argmin(cs)*self.TR*1000, np.min(cs), color = 'chocolate', marker = 'x', s = 130)
@@ -837,9 +857,9 @@ class ComboDataSR_2D:
             plt.plot(self.range_TR[2:-1], running_average((180/np.pi)*std1, 4)[2:-1], label = 'Stretch', c = 'r', lw=1.5, ls='--')
             plt.plot(self.range_TR[2:-1], running_average((180/np.pi)*std2, 4)[2:-1], label = 'Compression', c = 'g', lw=1.5, ls='--')
             #plt.plot(self.range_TR[2:-1], std_comb[2:-1], 'k', label = 'Standard deviation', lw=2.5)
-            plt.plot(self.range_TR[2:-1], (180/np.pi)*std_comb[2:-1], 'k', label = 'Average', lw=2.5)
+            plt.plot(self.range_TR[2:-1], self.dispersion_curve, 'k', label = 'Average', lw=2.5)
             
-            plt.ylim(10, 75)
+            #plt.ylim(10, 75)
             plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('Standard deviation of $\\theta$', fontsize = 15)
             plt.legend(); plt.show()
@@ -897,13 +917,13 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run2 = ComboDataSR_2D('mi_D9-3_42d', n = 2)
-    #run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2)
-    run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
+    run2 = ComboDataSR_2D('mi_D8-8_20d', n = 1, sigma = 2)
+    #run2 = ComboDataSR_2D('sham_D7-1_40d', n = 1, sigma=1)
+    #run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
     
     # get info/generate data 
     #run2.overview()
-    #grv1 = run2.velocity()
+    #grv1 = run2.velocity(plot = 0)
     
     ### strain rate analysis ###
     # ellipse = 1: show ellipse plot for entire heart cycle
@@ -911,7 +931,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 1)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
