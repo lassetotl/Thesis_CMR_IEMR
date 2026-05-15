@@ -548,13 +548,20 @@ print(fr'MI: {round(meanval_mi, 3)} $\pm$ {round(stdval_mi, 3)}')
 print(fr'p-value: {round(pval, 3)}')
 
 #%%
+# fix std_e _s units
+
+df_mi_40['std_s_reg'] = df_mi_40['std_s_reg']*180/np.pi
+df_sham_40['std_s_reg'] = df_sham_40['std_s_reg']*180/np.pi
+
+df_mi_40['std_e_reg'] = df_mi_40['std_e_reg']*180/np.pi
+df_sham_40['std_e_reg'] = df_sham_40['std_e_reg']*180/np.pi
 
 #%%
 # box plot MI hearts regional variation (only works with fresh dataframe ??)
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 # c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg or 
 # GCSRs_reg or TSs_reg_mod (etc)
-column = 'c_reg'
+column = 'std_e_reg'
 
 # Sham
 
@@ -664,25 +671,25 @@ for i in range(3):
 all_points_mi = np.array([infarct, adjacent, medial, remote])
 
 
-plt.figure(figsize=(6, 2.5), dpi=200)
+plt.figure(figsize=(6, 2.5), dpi=300)
 #plt.title('GRS Regional variation MI')
 
 ax1=sns.stripplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], size=5, \
             palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)]*2, alpha = 1, jitter=False)
 
 for i in range(len(g1)):
-    ax1.plot(list(range(4)), all_points_sham[:,i], color='gray', zorder=1, alpha=0.6, lw=0.9)
+    ax1.plot(list(range(4)), all_points_sham[:,i], color='gray', zorder=1, alpha=0.5, lw=0.9)
     
 for i in range(len(infarct)):
-    ax1.plot(list(range(4,8)), all_points_mi[:,i], color='gray', zorder=1, alpha=0.6, lw=0.9)
+    ax1.plot(list(range(4,8)), all_points_mi[:,i], color='gray', zorder=1, alpha=0.5, lw=0.9)
 
 
 ax2=sns.pointplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], errorbar=None, marker='_', \
-              markersize=20, markeredgewidth=3, color='k', join=False)
+              markersize=17, markeredgewidth=2, color='k', join=False)
     
 plt.setp(ax1.collections, zorder=2)
 plt.setp(ax2.collections, zorder=2)
-plt.yticks(fontsize=8)
+plt.yticks(fontsize=7)
     
 # uncomment to include p values relative to infarct
 #plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
