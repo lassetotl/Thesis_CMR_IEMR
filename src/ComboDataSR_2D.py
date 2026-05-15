@@ -917,8 +917,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    run2 = ComboDataSR_2D('mi_D8-8_20d', n = 1, sigma = 2)
-    #run2 = ComboDataSR_2D('sham_D7-1_40d', n = 1, sigma=1)
+    #run2 = ComboDataSR_2D('mi_D8-8_41d', n = 1, sigma = 0)
+    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 1, sigma=0)
     #run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
     
     # get info/generate data 
@@ -931,7 +931,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     

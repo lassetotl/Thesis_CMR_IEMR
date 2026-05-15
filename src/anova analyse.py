@@ -24,7 +24,7 @@ df = pd.DataFrame(data)
 print(df)
 '''
 #%%subject og dag må sorteres ut fra strings, testen gjentas for hver parameter
-df = pd.read_csv('combodata_analysis_apr_2026')
+df = pd.read_csv('combodata_analysis_may_2026')
 
 #%% dataframe where with viable means instead of global
 # if reg parameters dont work, create a fresh df instead of import ("strain_analysis.py")
@@ -139,7 +139,7 @@ plt.title(f'RM correlation (r = {r.round(3)}, p {p})')
 plt.show()
 
 #%% spearman 6w
-param = ['angle_std_s', 'GCSRd']
+param = ['angle_std_s', 'GCSRs']
 df_num_6w = df[df['Day']>=40]
 
 
@@ -169,7 +169,7 @@ df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
 df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
 #%% mixed linear models longitudinal data
 
-param = 'TCd_mod'
+param = 'GCS'
 formula = f'{param} ~ Day + ID'
 
 df_sham = df[df['Condition']==0]

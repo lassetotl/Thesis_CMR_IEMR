@@ -44,7 +44,7 @@ filenr = 0
 save = 1
 for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\combodata_shax'):
     file_ = os.path.splitext(file)
-    run = ComboDataSR_2D(file_[0], n = 1)  # n = 1 should be used for proper analysis
+    run = ComboDataSR_2D(file_[0], n = 1, sigma=0)  # n = 1 should be used for proper analysis
     run.strain_rate(save = save, plot = 0, ellipse = 0)
     
     # collect parameters
@@ -347,9 +347,9 @@ TCd_reg_mod = []; TCs_reg_mod = []
 
 for row in range(len(df)):
     TSd_reg_mod.append(abs(90 - 180/np.pi*np.array(df['TSd_reg'][row])))
-    TSs_reg_mod.append(abs(180*np.pi*np.array(df['TSs_reg'][row])))
+    TSs_reg_mod.append(abs(180/np.pi*np.array(df['TSs_reg'][row])))
     
-    TCd_reg_mod.append(abs(180*np.pi*np.array(df['TCd_reg'][row])))
+    TCd_reg_mod.append(abs(180/np.pi*np.array(df['TCd_reg'][row])))
     TCs_reg_mod.append(abs(90 - 180/np.pi*np.array(df['TCs_reg'][row])))
     
 df['TSd_reg_mod'] = TSd_reg_mod; df['TSs_reg_mod'] = TSs_reg_mod
@@ -523,7 +523,7 @@ sns_plot('t_peak_diff_e', ylabel_ = r'$\theta_{cd}$ [Degrees]')
 #%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
-column = 'GCSRd'
+column = 'angle_std_s'
 df_ = df[df['Day'] >= 40].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 df__ = df[df['Day'] == 1].groupby(['Condition'], as_index = False).agg({column:['mean', 'std']})
 
@@ -533,7 +533,7 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 'angle_std_e'
+column = 'GRS'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
@@ -554,7 +554,7 @@ print(fr'p-value: {round(pval, 3)}')
 # bug: c_reg and r_reg keys turn from list into strings when loading df?
 # c_reg or r_reg or TSd_reg or TSs_reg or TCd_reg or TCs_reg or std_s_reg or std_e_reg or 
 # GCSRs_reg or TSs_reg_mod (etc)
-column = 'TSs_reg_mod'
+column = 'c_reg'
 
 # Sham
 
@@ -597,18 +597,9 @@ for i in range(3):
     else: 
         HB_sham += 'X'
 
-# scatter/violin plot MI regional variation
-'''
-plt.figure(figsize=(5, 4), dpi=200)
-#plt.title('GRS Regional variation Sham')
-sns.stripplot(data = [g1, g2, g3, g4], size=6, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)])
+# line-plot individual animals (each column is one animal)
+all_points_sham = np.array([g1, g2, g3, g4])
 
-sns.pointplot(data = [g1, g2, g3, g4], errorbar=None, marker='_', \
-              markersize=20, markeredgewidth=3, color='k')
-    
-plt.xticks([0, 1, 2, 3], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4'])
-'''
 #plt.xticks([0, 1, 2, 3], ['Sector 1', f'Sector 2 \n ($p =${np.round(pa, 3)})', \
 #                          f'Sector 3 \n ($p =${np.round(pm, 3)})', f'Sector 4 \n ($p =${np.round(pr, 3)})'])
     
@@ -669,50 +660,47 @@ for i in range(3):
     else: 
         HB_mi += 'X'
 
-# scatter/violin plot MI regional variation
-'''
-plt.figure(figsize=(6, 5))
-plt.title('GCS Regional variation MI')
+# line-plot individual animals (each column is one animal)
+all_points_mi = np.array([infarct, adjacent, medial, remote])
 
-plt.scatter([0]*len(df_mi_40[column]), infarct, color = c_cmap(0))
-plt.scatter([1]*len(df_mi_40[column]), adjacent, color = c_cmap(1))
-plt.scatter([2]*len(df_mi_40[column]), medial, color = c_cmap(2))
-plt.scatter([3]*len(df_mi_40[column]), remote, color = c_cmap(3))
 
-plt.xticks([0, 1, 2, 3], ['Infarct', 'Adjacent', 'Medial', 'Remote'])
-plt.ylabel('%', fontsize = 17)
-
-plt.show()
-
-'''
-
-plt.figure(figsize=(9, 4), dpi=200)
+plt.figure(figsize=(6, 2.5), dpi=200)
 #plt.title('GRS Regional variation MI')
 
-ax1=sns.stripplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], size=6, \
-            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)]*2)
+ax1=sns.stripplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], size=5, \
+            palette = [c_cmap(0), c_cmap(1), c_cmap(2), c_cmap(3)]*2, alpha = 1, jitter=False)
+
+for i in range(len(g1)):
+    ax1.plot(list(range(4)), all_points_sham[:,i], color='gray', zorder=1, alpha=0.6, lw=0.9)
+    
+for i in range(len(infarct)):
+    ax1.plot(list(range(4,8)), all_points_mi[:,i], color='gray', zorder=1, alpha=0.6, lw=0.9)
+
 
 ax2=sns.pointplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], errorbar=None, marker='_', \
               markersize=20, markeredgewidth=3, color='k', join=False)
-plt.setp(ax1.collections, zorder=1)
-plt.setp(ax2.collections, zorder=1)
+    
+plt.setp(ax1.collections, zorder=2)
+plt.setp(ax2.collections, zorder=2)
+plt.yticks(fontsize=8)
     
 # uncomment to include p values relative to infarct
 #plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
 #                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
     
-plt.xticks([0, 1, 2, 3, 4, 5, 6, 7], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Infarct', 'Adjacent', 'Medial', 'Remote'], size=10)
+plt.xticks([0, 1, 2, 3, 4, 5, 6, 7], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Infarct', 'Adjacent', 'Medial', 'Remote'], size=7)
 #plt.scatter([0]*len(infarct), infarct, color = 'darkred', s = 40)
 #plt.scatter([1]*len(adjacent), adjacent, color = 'darkgreen', s = 40)
 #plt.scatter([2]*len(medial), medial, color = 'darkblue', s = 40)
 #plt.scatter([3]*len(remote), remote, color = 'indigo', s = 40)
 
+ymax = max([ax1.get_ylim()[1], ax2.get_ylim()[1]])
+ymin = min([ax1.get_ylim()[0], ax2.get_ylim()[0]])
 
-#ymin = plt.axis()[2]
-#ymax = plt.axis()[3]
-#plt.ylim(ymin, ymax)
+#plt.ylim(ymin, ymax + abs(max([abs(ymax), abs(ymin)]))*0.4)
+plt.gca().set_ylim(top = ymax + abs(max([abs(ymax), abs(ymin)]))*0.4)
 plt.axvline(3.5, color='white', linewidth=7)
-plt.title(f'{column}, sham:, 2) {pa_sham}, 3) {pm_sham}, 4) {pr_sham} {HB_sham[::-1]}- mi: a {pa}, m {pm}, r {pr} {HB_mi[::-1]}')
+plt.title(f'{column}, sham:, 2) {pa_sham}, 3) {pm_sham}, 4) {pr_sham} {HB_sham[::-1]}- mi: a {pa}, m {pm}, r {pr} {HB_mi[::-1]}', fontsize = 8)
 plt.show()
 
 #% Sham vs MI @ 6w

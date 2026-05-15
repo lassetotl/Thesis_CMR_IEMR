@@ -117,5 +117,5 @@ ax2.plot(D0, color='k')
 ax2.plot(D1, color='k', linestyle='--')
 ax2.plot(D2, color='k', linestyle='-.')
 
-ax2.set_ylabel('Standard deviation of $\theta$', fontsize = 12)
+ax2.set_ylabel('Standard deviation of $\{theta}$', fontsize = 12)
 ax1.legend(); plt.show()
