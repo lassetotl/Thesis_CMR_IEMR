@@ -13,12 +13,21 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from matplotlib.lines import Line2D
+import matplotlib.patches as mpatches
 from ComboDataSR_2D import ComboDataSR_2D
 from scipy.integrate import cumulative_trapezoid
 from scipy import stats
 from util import drop_outliers_IQR
 import pandas 
 import seaborn as sns; sns.set()
+
+
+import pandas as pd
+
+from statsmodels.formula.api import ols, mixedlm
+from statsmodels.stats.anova import anova_lm
+from scipy.stats import pearsonr, linregress, spearmanr
+import pingouin as pg
 
 #import warnings
 #warnings.simplefilter("ignore", DeprecationWarning)
@@ -328,6 +337,9 @@ df = pandas.DataFrame(df_list, columns=['Name', 'Day', 'GRS', 'GCS', \
 print(f'Shape of dataset (instances, features): {df.shape}')
 
 #%%
+df_sham = df[df['Condition'] == 0]
+df_mi = df[df['Condition'] == 1]
+
 # modifiser TSd til å vise avstand som avstand fra 90
 
 TSd_mod = []; TSs_mod = []
@@ -354,6 +366,7 @@ for row in range(len(df)):
     
 df['TSd_reg_mod'] = TSd_reg_mod; df['TSs_reg_mod'] = TSs_reg_mod
 df['TCd_reg_mod'] = TCd_reg_mod; df['TCs_reg_mod'] = TCs_reg_mod
+
 #%%
 # correlation analysis
 # https://www.kaggle.com/code/datafan07/heart-disease-and-some-scikit-learn-magic/notebook
@@ -369,158 +382,6 @@ fig.get_axes()[1].remove()#; plt.savefig('Corr_Heatmap')
 plt.show()
 
 #%%
-# internal function that does linear fit on non-outlier data and plot
-# only works with global values within this script
-def ax_corr(ax, column_name):
-    # create temporary dataframes 
-    temp_sham = drop_outliers_IQR(df_sham, column_name, 100) 
-    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)
-    valid_data = pandas.concat([temp_sham[1], temp_mi[1]])
-    outliers = pandas.concat([temp_sham[0], temp_mi[0]])
-    
-    # find correlation and p value with days
-    corr_sham, r_sham = stats.pearsonr(temp_sham[1][column_name], temp_sham[1]['Day'])
-    corr_mi, r_mi = stats.pearsonr(temp_mi[1][column_name], temp_mi[1]['Day'])
-    
-    # t-test
-    r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
-    if r[1] < 0.001:
-        r_str = 'r < 0.001'
-    else:
-        r_str = f'r = {np.round(r[1], 3)}'
-
-
-    sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, palette='Set1')
-    '''
-    valid_data.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, colorbar = 0)
-    outliers.plot.scatter(x='Day', y=column_name, c='Condition', cmap=cmap, s=50, ax=ax, alpha=0.8, marker = 'x', colorbar = 0)
-    
-    
-    
-    ax.plot(t, temp_sham[2]*t + temp_sham[3], c = plt.get_cmap(cmap)(0), label = f'slope = {np.round(temp_sham[2], 3)}, p = {np.round(r_sham, 3)}')
-    ax.plot(t, temp_mi[2]*t + temp_mi[3], c = plt.get_cmap(cmap)(1000), label = f'slope = {np.round(temp_mi[2], 3)}, p = {np.round(r_mi, 3)}, {r_str}')
-    '''
-
-    
-# plot linear regression with 95% confidence interval
-def sns_plot(column_name, ylabel_):
-    # linreg scatterplot
-    s = sns.lmplot(x='Day', y=column_name, hue='Condition', hue_order=[1,0], data = df, \
-                    palette='Set1', height=5, aspect=1.1, legend = 0) 
-    s.ax.set_ylabel(ylabel_, fontsize = 15)
-    s.ax.set_xlabel('Days', fontsize = 15)
-    
-    
-    
-    temp_sham = drop_outliers_IQR(df_sham, column_name, 100)[1]
-    temp_mi = drop_outliers_IQR(df_mi, column_name, 100)[1]
-    # t-test
-    #r = stats.ttest_ind(temp_sham[1][column_name], temp_mi[1][column_name])
-    
-    # barplot p1 p40
-    temp_c1 =  drop_outliers_IQR(df[df['Day'] == 1], column_name, 100)[1]
-    temp_c40 =  drop_outliers_IQR(df[df['Day'] >= 40], column_name, 100)[1]
-    temp_c40['Day'].replace([41,42,43,44,45], 40, inplace = True)
-    
-    # grouped days 40+ together
-    temp_c = pandas.concat([temp_c1, temp_c40])
-    
-    # slope
-    b1_mi = drop_outliers_IQR(df_mi, column_name, 100)[6]
-    b1_sham = drop_outliers_IQR(df_sham, column_name, 100)[6]
-    
-    # slope p-values
-    b_mi = drop_outliers_IQR(df_mi, column_name, 100)[4]
-    b_sham = drop_outliers_IQR(df_sham, column_name, 100)[4]
-    
-    # slope ci
-    ci_mi = drop_outliers_IQR(df_mi, column_name, 100)[5]*1.96
-    ci_sham = drop_outliers_IQR(df_sham, column_name, 100)[5]*1.96
-    
-    print(f'beta1 mi pval: {np.round(b_mi, 3)}')
-    print(f'beta1 sham pval: {np.round(b_sham, 3)}')
-    
-    # https://www.econometrics-with-r.org/2.1-random-variables-and-probability-distributions.html
-    # https://www.econometrics-with-r.org/5.2-cifrc.html
-    print(f'(b1 +- 95ci) mi: {np.round(b1_mi, 3)} {np.round(ci_mi, 3)}')
-    print(f'(b1 +- 95ci) sham: {np.round(b1_sham, 3)} {np.round(ci_sham, 3)}')
-    
-    #t test at start and end
-    r1 = stats.ttest_ind(temp_sham[temp_sham['Day'] == 1][column_name], temp_mi[temp_mi['Day'] == 1][column_name])
-    r40 = stats.ttest_ind(temp_sham[temp_sham['Day'] >= 40][column_name], temp_mi[temp_mi['Day'] >= 40][column_name])
-    
-    
-    # linreg slope pvalues (for scatter plot)
-    if b_mi < 0.001:
-        b_str1 = r'$\beta_1 = $' + f'{np.round(b1_mi, 3)},  $p < 0.001$'
-    else:
-        b_str1 = r'$\beta_1 = $' + f'{np.round(b1_mi, 3)},  p = {np.round(b_mi, 3)}'
-        
-    if b_sham < 0.001:
-        b_str2 = r'$\beta_1 = $' + f'{np.round(b1_sham, 3)},  $p < 0.001$'
-    else:
-        b_str2 = r'$\beta_1 = $' + f'{np.round(b1_sham, 3)},  p = {np.round(b_sham, 3)}'
-    
-    # ttest pvalues (for catplot)
-    if r1[1] < 0.001:
-        r_str1 = 'Day 1 \n ($p < 0.001$)'
-    else:
-        r_str1 = f'Day 1 \n ($p = ${np.round(r1[1], 3)})'
-        
-    if r40[1] < 0.001:
-        r_str40 = 'Day 40+ \n ($p < 0.001$)'
-    else:
-        r_str40 = f'Day 40+ \n ($p = ${np.round(r40[1], 3)})'
-    # return p value that represents linreg comparison
-    #s.ax.text(22, np.min(df[column_name]), f'{b_str1}, {b_str2}', size=15, color='k')
-    s.ax.tick_params(axis='both', which='major', labelsize=13)
-    
-    c_cmap = mpl.colors.ListedColormap(sns.color_palette('Set1').as_hex())
-    legend_handles1 = [Line2D([0], [0], color = c_cmap(0), lw = 2, label = b_str1),
-              Line2D([0], [0], color = c_cmap(1), lw = 2, label = b_str2)]
-    
-    plt.legend(s, handles=legend_handles1, prop={'size': 12}); plt.show(s)
-    
-    
-    # catplot
-    c = sns.catplot(data = temp_c, x = 'Day', y = column_name, hue='Condition', hue_order=[1,0], \
-                    palette='Set1', kind='bar', ci='sd', capsize=.1, alpha = 0.8, legend = 0)
-    c.ax.set_ylabel(ylabel_, fontsize = 15)
-    c.ax.set_xlabel('', fontsize = 15)
-    
-    c.ax.set_xticks([0,1], [r_str1, r_str40])
-    c.ax.tick_params(axis='both', which='major', labelsize=15)
-    
-#%%
-
-df_sham = df[df['Condition'] == 0]
-df_mi = df[df['Condition'] == 1]
-
-sns_plot('GCS', ylabel_ = 'GCS [%]')
-sns_plot('GRS', ylabel_ = 'GRS [%]')
-sns_plot('Circ SDI', ylabel_ = 'CSDI [%]')
-sns_plot('Rad SDI', ylabel_ = 'RSDI [%]')
-
-#sns_plot('r_std', ylabel_ = 'rstd [%]')
-#sns_plot('c_std', ylabel_ = 'cstd [%]')
-
-sns_plot('GRSRs', ylabel_ = 'GRSRs [$s^{-1}$]')
-sns_plot('GRSRd', ylabel_ = 'GRSRd [$s^{-1}$]')
-sns_plot('GCSRs', ylabel_ = 'GCSRs [$s^{-1}$]')
-sns_plot('GCSRd', ylabel_ = 'GCSRd [$s^{-1}$]')
-
-sns_plot('TSd', ylabel_ = r'$\theta_{sd}$ [Degrees]')
-sns_plot('TSs', ylabel_ = r'$\theta_{ss}$ [Degrees]')
-sns_plot('TCs', ylabel_ = r'$\theta_{cs}$ [Degrees]')
-sns_plot('TCd', ylabel_ = r'$\theta_{cd}$ [Degrees]')
-
-sns_plot('angle_std_s', ylabel_ = r'$\theta_{cs}$ [Degrees]')
-sns_plot('angle_std_e', ylabel_ = r'$\theta_{cd}$ [Degrees]')
-
-sns_plot('t_peak_diff_s', ylabel_ = r'$\theta_{cs}$ [Degrees]')
-sns_plot('t_peak_diff_e', ylabel_ = r'$\theta_{cd}$ [Degrees]')
-
-#%%
 # table of (mean +- std) for each parameter in df, grouped by condition
 
 column = 'angle_std_s'
@@ -533,7 +394,7 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 'GRS'
+column = 'angle_std_e'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
@@ -599,7 +460,7 @@ pvals_sham = sorted([pa_sham, pm_sham, pr_sham])
 HB_sham = ''
 for i in range(3):
     p_corr = 0.05/(3-i)
-    if pvals_sham[i] <= p_corr:
+    if (HB_sham.count('X') == 0) and (pvals_sham[i] <= p_corr):
         HB_sham += 'V'
     else: 
         HB_sham += 'X'
@@ -661,8 +522,8 @@ pvals_mi = sorted([pa, pm, pr])
 HB_mi = ''
 for i in range(3):
     p_corr = 0.05/(3-i)
-    print(p_corr)
-    if pvals_mi[i] <= p_corr:
+    print(p_corr, pvals_mi[i])
+    if (HB_mi.count('X') == 0) and (pvals_mi[i] <= p_corr):
         HB_mi += 'V'
     else: 
         HB_mi += 'X'
@@ -736,15 +597,238 @@ print(fr'p-value: {round(pval, 3)}')
 
 color_ = ['#373C9B']*len(sham_mean_SR) + ['#B03D3E']*len(mi_mean_SR)
 SR = np.concatenate([sham_mean_SR, mi_mean_SR])
-std = np.concatenate([sham_mean*180/np.pi, mi_mean*180/np.pi])
+std = np.concatenate([sham_mean, mi_mean])
 
 spear, p_s = stats.spearmanr(std, SR).statistic, stats.spearmanr(std, SR).pvalue
 print(spear, p_s)
 
+plt.figure(dpi=300)
 plt.scatter(std, SR, color = color_)
-plt.title(f'Spearman correlation, six weeks post-MI (r = {spear.round(3)}, p = {p_s.round(3)})')
+plt.title(f'Spearman correlation, six weeks post-MI')
 plt.xlabel('angle_std_e'); plt.ylabel('GRSRd')
+empty_patch = mpatches.Patch(color='none', label = f'r = {spear.round(3)}, p = {p_s.round(3)}') 
+plt.legend(handles=[empty_patch])
 plt.show()
 
-#%% identify outlier mi
+#%% dataframe where with viable means instead of global
+# if reg parameters dont work, create a fresh df instead of import ("strain_analysis.py")
 
+std_s_v = []; std_e_v = []
+GCSRs_v = []; GCSRd_v = []
+GRSRs_v = []; GRSRd_v = []
+for i in range(len(df['std_e_reg'])):
+    std_s_v.append(np.mean(df['std_s_reg'][i][1:4])*180/np.pi)
+    std_e_v.append(np.mean(df['std_e_reg'][i][1:4])*180/np.pi)
+    GCSRs_v.append(np.mean(df['GCSRs_reg'][i][1:4]))
+    GCSRd_v.append(np.mean(df['GCSRd_reg'][i][1:4]))
+    GRSRs_v.append(np.mean(df['GRSRs_reg'][i][1:4]))
+    GRSRd_v.append(np.mean(df['GRSRd_reg'][i][1:4]))
+    
+df['std_s_v'] = std_s_v
+df['std_e_v'] = std_e_v
+df['GCSRs_v'] = GCSRs_v
+df['GCSRd_v'] = GCSRd_v
+df['GRSRs_v'] = GRSRs_v
+df['GRSRd_v'] = GRSRd_v 
+
+# legger til en egen kolonne med IDer
+ID = []
+for row in range(len(df)):
+    ID.append(df['Name'][row].split('_')[1])
+df['ID'] = ID
+#df = df.set_index('ID')
+
+# create another column of integers mapped to IDs
+mapping = {item:i for i, item in enumerate(df['ID'].unique())}
+df['ID_int'] = df['ID'].apply(lambda x: mapping[x])
+
+#%% correlation heatmap
+
+df_num = df.copy()
+df_num = df_num.drop(columns = ['Name', 'std_s_reg', 'std_e_reg', 'GCSRs_reg', 'GCSRd_reg', 'GRSRs_reg', 't_peak_diff_s',
+'t_peak_diff_e', 'GRSRd_reg', 'r_std', 'c_std', 'r_reg', 'c_reg', 'Rad SDI', 'Circ SDI', 'TSd', 'TSs', 'TCs', 'TCd'])
+
+corr = df_num.corr(method='pearson')
+mask = np.triu(corr)  # diagonal + upper triangle redundant
+fig = plt.figure(figsize=(14,12))
+sns.heatmap(corr, mask=mask, cmap='coolwarm', annot=True, norm='linear', annot_kws={'size':14}, fmt='.2f')
+plt.xticks(fontsize=12); plt.yticks(fontsize=12)
+fig.get_axes()[1].remove()
+plt.show()
+
+#%%
+# paletter, html-koder
+mi_palette = ['#852F30', '#9B3637', '#B03D3E', '#C1494A', '#C95D5E', '#D07273', '#D88788', '#DF9C9C', '#E6B1B1']
+sham_palette = ['#373C9B', '#3E44B1', '#4B51C1', '#5F64C9', '#7478D0', '#898CD8', '#9DA1DF', '#B3B5E6', '#C8CAEE']
+
+# mi x7, sham x6
+palette_ = mi_palette[:6] + sham_palette[:6]
+markers_ = ['v']*6 + ['o']*6
+
+#%% correlation plot (use pg.rm_corr)
+
+param = ['std_e_v', 'GRSRd_v']
+
+df_num_s = df[df['Condition']==0]
+df_num_mi = df[df['Condition']==1]
+
+x_s = df_num_s[param[0]]; y_s = df_num_s[param[1]]
+mask = ~np.isnan(x_s) & ~np.isnan(y_s)
+x_s = x_s[mask]; y_s = y_s[mask]
+
+a_s, b_s = linregress(x_s, y_s)[:2]
+pear_s, p_s = pearsonr(x_s, y_s).statistic, pearsonr(x_s, y_s).pvalue
+
+x_mi = df_num_mi[param[0]]; y_mi = df_num_mi[param[1]]
+mask = ~np.isnan(x_mi) & ~np.isnan(y_mi)
+x_mi = x_mi[mask]; y_mi = y_mi[mask]
+
+a_mi, b_mi = linregress(x_mi, y_mi)[:2]
+pear_mi, p_mi = pearsonr(x_mi, y_mi).statistic, pearsonr(x_mi, y_mi).pvalue
+
+plt.scatter(x_s, y_s, c='b', label = f'Sham, pearson {round(pear_s, 3)} (p = {round(p_s, 3)})')
+plt.scatter(x_mi, y_mi, c='r', label = f'MI, pearson {round(pear_mi, 3)} (p = {round(p_mi, 3)})')
+
+x = np.linspace(min([min(x_mi), min(x_s)]), max([max(x_mi), min(x_s)]), 1000)
+plt.plot(x, a_mi*x + b_mi, 'r')
+plt.plot(x, a_s*x + b_s, 'b')
+
+plt.xlabel(param[0]); plt.ylabel(param[1])
+plt.legend(); plt.show()
+
+#repeated measures correlation
+
+rm_corr = pg.rm_corr(data=df, x=param[0], y=param[1], subject='ID')
+r = rm_corr['r'].iloc[0]
+p = rm_corr['pval'].iloc[0]
+dof = rm_corr['dof'].iloc[0]
+ci_lower, ci_upper = rm_corr['CI95%'].iloc[0]
+power = rm_corr['power'].iloc[0]
+if p < 0.001:
+    p = '< 0.001'
+else:
+    p = f'= {p.round(3)}'
+
+fig = pg.plot_rm_corr(data=df, x=param[0], y=param[1], subject='ID', \
+                      kwargs_facetgrid={'aspect': 1.2, 'height': 4.5, 'palette':palette_},\
+                          kwargs_scatter={'edgecolors':'None'})
+    
+plt.title(f'RM correlation (r = {r.round(3)}, p {p})')
+plt.show()
+
+#%% spearman 6w
+param = ['angle_std_s', 'GCSRs']
+df_num_6w = df[df['Day']>=40]
+
+
+x = df_num_6w[param[0]]
+y = df_num_6w[param[1]]
+spear, p_s = spearmanr(x, y).statistic, spearmanr(x, y).pvalue
+print(spear, p_s)
+
+plt.scatter(x, y, color = palette_)
+plt.title(f'Spearman correlation @ 40+ days (r = {spear.round(3)}, p = {p_s.round(3)})')
+plt.xlabel(param[0]); plt.ylabel(param[1])
+plt.show()
+
+#%%
+# modifiser TSd til å vise avstand som avstand fra 90
+
+TSd_mod = []; TSs_mod = []
+TCd_mod = []; TCs_mod = []
+for row in range(len(df)):
+    TSd_mod.append(abs(90 - df['TSd'][row]))
+    TSs_mod.append(abs(df['TSs'][row]))
+    
+    TCd_mod.append(abs(df['TCd'][row]))
+    TCs_mod.append(abs(90 - df['TCs'][row]))
+    
+df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
+df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
+#%% mixed linear models longitudinal data
+
+param = 'TSs_mod'
+formula = f'{param} ~ Day + ID'
+
+df_sham = df[df['Condition']==0]
+df_sham = df_sham.dropna()
+
+'''
+model_sham = ols(formula, data=df_sham).fit()
+#print(model_sham.summary())
+slope_sham = model_sham.params.iloc[-1] # indexing to exclude intercept and Day
+std_sham = model_sham.bse.iloc[-1]
+print(f'OLS regression, sham: ({slope_sham.round(3)} \pm {std_sham.round(3)})')
+
+anova_table_sham = anova_lm(model_sham)
+print(f'ANOVA results {param} (sham): \n', anova_table_sham, '\n')
+P_sham = anova_table_sham['PR(>F)']['Day']  # P-verdi for endring over dager
+
+'''
+df_mi = df[df['Condition']==1]
+df_mi = df_mi.dropna()
+'''
+model_mi = ols(formula, data=df_mi).fit()
+anova_table_mi = anova_lm(model_mi)
+#print(model_mi.summary())
+slope_mi = model_mi.params.iloc[-1] # indexing to exclude intercept and Day
+std_mi = model_mi.bse.iloc[-1]
+print(f'OLS regression, mi: ({slope_mi.round(3)} \pm {std_mi.round(3)})')
+
+print(f'ANOVA results {param} (mi): \n', anova_table_mi, '\n')
+P_mi = anova_table_mi['PR(>F)']['Day']  # P-verdi for endring over dager
+
+print(f'Endring over tid for {param}: \n Sham: {np.round(P_sham, 3)} \n MI: {np.round(P_mi, 3)}')
+
+
+f = plt.figure(figsize=(6, 5), dpi=200)
+#plt.title('Repeated measures ANOVA, OLS linear model')
+
+
+# labels
+legend_handles1 = [Line2D([0], [0], color = sham_palette[1], lw = 2, label = fr'$\beta_1$ = {np.round(slope_sham, 3)}, p = {np.round(P_sham, 3)}', marker = 'o'),
+          Line2D([0], [0], color = mi_palette[1], lw = 2, label = fr'$\beta_1$ = {np.round(slope_mi,3)}, p = {np.round(P_mi, 3)}', marker = 'v')]
+'''
+'''
+# RM ANOVA
+#df_sham input
+rm_anova_sham = AnovaRM(data=df_sham, depvar=param, subject='ID', within=['Day'])
+rm_results_sham = rm_anova_sham.fit()
+print(rm_results_sham.anova_table)
+'''
+
+#mixed linear model
+md = mixedlm(f'{param} ~ Day', data=df_sham, groups=df_sham["ID"])
+mdf = md.fit()
+print(mdf.summary())
+
+md_mi = mixedlm(f'{param} ~ Day', data=df_mi, groups=df_mi["ID"])
+mdf_mi = md_mi.fit()
+print(mdf_mi.summary())
+
+# plotte linjer over tid for hvert individ
+individer = set(df['ID'])
+mi_i = 0; sham_i = 0
+for id_ in individer:
+    #print(id_)
+    days = list(df[df['ID']==id_]['Day'])
+    param_ = list(df[df['ID']==id_][param])
+    days_param_zip = sorted(zip(days, param_))
+    days_sorted, param_sorted = zip(*days_param_zip)
+    #print(days_sorted, param_sorted)
+    if df[df['ID']==id_]['Condition'].any()==1:
+        color = mi_palette[mi_i]
+        mi_i += 1
+        marker = 'v'
+    else:
+        color = sham_palette[sham_i]
+        sham_i += 1
+        marker = 'o'
+    plt.plot(days_sorted, param_sorted, c=color, marker=marker)
+
+plt.xlabel('Days'); plt.ylabel(param)
+#plt.ylabel(r'GC-SRs [$s^{-1}$]')
+#plt.ylabel(r'$\theta_{compression, diastole} \ [^{\circ}]$', fontsize = 15)
+#plt.legend(handles=legend_handles1, prop={'size': 12})
+#plt.legend(handles=legend_handles1, prop={'size': 12}, loc='upper right', bbox_to_anchor=(0.99, 0.8))
+plt.show()

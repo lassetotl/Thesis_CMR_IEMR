@@ -568,8 +568,8 @@ class ComboDataSR_2D:
             self.theta2_global_[t] = np.array(theta2_global)*180/np.pi
             
         # add strain rate parameters to dictionary
-        r_sr_global = np.sum(self.r_matrix, axis = 0) / 4
-        c_sr_global = np.sum(self.c_matrix, axis = 0) / 4
+        r_sr_global = running_average(np.sum(self.r_matrix, axis = 0) / 4, 4)
+        c_sr_global = running_average(np.sum(self.c_matrix, axis = 0) / 4, 4)
         
         self.c_sr_max = np.max(self.c_global)
         self.r_sr_max = np.max(self.r_global)
@@ -918,7 +918,7 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run2 = ComboDataSR_2D('mi_D8-8_41d', n = 1, sigma = 0)
-    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 1, sigma=0)
+    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2, sigma=0)
     #run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
     
     # get info/generate data 
