@@ -699,8 +699,8 @@ class ComboDataSR_2D:
                 
                 
                 # noisy data (for fig 2)
-                plt.plot(self.range_TR, self.r_global, c = 'grey', alpha = 0.7, lw=1.5)
-                plt.plot(self.range_TR, self.c_global, c = 'grey', alpha = 0.7, lw=1.5)
+                #plt.plot(self.range_TR, self.r_global, c = 'grey', alpha = 0.6, lw=1.5)
+                #plt.plot(self.range_TR, self.c_global, c = 'grey', alpha = 0.6, lw=1.5, ls='--')
                 
                 # smoothed
                 plt.plot(self.range_TR, rsr, c = 'darkblue', lw=2.5, label = 'Radial')
@@ -712,7 +712,7 @@ class ComboDataSR_2D:
                 #plt.scatter(np.argmax(csr)*self.TR*1000, np.max(csr), color = 'chocolate', marker = 'x', s = 130)
                 #plt.scatter(np.argmin(csr)*self.TR*1000, np.min(csr), color = 'chocolate', marker = 'x', s = 130)
                 
-                #plt.ylim(-8, 12)
+                plt.ylim(-12, 11)
                 plt.legend()
 
             plt.subplots_adjust(wspace=0.25)
@@ -829,15 +829,15 @@ class ComboDataSR_2D:
                 for i in self.range_:
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
-                        plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], color = 'r', alpha = 0.011*self.n**2)
-                        plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], color = 'g', alpha = 0.011*self.n**2)
+                        plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], s = 80, color = 'r', alpha = 0.009*self.n**2)
+                        plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], s = 80, color = 'g', alpha = 0.009*self.n**2)
 
                 
                 #plt.plot(self.range_TR, theta1_mean_global, 'r', lw=2, label = 'Mean stretch angle')
                 #plt.plot(self.range_TR, theta2_mean_global, 'g', lw=2, label = 'Mean compression angle')
                 
-                plt.plot(self.range_TR, (180/np.pi)*theta1_mean_global, 'r', lw=2, label = 'Mean stretch angle')
-                plt.plot(self.range_TR, (180/np.pi)*theta2_mean_global, 'g', lw=2, label = 'Mean compression angle')
+                plt.plot(self.range_TR, (180/np.pi)*theta1_mean_global, 'r', lw=2.5, label = 'Mean stretch angle')
+                plt.plot(self.range_TR, (180/np.pi)*theta2_mean_global, 'g', lw=2.5, label = 'Mean compression angle')
                 
                 #plt.scatter(np.argmax(theta1_mean_global)*self.TR*1000, np.max(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
                 #plt.scatter(np.argmin(theta1_mean_global)*self.TR*1000, np.min(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
@@ -859,7 +859,7 @@ class ComboDataSR_2D:
             #plt.plot(self.range_TR[2:-1], std_comb[2:-1], 'k', label = 'Standard deviation', lw=2.5)
             plt.plot(self.range_TR[2:-1], self.dispersion_curve, 'k', label = 'Average', lw=2.5)
             
-            #plt.ylim(10, 75)
+            plt.ylim(20, 75)
             plt.xlabel('Time [ms]', fontsize = 15)
             plt.ylabel('Standard deviation of $\\theta$', fontsize = 15)
             plt.legend(); plt.show()
@@ -917,8 +917,8 @@ class ComboDataSR_2D:
 if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
-    #run2 = ComboDataSR_2D('mi_D8-8_41d', n = 1, sigma = 0)
-    run2 = ComboDataSR_2D('sham_D7-1_1d', n = 2, sigma=0)
+    #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 1, sigma = 0)
+    run2 = ComboDataSR_2D('sham_D7-1_40d', n = 1, sigma=0)
     #run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
     
     # get info/generate data 

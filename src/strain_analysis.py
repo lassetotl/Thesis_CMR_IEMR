@@ -161,155 +161,6 @@ for t in mis_list:
 print(f'Mean MI sector: [{int(np.mean(m1))}, {int(np.mean(m2))}]')
 '''
 # output: Mean MI sector: [5, 18]
-#%%
-# mean strain with std
-T = 77  # timepoints
-# one of the clips are longer for some reason, but we force it to stop at timepoint 62
-TR = run.__dict__['TR']
-range_ = np.arange(0, T)
-range_TR = range_*TR
-
-f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
-
-ax1.set_title('Global Radial Strain over time', fontsize = 15)
-ax1.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-#ax1.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-ax1.axhline(0, c = 'k', lw = 1)
-ax1.set_xlim(0, np.mean(T_ed_list)*TR)
-ax1.set_xlabel('Time [s]', fontsize = 15)
-ax1.set_ylabel('%', fontsize = 17)
-
-ax2.set_title('Global Circumferential Strain over time', fontsize = 15)
-ax2.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-#ax2.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-ax2.axhline(0, c = 'k', lw = 1)
-ax2.set_xlim(0, np.mean(T_ed_list)*TR)
-ax2.set_xlabel('Time [s]', fontsize = 15)
-
-rs_sham_ = np.sum(rs_sham, axis = 0)/len(rs_sham); T_ = len(rs_sham_)
-cs_sham_ = np.sum(cs_sham, axis = 0)/len(cs_sham)
-rs_mi_1d_ = np.sum(rs_mi_1d, axis = 0)/len(rs_mi_1d)
-cs_mi_1d_ = np.sum(cs_mi_1d, axis = 0)/len(rs_mi_1d)
-rs_mi_40d_ = np.sum(rs_mi_40d, axis = 0)/len(rs_mi_40d)
-cs_mi_40d_ = np.sum(cs_mi_40d, axis = 0)/len(rs_mi_40d)
-
-
-ax1.plot(range_TR[:T_], rs_sham_[:T_], lw=2, c='darkblue', label = 'Sham')
-ax1.plot(range_TR[:T_], rs_mi_1d_[:T_], lw=2, c='purple', label = 'MI 1 day')
-ax1.plot(range_TR[:T_], rs_mi_40d_[:T_], lw=2, c='red', label = 'MI 40+ days')
-
-ax2.plot(range_TR[:T_], cs_sham_[:T_], lw=2, c='chocolate', label = 'Sham') 
-ax2.plot(range_TR[:T_], cs_mi_1d_[:T_], lw=2, c='orangered', label = 'MI 1 day')
-ax2.plot(range_TR[:T_], cs_mi_40d_[:T_], lw=2, c='red', label = 'MI 40+ days')
-                       
-ax1.legend(fontsize = 12)
-ax2.legend(fontsize = 12)
-
-plt.subplots_adjust(wspace=0.07)
-if save == 1:
-    plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}\{file}_GS.PNG')
-plt.show()
-
-
-#%%
-# strain
-T = 77  # timepoints
-# one of the clips are longer for some reason, but we force it to stop at timepoint 62
-TR = run.__dict__['TR']
-range_ = np.arange(0, T)
-range_TR = range_*TR
-
-f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
-
-ax1.set_title('Global Radial Strain over time', fontsize = 15)
-ax1.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-ax1.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-ax1.axhline(0, c = 'k', lw = 1)
-ax1.set_xlim(0, np.max(T_ed_list)*TR)
-ax1.set_xlabel('Time [s]', fontsize = 15)
-ax1.set_ylabel('%', fontsize = 17)
-
-ax2.set_title('Global Circumferential Strain over time', fontsize = 15)
-ax2.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-ax2.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-ax2.axhline(0, c = 'k', lw = 1)
-ax2.set_xlim(0, np.max(T_ed_list)*TR)
-ax2.set_xlabel('Time [s]', fontsize = 15)
-
-for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\strain data'):
-    # drop this method and save matrices instead?
-    r_strain = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{str(file)}\r_strain.npy', allow_pickle = 1)
-    c_strain = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain data\{str(file)}\c_strain.npy', allow_pickle = 1)
-    
-    T_ = len(r_strain)  # stops at respective end diastole
-    if str(file[0]) == 'm':  # double check that folder includes only 6w mi
-        ax1.plot(range_TR[:T_], r_strain[:T_], lw=1.3, c='lime') #, label = f'({file.split("_")[2]})')
-        ax2.plot(range_TR[:T_], c_strain[:T_], lw=1.3, c='gold')
-    else:
-        
-        ax1.plot(range_TR[:T_], r_strain[:T_], lw=1.3, c='darkblue') 
-        ax2.plot(range_TR[:T_], c_strain[:T_], lw=1.3, c='chocolate') 
-     
-legend_handles1 = [Line2D([0], [0], color = 'darkblue', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'lime', lw = 1.3, label = '6w after MI')]
-
-legend_handles2 = [Line2D([0], [0], color = 'chocolate', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'gold', lw = 1.3, label = '6w after MI')]
-                       
-ax1.legend(handles = legend_handles1, fontsize = 12)
-ax2.legend(handles = legend_handles2, fontsize = 12)
-
-plt.subplots_adjust(wspace=0.07)
-plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}\{file}_GS.PNG')
-plt.show()
-
-
-#%%
-# strain rate
-
-f, (ax1, ax2) = plt.subplots(1, 2, sharey=True, figsize=(12, 6))
-
-ax1.set_title('Global Radial Strain Rate over time', fontsize = 15)
-ax1.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-ax1.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-ax1.axhline(0, c = 'k', lw = 1)
-ax1.set_xlim(0, np.max(T_ed_list)*TR)
-ax1.set_xlabel('Time [s]', fontsize = 15)
-ax1.set_ylabel('$s^{-1}$', fontsize = 15)
-
-ax2.set_title('Global Circumferential Strain Rate over time', fontsize = 15)
-ax2.axvline(np.mean(T_es_list)*TR, c = 'k', ls = ':', lw = 2, label = 'End Systole')
-ax2.axvline(np.mean(T_ed_list)*TR, c = 'k', ls = '--', lw = 1.5, label = 'End Diastole')
-ax2.axhline(0, c = 'k', lw = 1)
-ax2.set_xlim(0, np.max(T_ed_list)*TR)
-ax2.set_xlabel('Time [s]', fontsize = 15)
-
-for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data'):
-    r_strain_rate = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{str(file)}\r_strain_rate.npy', allow_pickle = 1)
-    c_strain_rate = np.load(fr'C:\Users\lasse\Desktop\IEMR\Lasse\strain rate data\{str(file)}\c_strain_rate.npy', allow_pickle = 1)
-    
-    T_ = len(r_strain_rate) # stops at respective end diastole
-    if str(file[0]) == 'm':
-        ax1.plot(range_TR[:T_], r_strain_rate[:T_], 'lime', lw=1.3)
-        ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'gold', lw=1.3)
-    else:
-        
-        ax1.plot(range_TR[:T_], r_strain_rate[:T_], 'darkblue', lw=1.3) 
-        ax2.plot(range_TR[:T_], c_strain_rate[:T_], 'chocolate', lw=1.3) 
-        
-legend_handles1 = [Line2D([0], [0], color = 'darkblue', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'lime', lw = 1.3, label = 'MI')]
-
-legend_handles2 = [Line2D([0], [0], color = 'chocolate', lw = 1.3, label = 'Sham'),
-          Line2D([0], [0], color = 'gold', lw = 1.3, label = 'MI')]
-                       
-ax1.legend(handles = legend_handles1, fontsize = 12)
-ax2.legend(handles = legend_handles2, fontsize = 12)
-
-plt.subplots_adjust(wspace=0.07)
-plt.savefig(fr'C:\Users\lasse\Desktop\IEMR\Lasse\plots\MP4\{file}\{file}_GS.PNG')
-plt.show()
-
 
 #%%
 # dataframe analysis
@@ -394,7 +245,7 @@ print(f'Day 40+: {df_.round(2)}')
 #%%
 # chronic sham vs mi, mean, std, pval
 
-column = 'angle_std_e'
+column = 'angle_std_s'
 #df_mi_1 = df_mi[df_mi['Day'] == 1]
 df_mi_40 = df_mi[df_mi['Day'] >= 40]  # chronic stage MI
 df_sham_40 = df_sham[df_sham['Day'] >= 40]  # chronic stage MI
@@ -550,13 +401,13 @@ ax2=sns.pointplot(data = [g1, g2, g3, g4, infarct, adjacent, medial, remote], er
     
 plt.setp(ax1.collections, zorder=2)
 plt.setp(ax2.collections, zorder=2)
-plt.yticks(fontsize=7)
+plt.yticks(fontsize=7.5)
     
 # uncomment to include p values relative to infarct
 #plt.xticks([0, 1, 2, 3], ['Infarct', f'Adjacent \n ($p =${np.round(pa, 3)})', \
 #                          f'Medial \n ($p =${np.round(pm, 3)})', f'Remote \n ($p =${np.round(pr, 3)})'])
     
-plt.xticks([0, 1, 2, 3, 4, 5, 6, 7], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Infarct', 'Adjacent', 'Medial', 'Remote'], size=7)
+plt.xticks([0, 1, 2, 3, 4, 5, 6, 7], ['Sector 1', 'Sector 2', 'Sector 3', 'Sector 4', 'Infarct', 'Adjacent', 'Medial', 'Remote'], size=7.5)
 #plt.scatter([0]*len(infarct), infarct, color = 'darkred', s = 40)
 #plt.scatter([1]*len(adjacent), adjacent, color = 'darkgreen', s = 40)
 #plt.scatter([2]*len(medial), medial, color = 'darkblue', s = 40)
@@ -566,7 +417,7 @@ ymax = max([ax1.get_ylim()[1], ax2.get_ylim()[1]])
 ymin = min([ax1.get_ylim()[0], ax2.get_ylim()[0]])
 
 #plt.ylim(ymin, ymax + abs(max([abs(ymax), abs(ymin)]))*0.4)
-plt.gca().set_ylim(top = ymax + abs(max([abs(ymax), abs(ymin)]))*0.4)
+plt.gca().set_ylim(top = ymax + abs(max([abs(ymax), abs(ymin)]))*0.3)
 plt.axvline(3.5, color='white', linewidth=7)
 plt.title(f'{column}, sham:, 2) {pa_sham}, 3) {pm_sham}, 4) {pr_sham} {HB_sham[::-1]}- mi: a {pa}, m {pm}, r {pr} {HB_mi[::-1]}', fontsize = 8)
 plt.show()
@@ -747,55 +598,18 @@ df['TSd_mod'] = TSd_mod; df['TSs_mod'] = TSs_mod
 df['TCd_mod'] = TCd_mod; df['TCs_mod'] = TCs_mod
 #%% mixed linear models longitudinal data
 
-param = 'TSs_mod'
+param = 'angle_std_e'
 formula = f'{param} ~ Day + ID'
+
+#filter outliers TSs and TCs (only apply for those measurements!!)
+#df = df[(df['TSs_mod'] < 50) & (df['TCs_mod'] < 50)]
 
 df_sham = df[df['Condition']==0]
 df_sham = df_sham.dropna()
 
-'''
-model_sham = ols(formula, data=df_sham).fit()
-#print(model_sham.summary())
-slope_sham = model_sham.params.iloc[-1] # indexing to exclude intercept and Day
-std_sham = model_sham.bse.iloc[-1]
-print(f'OLS regression, sham: ({slope_sham.round(3)} \pm {std_sham.round(3)})')
-
-anova_table_sham = anova_lm(model_sham)
-print(f'ANOVA results {param} (sham): \n', anova_table_sham, '\n')
-P_sham = anova_table_sham['PR(>F)']['Day']  # P-verdi for endring over dager
-
-'''
 df_mi = df[df['Condition']==1]
 df_mi = df_mi.dropna()
-'''
-model_mi = ols(formula, data=df_mi).fit()
-anova_table_mi = anova_lm(model_mi)
-#print(model_mi.summary())
-slope_mi = model_mi.params.iloc[-1] # indexing to exclude intercept and Day
-std_mi = model_mi.bse.iloc[-1]
-print(f'OLS regression, mi: ({slope_mi.round(3)} \pm {std_mi.round(3)})')
 
-print(f'ANOVA results {param} (mi): \n', anova_table_mi, '\n')
-P_mi = anova_table_mi['PR(>F)']['Day']  # P-verdi for endring over dager
-
-print(f'Endring over tid for {param}: \n Sham: {np.round(P_sham, 3)} \n MI: {np.round(P_mi, 3)}')
-
-
-f = plt.figure(figsize=(6, 5), dpi=200)
-#plt.title('Repeated measures ANOVA, OLS linear model')
-
-
-# labels
-legend_handles1 = [Line2D([0], [0], color = sham_palette[1], lw = 2, label = fr'$\beta_1$ = {np.round(slope_sham, 3)}, p = {np.round(P_sham, 3)}', marker = 'o'),
-          Line2D([0], [0], color = mi_palette[1], lw = 2, label = fr'$\beta_1$ = {np.round(slope_mi,3)}, p = {np.round(P_mi, 3)}', marker = 'v')]
-'''
-'''
-# RM ANOVA
-#df_sham input
-rm_anova_sham = AnovaRM(data=df_sham, depvar=param, subject='ID', within=['Day'])
-rm_results_sham = rm_anova_sham.fit()
-print(rm_results_sham.anova_table)
-'''
 
 #mixed linear model
 md = mixedlm(f'{param} ~ Day', data=df_sham, groups=df_sham["ID"])
