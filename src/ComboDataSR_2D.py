@@ -865,8 +865,6 @@ class ComboDataSR_2D:
             plt.legend(); plt.show()
             
         if segment == 0:  # turn all return arrays global
-            self.r_matrix = self.r_global
-            self.c_matrix = self.c_global
             
             #r_strain = 100*self._strain(self.r_matrix)
             #c_strain = 100*self._strain(self.c_matrix)
@@ -874,10 +872,29 @@ class ComboDataSR_2D:
             self.r_strain = r_sr_global
             self.c_strain = c_sr_global
             
+            # reg kurver
+            self.dispreg = 180*(theta1_std + theta2_std)/(2*np.pi)
+            
+            CS_ = []; RS_ = []
+            for sector in range(4):
+                self.c_matrix[sector, :] = running_average(self.c_matrix[sector, :], 4)
+                self.r_matrix[sector, :] = running_average(self.r_matrix[sector, :], 4)
+                CS_.append(100*self._strain(self.c_matrix[sector, :]))
+                RS_.append(100*self._strain(self.r_matrix[sector, :]))
+                self.dispreg[sector, :] = running_average(self.dispreg[sector, :], 4)
+            
+            self.CSRreg = self.c_matrix
+            self.RSRreg = self.r_matrix
+            self.CSreg = np.array(CS_)
+            self.RSreg = np.array(RS_)
+            
             self.theta1 = theta1_mean_global
             self.theta2 = theta2_mean_global
             self.theta_std_s = np.min(std_comb[2:self.T_es])*180/np.pi #
             self.theta_std_e = np.min(std_comb[self.T_es:-1])*180/np.pi #
+            
+            self.r_matrix = self.r_global
+            self.c_matrix = self.c_global
             
         else:
             self.theta1 = theta1_mean
@@ -918,7 +935,7 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 1, sigma = 0)
-    run2 = ComboDataSR_2D('sham_D7-1_40d', n = 1, sigma=0)
+    run2 = ComboDataSR_2D('43retest', n = 1, sigma=0)
     #run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
     
     # get info/generate data 
@@ -931,7 +948,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 0, plot = 0, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
@@ -942,6 +959,12 @@ if __name__ == "__main__":
     print('systole', round(run2.__dict__['peaktime_diff_s'], 3)) #
     print('diastole', round(run2.__dict__['peaktime_diff_e'], 3)) #
 
-#%%
+#%
 
-    #d1 = run1.__dict__['d']  # divergence over time
+a = run2.__dict__['RSreg']
+
+for i in range(4):
+    plt.plot(a[i], label = f'{i}')
+    
+plt.legend()
+plt.show()
