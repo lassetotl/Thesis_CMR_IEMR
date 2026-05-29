@@ -34,7 +34,7 @@ CS_curves = []
 RS_curves = []
 disp_curves = []
 
-folder = '4'  # 2 files (test and retest) should be in folder
+folder = '1'  # 2 files (test and retest) should be in folder
 day = []
 
 for file in os.listdir(fr'C:\Users\\lasse\\Desktop\\IEMR\\Lasse\\repeatability testing\\{folder}'):
@@ -68,27 +68,27 @@ def bland_altman_plot(data1, data2, label = '', unit = '', plot = 1, *args, **kw
         plt.axhline(md,           color='gray')
         plt.axhline(md + 1.96*sd, color='gray', linestyle='--')
         plt.axhline(md - 1.96*sd, color='gray', linestyle='--')
-        plt.scatter(mean, diff, color = 'k', s = 20, alpha = 1, label = f'Bias = {md.round(3)}, SD = {sd.round(3)}', zorder = 4)
-        plt.xlabel(f'Mean{label} - test/retest{unit}'); plt.ylabel(f'Diff{label} - test/retest ({unit[2:-1]}$\pm$ 1.96*SD)')
+        plt.scatter(mean, diff, color = 'k', s = 20, alpha = 1, label = f'Bias = {md.round(3)}, 1.96*SD = {(1.96*sd).round(3)}', zorder = 4)
+        plt.xlabel(f'Mean test/retest{label}{unit}'); plt.ylabel(f'Diff ({unit[2:-1]}$\pm$ 1.96*SD)')
         plt.ylim(min(diff) - sd, max(diff) + 1.5*sd)
         plt.legend()
     
     return md, sd
 
-plt.plot(CS_curves[0], 'k', label = f'Day {day[0]}')
-plt.plot(CS_curves[1], 'k', ls='--', label = f'Day {day[1]}')
+plt.plot(CS_curves[0], 'k', label = 'Test')
+plt.plot(CS_curves[1], 'k', ls='--', label = 'Retest')
 plt.ylabel('Circ Strain Rate [s$^{-1}$]', fontsize = 11)
 plt.legend(); plt.savefig('C:\\Users\\lasse\\Desktop\\IEMR\\Lasse\\repeatability testing\\temp\\1.png', bbox_inches='tight', pad_inches=0)
 plt.show()
 
-plt.plot(RS_curves[0], 'k', label = f'Day {day[0]}')
-plt.plot(RS_curves[1], 'k', ls='--', label = f'Day {day[1]}')
+plt.plot(RS_curves[0], 'k', label = 'Test')
+plt.plot(RS_curves[1], 'k', ls='--', label = 'Retest')
 plt.ylabel('Rad Strain Rate [s$^{-1}$]', fontsize = 11)
 plt.legend(); plt.savefig('C:\\Users\\lasse\\Desktop\\IEMR\\Lasse\\repeatability testing\\temp\\2.png', bbox_inches='tight', pad_inches=0)
 plt.show()
 
-plt.plot(disp_curves[0], 'k', label = f'Day {day[0]}')
-plt.plot(disp_curves[1], 'k', ls='--', label = f'Day {day[1]}')
+plt.plot(disp_curves[0], 'k', label = 'Test')
+plt.plot(disp_curves[1], 'k', ls='--', label = 'Retest')
 plt.ylabel('Strain Rate Angle Dispersion [$^{\circ}$]', fontsize = 11)
 plt.legend(); plt.savefig('C:\\Users\\lasse\\Desktop\\IEMR\\Lasse\\repeatability testing\\temp\\3.png', bbox_inches='tight', pad_inches=0)
 plt.show()
@@ -109,7 +109,7 @@ plt.show()
 # Figure 7?
 
 f, ax = plt.subplots(3, 2, figsize = (10, 11), dpi = 300)
-f.suptitle('43', fontsize=13)
+f.suptitle('Test-retest reliability', fontsize=16)
 
 image = 1
 for column in [0, 1]:
@@ -135,7 +135,7 @@ bias = np.zeros((5,5))
 SD = np.zeros((5,5))
 
 # inkl 2 senere ...
-folders = ['1', '3', '4']
+folders = ['1', '2', '3', '4']
 for folder in folders:
     # reset
     print(folder)
@@ -207,4 +207,4 @@ for folder in folders:
 bias = bias/len(folders); SD = 1.96*SD/len(folders)
 
 print(f'BIAS:\n{bias.round(2)}')
-print(f'\nSD:\n{SD.round(2)}')    
+print(f'\n1.96*SD:\n{SD.round(2)}')    

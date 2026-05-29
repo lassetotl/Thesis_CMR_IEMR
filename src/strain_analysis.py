@@ -482,6 +482,8 @@ df['GCSRd_v'] = GCSRd_v
 df['GRSRs_v'] = GRSRs_v
 df['GRSRd_v'] = GRSRd_v 
 
+#%%
+
 # legger til en egen kolonne med IDer
 ID = []
 for row in range(len(df)):
@@ -518,7 +520,7 @@ markers_ = ['v']*6 + ['o']*6
 
 #%% correlation plot (use pg.rm_corr)
 
-param = ['std_e_v', 'GRSRd_v']
+param = ['angle_std_s', 'GRSRs']
 
 df_num_s = df[df['Condition']==0]
 df_num_mi = df[df['Condition']==1]

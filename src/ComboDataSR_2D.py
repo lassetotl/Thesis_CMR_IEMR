@@ -935,7 +935,7 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 1, sigma = 0)
-    run2 = ComboDataSR_2D('43retest', n = 1, sigma=0)
+    run2 = ComboDataSR_2D('37test', n = 1, sigma=0)
     #run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
     
     # get info/generate data 
@@ -948,7 +948,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 0, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
@@ -959,12 +959,12 @@ if __name__ == "__main__":
     print('systole', round(run2.__dict__['peaktime_diff_s'], 3)) #
     print('diastole', round(run2.__dict__['peaktime_diff_e'], 3)) #
 
-#%
-
-a = run2.__dict__['RSreg']
-
-for i in range(4):
-    plt.plot(a[i], label = f'{i}')
+    #%
     
-plt.legend()
-plt.show()
+    a = run2.__dict__['RSreg']
+    
+    for i in range(4):
+        plt.plot(a[i], label = f'{i}')
+        
+    plt.legend()
+    plt.show()
