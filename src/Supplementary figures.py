@@ -10,6 +10,7 @@ import os
 import scipy.io as sio
 import scipy.ndimage as ndi
 import matplotlib.pyplot as plt
+import numpy as np
 
 from ComboDataSR_2D import ComboDataSR_2D
 
@@ -45,11 +46,13 @@ for file in os.listdir(r'C:\\Users\\lasse\\Desktop\\IEMR\\Lasse\\combodata_shax'
     #f.suptitle(f'condition {condition} @ {image_day} days')
     
     # magnitude at end systole / diastole
-    ax0.imshow(M[:, :, 0, T_es], cmap = 'gray')
+    M_s = M[:, :, 0, T_es]
+    M_e = M[:, :, 0, T_ed]
+    ax0.imshow(M_s, cmap = 'gray', vmin = np.percentile(M_s, 5)*0.6, vmax = np.percentile(M_s, 95)*1.4)
     ax0.set_xticks([]); ax0.set_yticks([])
     ax0.set_xlim(cx0-w, cx0+w); ax0.set_ylim(cy0-w, cy0+w)
     
-    ax1.imshow(M[:, :, 0, T_ed], cmap = 'gray')
+    ax1.imshow(M[:, :, 0, T_ed], cmap = 'gray', vmin = np.percentile(M_e, 5)*0.6, vmax = np.percentile(M_e, 95)*1.4)
     ax1.set_xticks([]); ax1.set_yticks([])
     ax1.set_xlim(cx1-w, cx1+w); ax1.set_ylim(cy1-w, cy1+w)
     f.tight_layout()
@@ -82,7 +85,7 @@ plt.show()
 
 #%% FigS2 - effekt av smoothing på målinger ved sigma=0,1,2
 
-a = 'mi_D9-3_42d'
+a = 'sham_D7-1_40d'
 
 run0 = ComboDataSR_2D(a, n = 1, sigma = 0)
 run0.strain_rate(ellipse = 0, plot = 0, save = 0, segment = 0)
@@ -101,7 +104,7 @@ D2 = run2.__dict__['dispersion_curve']
 
 f, (ax1, ax2) = plt.subplots(1, 2, figsize = (13,5))
 
-f.suptitle('Effect of Gaussian smoothing on measurements', fontsize = 17)
+f.suptitle('Effect of Gaussian smoothing on velocity fields', fontsize = 17)
 ax1.plot(R0, color='k', label = '$\sigma$ = 0')
 ax1.plot(C0, color='k')
 
@@ -117,5 +120,5 @@ ax2.plot(D0, color='k')
 ax2.plot(D1, color='k', linestyle='--')
 ax2.plot(D2, color='k', linestyle='-.')
 
-ax2.set_ylabel('Standard deviation of $\{theta}$', fontsize = 12)
+ax2.set_ylabel(r'Standard deviation of $\theta$ ($^{\circ}$)', fontsize = 12)
 ax1.legend(); plt.show()

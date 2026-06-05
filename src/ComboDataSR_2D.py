@@ -948,7 +948,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
@@ -961,7 +961,7 @@ if __name__ == "__main__":
 
     #%
     
-    a = run2.__dict__['RSreg']
+    a = run2.__dict__['dispreg']
     
     for i in range(4):
         plt.plot(a[i], label = f'{i}')

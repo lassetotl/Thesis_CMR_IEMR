@@ -30,6 +30,7 @@ import matplotlib.pyplot as plt
 
 from ComboDataSR_2D import ComboDataSR_2D
 
+#%% 
 CS_curves = []
 RS_curves = []
 disp_curves = []
@@ -127,12 +128,12 @@ plt.subplots_adjust(wspace=0.05, hspace=0.05)
 plt.axis('off')
 plt.show()
 
-#%% TABLE 3
+#%% TABLE 4
 # collect regional and global curves CS, RS, CSR, RSR, dispersion 
 # run bland altman, collect bias and SD (formatted like Table 3) [rad, kolonne]
 
-bias = np.zeros((5,5))
-SD = np.zeros((5,5))
+bias = np.zeros((6,5))
+SD = np.zeros((6,5))
 
 # inkl 2 senere ...
 folders = ['1', '2', '3', '4']
@@ -141,6 +142,7 @@ for folder in folders:
     print(folder)
     CS_curves = []; RS_curves = []; CSR_curves = []; RSR_curves = []; disp_curves = []
     CSreg_curves = []; RSreg_curves = []; CSRreg_curves = []; RSRreg_curves = []; dispreg_curves = []
+    dispsys = []; dispdia = []
     
     for file in os.listdir(fr'C:\Users\\lasse\\Desktop\\IEMR\\Lasse\\repeatability testing\\{folder}'):
         file_ = os.path.splitext(file)[0]
@@ -151,6 +153,7 @@ for folder in folders:
             
         run = ComboDataSR_2D(file_, n = 1, sigma=0)  # n = 1 should be used for proper analysis
         run.strain_rate(save = 0, plot = 0, ellipse = 0)
+        T_es = run.__dict__['T_es']
         
         # global curves
         CS_curves.append(run.__dict__['cs'])
@@ -158,6 +161,8 @@ for folder in folders:
         CSR_curves.append(run.__dict__['c_strain'])
         RSR_curves.append(run.__dict__['r_strain'])
         disp_curves.append(run.__dict__['dispersion_curve'])
+        dispsys.append(np.min(disp_curves[-1][:T_es]))  # dispersion minima
+        dispdia.append(np.min(disp_curves[-1][T_es:]))
         
         # regional curves
         CSreg_curves.append(run.__dict__['CSreg'])
@@ -186,6 +191,10 @@ for folder in folders:
             disp = bland_altman_plot(disp_curves[0], disp_curves[1], plot=0)
             bias[4, 4] += abs(disp[0]); SD[4, 4] += disp[1]
             
+            #dispminima
+            bias[5, 4] += np.mean([abs(dispsys[1] - dispsys[0]), abs(dispdia[1] - dispdia[0])])
+            SD[5, 4] += np.std([abs(dispsys[1] - dispsys[0]), abs(dispdia[1] - dispdia[0])])
+            
             # REGIONAL
             for sector in range(4):
                 CSr = bland_altman_plot(CSreg_curves[0][sector, :], CSreg_curves[1][sector, :])
@@ -202,6 +211,12 @@ for folder in folders:
                 
                 dispr = bland_altman_plot(dispreg_curves[0][sector, :], dispreg_curves[1][sector, :])
                 bias[4, sector] += abs(dispr[0]); SD[4, sector] += dispr[1]
+                
+                # minima - differanse test/retest
+                dispsys_ = abs(np.min(dispreg_curves[0][sector, :T_es]) - np.min(dispreg_curves[1][sector, :T_es]))
+                dispdia_ = abs(np.min(dispreg_curves[0][sector, T_es:]) - np.min(dispreg_curves[1][sector, T_es:]))
+                bias[5, sector] += np.mean([dispsys_, dispdia_])
+                SD[5, sector] += np.std([dispsys_, dispdia_])
                 
 # beregner gjennomsnitt og konverterer SD verdier til 1.96*SD
 bias = bias/len(folders); SD = 1.96*SD/len(folders)
