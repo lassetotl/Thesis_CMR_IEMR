@@ -223,3 +223,42 @@ bias = bias/len(folders); SD = 1.96*SD/len(folders)
 
 print(f'BIAS:\n{bias.round(2)}')
 print(f'\n1.96*SD:\n{SD.round(2)}')    
+
+
+#%% REGIONAL - ANIMALS W/O OPERATION
+# for hver fil: import, kjør, hent regionale peak verdier, plott mean+-std
+
+A = np.zeros((2,4,6))  # file, sector, parameter
+
+file_nr = 0
+for file in os.listdir(r'C:\Users\lasse\Desktop\IEMR\2026 aug uoperert'):
+    file_ = os.path.splitext(file)
+    run = ComboDataSR_2D(file_[0], n = 1, sigma = 0)  # n = 1 should be used for proper analysis
+    try:
+        run.strain_rate(save = 0, plot = 0, ellipse = 0)
+    except NotImplementedError:
+        continue
+    
+    # index order - infarct, adjacent, medial, remote
+    c_strain_reg = run.__dict__['c_peakvals']
+    r_strain_reg = run.__dict__['r_peakvals']
+    GCSRs_reg = run.__dict__['GCSRs_peakvals']
+    GCSRd_reg = run.__dict__['GCSRd_peakvals']
+    GRSRs_reg = run.__dict__['GRSRs_peakvals']
+    GRSRd_reg = run.__dict__['GRSRd_peakvals']
+    
+    for sector in range(4):
+        A[file_nr, sector, 0] = c_strain_reg[sector]
+        A[file_nr, sector, 1] = r_strain_reg[sector]
+        A[file_nr, sector, 2] = GCSRs_reg[sector]
+        A[file_nr, sector, 3] = GCSRd_reg[sector]
+        A[file_nr, sector, 4] = GRSRs_reg[sector]
+        A[file_nr, sector, 5] = GRSRd_reg[sector]
+    
+    file_nr += 1
+    
+Amean = np.mean(A, axis = 0)
+Astd = np.std(A, axis = 0)
+
+print(f'MEAN:\n{Amean.round(2)}')
+print(f'STD.DEV:\n{Astd.round(2)}')

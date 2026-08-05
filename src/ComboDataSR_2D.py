@@ -61,7 +61,10 @@ class ComboDataSR_2D:
         self.T_ed = self.data['TimePointEndDiastole'][0,0][0][0]
         self.res = self.data['Resolution'][0,0][0][0]  # temporal resolution
         self.TR = self.data['TR'][0,0][0][0]  # repetition time
-        self.image_day = self.data['ImageDay'][0,0][0]
+        try:
+            self.image_day = self.data['ImageDay'][0,0][0]
+        except IndexError:
+            pass
         
         # infarct sector, arbitrary choice if no infarct sector in metadata
         self.infarct = 0  # MI true = 1 or false = 0
@@ -498,7 +501,7 @@ class ComboDataSR_2D:
                             
                             # draw ellipses that are spanned by eigenvectors
                             # eigenvalues are transformed (1 + tanh(val)) to have a circular unit ellipse
-                            ellipse_ = patches.Ellipse((x, y), (1 + np.tanh(val[val_max_i])), (1 + np.tanh(val[val_min_i])), 
+                            ellipse_ = patches.Ellipse((x, y), (1 + np.tanh(val[val_max_i]/2)), (1 + np.tanh(val[val_min_i]/2)), 
                                                       angle = e_angle, color = hx, alpha = np.tanh(I/0.1)) # alpha = I
                             
                             #unit ellipse
@@ -935,12 +938,13 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 1, sigma = 0)
-    run2 = ComboDataSR_2D('37test', n = 1, sigma=0)
-    #run2 = ComboDataSR_2D('mi_D12-8_45d', n = 2)  # får NaN verdier regionalt
+    #run2 = ComboDataSR_2D('37test', n = 1, sigma=0)
+    #run2 = ComboDataSR_2D('ComboData7_PC(260804_DSC-NT3_s_2017123001)', n = 20)
+    run2 = ComboDataSR_2D('ComboData7_PC(260804_DSH4_s_2017123003)', n = 2)
     
     # get info/generate data 
     #run2.overview()
-    #grv1 = run2.velocity(plot = 0)
+    grv1 = run2.velocity(plot = 1)
     
     ### strain rate analysis ###
     # ellipse = 1: show ellipse plot for entire heart cycle
@@ -948,7 +952,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
+    run2.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 1)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
@@ -959,7 +963,7 @@ if __name__ == "__main__":
     print('systole', round(run2.__dict__['peaktime_diff_s'], 3)) #
     print('diastole', round(run2.__dict__['peaktime_diff_e'], 3)) #
 
-    #%
+    #%%
     
     a = run2.__dict__['dispreg']
     
