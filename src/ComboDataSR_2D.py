@@ -17,6 +17,7 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib import patches
 from matplotlib.lines import Line2D
+import matplotlib.ticker as ticker
 
 from util import theta_rad, running_average, clockwise_angle, theta_rad_alt
 
@@ -822,31 +823,53 @@ class ComboDataSR_2D:
                       
             else:  # global angle distribution 
                 plt.figure(figsize = (8, 7))
-                mpl.rc_file_defaults()  # remove sns style
+                #mpl.rc_file_defaults()  # remove sns style
                 plt.title('Strain rate angle distribution', fontsize = 15)
                 #plt.axvline(self.T_es*self.TR*1000, c = 'k', ls = ':', lw = 2) #, label = 'End Systole')
                 #plt.axhline(45, c = 'k', ls = '--', lw = 1.5)
                 plt.xlim(0, self.T_ed*self.TR*1000)#; plt.ylim(0, 50)
                 plt.xlabel('Time [ms]', fontsize = 15)
                 plt.ylabel('Eigenvector angle $\\theta$', fontsize = 15)
+                
+                # standard deviation lines for stretch/compression
+                low1 = []; high1 = []
+                low2 = []; high2 = []
+                
                 for i in self.range_:
+                    dist1 = []  # angle distribution at timepoint i
+                    dist2 = []
                     for sector in range(4):
                         #print(i, len(self.theta1[sector, i]), len(self.theta2[sector, i]))
-                        plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], s = 80, color = 'r', alpha = 0.009*self.n**2)
-                        plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], s = 80, color = 'g', alpha = 0.009*self.n**2)
-
-                
+                        # scatterplot
+                        #plt.scatter([self.range_TR[i]]*len(self.theta1[sector, i]), self.theta1[sector, i], s = 80, color = 'r', alpha = 0.009*self.n**2)
+                        #plt.scatter([self.range_TR[i]]*len(self.theta2[sector, i]), self.theta2[sector, i], s = 80, color = 'g', alpha = 0.009*self.n**2)
+                        
+                        for val in self.theta1[sector, i]:
+                            dist1.append(val)
+                        for val in self.theta2[sector, i]:
+                            dist2.append(val)
+                            
+                    config = (theta_max*np.pi/180, theta_min*np.pi/180)
+                    dist1 = np.array(dist1); dist2 = np.array(dist2)
+                    low1.append(circmean(dist1*np.pi/180, *config) - circstd(dist1*np.pi/180, *config)); high1.append(circmean(dist1*np.pi/180, *config) + circstd(dist1*np.pi/180, *config))
+                    low2.append(circmean(dist2*np.pi/180, *config) - circstd(dist2*np.pi/180, *config)); high2.append(circmean(dist2*np.pi/180, *config) + circstd(dist2*np.pi/180, *config))
+               
+                low1 = np.array(running_average(low1, 4)); high1 = np.array(running_average(high1, 4))
+                low2 = np.array(running_average(low2, 4)); high2 = np.array(running_average(high2, 4))
                 #plt.plot(self.range_TR, theta1_mean_global, 'r', lw=2, label = 'Mean stretch angle')
                 #plt.plot(self.range_TR, theta2_mean_global, 'g', lw=2, label = 'Mean compression angle')
                 
-                plt.plot(self.range_TR, (180/np.pi)*theta1_mean_global, 'r', lw=2.5, label = 'Mean stretch angle')
-                plt.plot(self.range_TR, (180/np.pi)*theta2_mean_global, 'g', lw=2.5, label = 'Mean compression angle')
+                plt.plot(self.range_TR, (180/np.pi)*running_average(theta1_mean_global, 4), 'r', lw=2.5, label = 'Circular mean $\pm$ std (stretch)')
+                plt.fill_between(self.range_TR, (180/np.pi)*low1, (180/np.pi)*high1, alpha=0.2, color ='r')
+                
+                plt.plot(self.range_TR, (180/np.pi)*running_average(theta2_mean_global, 4), 'g', lw=2.5, label = 'Circular mean $\pm$ std (compression)')
+                plt.fill_between(self.range_TR, (180/np.pi)*low2, (180/np.pi)*high2, alpha=0.2, color ='g')
                 
                 #plt.scatter(np.argmax(theta1_mean_global)*self.TR*1000, np.max(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
                 #plt.scatter(np.argmin(theta1_mean_global)*self.TR*1000, np.min(theta1_mean_global), color = 'r', marker = 'x', s = 150, lw = 2)
                 #plt.scatter(np.argmax(theta2_mean_global)*self.TR*1000, np.max(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
                 #plt.scatter(np.argmin(theta2_mean_global)*self.TR*1000, np.min(theta2_mean_global), color = 'g', marker = 'x', s = 150, lw = 2)
-                
+                plt.yticks([-45, 0, 45, 90, 135]); plt.ylim(-70, 185)
                 plt.legend(loc = 'upper right')
 
             plt.show()
@@ -938,13 +961,13 @@ if __name__ == "__main__":
     st = time.time()
     # create instance for input combodata file
     #run2 = ComboDataSR_2D('mi_D11-3_40d', n = 1, sigma = 0)
-    #run2 = ComboDataSR_2D('37test', n = 1, sigma=0)
+    run2 = ComboDataSR_2D('sham_D7-1_40d', n = 1, sigma=0)
     #run2 = ComboDataSR_2D('ComboData7_PC(260804_DSC-NT3_s_2017123001)', n = 20)
-    run2 = ComboDataSR_2D('ComboData7_PC(260804_DSH4_s_2017123003)', n = 2)
+    #run2 = ComboDataSR_2D('ComboData7_PC(260804_DSH4_s_2017123003)', n = 2)
     
     # get info/generate data 
     #run2.overview()
-    grv1 = run2.velocity(plot = 1)
+    #grv1 = run2.velocity(plot = 1)
     
     ### strain rate analysis ###
     # ellipse = 1: show ellipse plot for entire heart cycle
@@ -952,7 +975,7 @@ if __name__ == "__main__":
     # save = 1: save data arrays, videos to folder
     # segment = 1: regional analysis
     #run1.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 1)
-    run2.strain_rate(ellipse = 1, plot = 1, save = 0, segment = 1)
+    run2.strain_rate(ellipse = 0, plot = 1, save = 0, segment = 0)
     
     #print(run1.__dict__['r_peaktime'])  # example of dictionary functionality
     
@@ -964,7 +987,7 @@ if __name__ == "__main__":
     print('diastole', round(run2.__dict__['peaktime_diff_e'], 3)) #
 
     #%%
-    
+    '''
     a = run2.__dict__['dispreg']
     
     for i in range(4):
@@ -972,3 +995,4 @@ if __name__ == "__main__":
         
     plt.legend()
     plt.show()
+    '''
